@@ -69,11 +69,21 @@ html.no-js .reveal{opacity:1 !important; transform:none !important;}
    something to catch, which is most of the difference between "dark theme"
    and "printed". Both are pointer-events:none and paint once.
    ========================================================================= */
+/* Grain. Previously opacity .32 with mix-blend-mode:overlay — and overlay
+   against surfaces this dark (#0b0908) returns almost nothing, so the tooth
+   was invisible at 100% zoom. Three changes, all in service of "printed"
+   rather than "dark theme":
+     · soft-light instead of overlay. Overlay pushes toward the backdrop's
+       own luminance, which on near-black is a no-op. soft-light lifts.
+     · baseFrequency 0.85 -> 0.58 and tile 140 -> 200px. The old noise was so
+       fine it fell below one device pixel on 2x displays and averaged out.
+     · opacity .32 -> .58, which is legible without becoming texture-as-effect.
+   Still fixed, still pointer-events:none, still paints once. */
 body::before{
   content:""; position:fixed; inset:0; z-index:var(--z-grain); pointer-events:none;
-  opacity:.32; mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
-  background-size:140px 140px;
+  opacity:.58; mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.58' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.62'/%3E%3C/svg%3E");
+  background-size:200px 200px;
 }
 body::after{
   content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
@@ -829,20 +839,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* =========================================================================
    12. HERO (home)
    ========================================================================= */
+/* The hero's own radial wash is gone. Brief 2.1 asks for ONE shape behind the
+   figure, not a stack, and the site-wide ambient warm gradients already come
+   from body::after. The .hero-portrait::before arc is now the only shape.
+   overflow:hidden stays for exactly one reason: clipping the crown bleed. */
 .hero{
   position:relative; inline-size:100%; overflow:hidden;
   padding-block:clamp(120px,14vw,180px) clamp(56px,8vw,100px);
-}
-.hero::before{
-  content:""; position:absolute; inset-block-start:0; inset-inline-end:-10%;
-  inline-size:70%; block-size:120%; pointer-events:none;
-  background:radial-gradient(closest-side, rgba(193,18,47,.16), transparent 72%);
 }
 .hero-inner{
   position:relative; z-index:2; max-width:var(--container);
   margin-inline:auto; padding-inline:var(--gutter); inline-size:100%;
 }
-.hero-copy{position:relative;}
+/* Copy sits above the arc, which reaches back under this column. */
+.hero-copy{position:relative; z-index:2;}
 
 .hero-eyebrow{
   display:inline-flex; align-items:center; gap:var(--space-2);
@@ -883,31 +893,64 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   overflow-wrap:anywhere;
 }
 
-/* Hero portrait.
-   ASSET NOTE: shahedin-cutout.webp is a feathered footer cutout, so here it
-   is deliberately framed — arched card, warm gradient bed behind it and a
-   bottom fade that absorbs the feathered edge instead of fighting it.
-   A purpose-shot replacement would be: waist-up, shot against a plain
-   backdrop, eyes on the upper third, 4:5, >=1600px on the long edge. */
+/* =========================================================================
+   HERO PORTRAIT — de-boxed (brief 2.1)
+   -------------------------------------------------------------------------
+   Previously this was a bordered, rounded, gradient-filled card with
+   overflow:hidden, which put a transparent cutout back inside a frame and
+   read as a stock photo in a widget. Everything that made it a card is gone:
+   no border, no radius, no background, no box-shadow, no overflow:hidden.
+
+   ONE shape sits behind the figure — the ::before arc — and it is
+   deliberately too small to contain him. The geometry is derived from the
+   asset's actual alpha matte, measured rather than guessed:
+
+     subject matte ..... 33.6% transparent, 7.2% partial (hair edge)
+     shoulder line ..... source row 465 of 1024
+     crop .............. rows 0-800 via aspect-ratio 1/1 + object-position top
+                         -> shoulder lands at 465/800 = 58% of the element
+     arc top edge ...... 37% block-size from the bottom = 63% from the top
+
+   58% < 63%, so the head and BOTH shoulders clear the arc's top edge. That
+   overlap is what makes it read as art direction instead of a placed image.
+
+   Two asset constraints are worked around rather than hidden: the crown is
+   clipped at source row 0 (so the figure bleeds off the top of the band and
+   the cut lands on the nav hairline), and the arms touch both frame edges by
+   row 768 (so the crop stops at 800 and the base feathers out). One photo
+   with headroom above the crown and margin beside the arms removes both. */
 .hero-portrait{
-  position:relative; aspect-ratio:4/5; inline-size:100%; max-block-size:600px;
-  margin-inline:auto; border-radius:var(--radius-xl) var(--radius-xl) var(--radius-l) var(--radius-l);
-  overflow:hidden; border:1px solid var(--line-strong);
+  position:relative; z-index:1;
+  aspect-ratio:1/1; inline-size:100%; max-inline-size:560px;
+  margin-inline:auto;
+}
+/* THE ONE SHAPE. Bleeds past the right gutter for the off-grid pull, and
+   reaches back LEFT underneath the copy column — that cross-column overlap is
+   this section's grid-break (brief 2.2). The copy sits at z-index 2, the arc
+   at 0, so nothing costs legibility. */
+.hero-portrait::before{
+  content:""; position:absolute; z-index:0;
+  inset-block-end:0; inset-inline-start:-46%; inset-inline-end:-14%;
+  block-size:37%;
+  border-radius:50% 50% 0 0 / 100% 100% 0 0;
   background:
-    radial-gradient(120% 90% at 50% 0%, rgba(193,18,47,.30), transparent 62%),
-    linear-gradient(170deg,var(--surface-3),var(--surface-0));
-  box-shadow:var(--shadow-4);
+    radial-gradient(120% 150% at 50% 100%, rgba(193,18,47,.40), rgba(193,18,47,.06) 62%, transparent 78%),
+    linear-gradient(180deg,var(--surface-2),var(--surface-1));
+  border-block-start:1px solid var(--line-accent);
+  box-shadow:0 -28px 64px -22px var(--accent-glow);   /* accent glow spill */
 }
 .hero-portrait img{
-  inline-size:100%; block-size:100%; object-fit:cover; object-position:50% 12%;
-  filter:saturate(.94) contrast(1.05);
-  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 11%,#000 100%);
-  mask-image:linear-gradient(to top,transparent 0%,#000 11%,#000 100%);
+  position:relative; z-index:1;
+  inline-size:100%; block-size:100%;
+  object-fit:cover; object-position:50% 0%;
+  /* drop-shadow() follows the alpha matte, so the warm rim light and the
+     grounding shadow both hug the silhouette instead of a bounding box. */
+  filter:saturate(.96) contrast(1.04)
+         drop-shadow(0 0 22px rgba(255,179,122,.22))
+         drop-shadow(0 26px 44px rgba(8,4,2,.60));
+  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
+          mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
   will-change:transform;
-}
-.hero-portrait::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg,transparent 55%,rgba(7,5,4,.55) 100%);
 }
 
 /* =========================================================================
@@ -951,19 +994,39 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .about-grid-text-first{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);}
 .about-grid > *,.product-grid > *,.course-hero-grid > *,.contact-grid > *,.footer-inner > *,.two-col > *{min-inline-size:0;}
 
-/* ASSET NOTE (story portrait): same cutout again. Framed in a soft-arch
-   card with a top-weighted crop so the feathered feet land outside the box.
-   Replacement: candid working shot, 4:5, warm key light. */
-.about-portrait{
-  aspect-ratio:4/5; border-radius:var(--radius-l); overflow:hidden; position:relative;
-  border:1px solid var(--line);
-  background:linear-gradient(165deg,var(--surface-3),var(--surface-0));
+/* STORY PORTRAIT — de-boxed, SECOND treatment (brief 2.1).
+   The card, border, radius, gradient bed and bottom scrim are all gone.
+   Where the hero uses a filled arc, this one uses an OUTLINED RING with no
+   fill, a tighter head-and-shoulders crop (source rows 0-560) and a cooler,
+   flatter grade — so the two portraits read as two photographs rather than
+   one component placed twice.
+
+   SPECIFICITY NOTE: the hero element in index.html carries BOTH
+   .about-portrait and .hero-portrait, and this block sits later in the file.
+   Every rule is therefore scoped :not(.hero-portrait), otherwise the ring
+   treatment would silently override the hero's arc. */
+.about-portrait:not(.hero-portrait){
+  position:relative; aspect-ratio:800/560;
+  inline-size:100%; max-inline-size:420px; margin-inline:auto;
 }
-.about-portrait::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg,transparent 60%,rgba(7,5,4,.5) 100%);
+/* the ring: narrower than his shoulders and shorter than his head, so the
+   figure breaks past it on three sides */
+.about-portrait:not(.hero-portrait)::before{
+  content:""; position:absolute; z-index:0;
+  inset-block-end:2%; inset-inline-start:50%; transform:translateX(-50%);
+  block-size:88%; aspect-ratio:1/1; border-radius:50%;
+  border:1px solid var(--line-accent);
+  background:radial-gradient(62% 62% at 50% 62%, var(--accent-dim), transparent 72%);
 }
-.about-portrait img{inline-size:100%; block-size:100%; object-fit:cover; object-position:50% top;}
+.about-portrait:not(.hero-portrait) img{
+  position:relative; z-index:1;
+  inline-size:100%; block-size:100%;
+  object-fit:cover; object-position:50% 0%;
+  filter:saturate(.72) contrast(1.06) brightness(.98)
+         drop-shadow(0 18px 34px rgba(8,4,2,.55));
+  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
+          mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
+}
 .about-copy > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
 .about-copy > div > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
 .about-copy p:first-of-type{font-family:var(--font-display); font-size:var(--step-1); line-height:1.55; color:var(--text-1);}
@@ -1534,16 +1597,24 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .reveal-stagger.inview > *:nth-child(6){transition-delay:calc(var(--stagger) * 5);}
 .reveal-stagger.inview > *:nth-child(n+7){transition-delay:calc(var(--stagger) * 6);}
 
-/* Homepage hero load choreography. Runs once, on load, without JS. */
+/* Homepage hero load choreography (brief 2.3, Tier 1).
+   Order is exactly as specified: eyebrow -> headline -> sub -> CTAs -> stats
+   -> portrait, 80ms apart. The portrait lands LAST, at 480ms, so the figure
+   arrives as the payoff rather than competing with the headline. Runs once on
+   load, no JS, and `backwards` holds the from-state so nothing flashes before
+   its turn. transform and opacity only. */
 .hero-seq > *{animation:heroIn var(--dur-5) var(--ease-out) backwards;}
-.hero-seq > *:nth-child(1){animation-delay:80ms;}
-.hero-seq > *:nth-child(2){animation-delay:180ms;}
-.hero-seq > *:nth-child(3){animation-delay:280ms;}
-.hero-seq > *:nth-child(4){animation-delay:380ms;}
-.hero-seq > *:nth-child(5){animation-delay:480ms;}
+.hero-seq > *:nth-child(1){animation-delay:80ms;}   /* eyebrow  */
+.hero-seq > *:nth-child(2){animation-delay:160ms;}  /* headline */
+.hero-seq > *:nth-child(3){animation-delay:240ms;}  /* sub      */
+.hero-seq > *:nth-child(4){animation-delay:320ms;}  /* CTAs     */
+.hero-seq > *:nth-child(5){animation-delay:400ms;}  /* stats    */
 @keyframes heroIn{from{opacity:0; transform:translateY(22px);}to{opacity:1; transform:none;}}
-.hero-portrait{animation:portraitIn var(--dur-5) var(--ease-out) 240ms backwards;}
+.hero-portrait{animation:portraitIn var(--dur-5) var(--ease-out) 480ms backwards;}
 @keyframes portraitIn{from{opacity:0; transform:translateY(30px) scale(.97);}to{opacity:1; transform:none;}}
+@media (prefers-reduced-motion: reduce){
+  .hero-seq > *,.hero-portrait{animation:none;}
+}
 
 /* Scroll-driven parallax where supported; js/motion.js covers the rest. */
 @supports (animation-timeline: view()){
@@ -1576,7 +1647,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-preview{position:static;}
   /* Media above copy on stacked course hero reads better than a wall of text. */
   .course-hero-grid > .course-preview{order:-1;}
-  .hero-portrait{max-block-size:440px;}
+  /* aspect-ratio drives height now, so cap the width instead of the height —
+     max-block-size against a 1/1 ratio would fight the crop geometry. */
+  .hero-portrait{max-inline-size:440px;}
   .footer-inner{grid-template-columns:minmax(0,1fr);}
   .footer-cutout-wrap{position:relative; inline-size:100%; block-size:260px; margin-block-start:var(--space-6); justify-content:flex-end; inset-inline-end:0;}
   .footer-cutout-wrap img{block-size:100%;}

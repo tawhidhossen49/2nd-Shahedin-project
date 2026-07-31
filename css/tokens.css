@@ -1,0 +1,260 @@
+/* =========================================================================
+   SHAHEDIN — DESIGN TOKENS
+   -------------------------------------------------------------------------
+   Single source of truth for colour, type, space, radius, shadow, motion
+   and z-index. Loaded BEFORE css/style.css on the public site and before
+   admin/css/admin.css in the admin panel, so both surfaces stay in sync
+   (previously the token block was copy-pasted into admin.css and drifted).
+
+   Two rules for anyone editing this file:
+
+   1. LEGACY ALIASES ARE LOAD-BEARING. js/render.js, js/dashboard.js and
+      js/course-reviews.js write inline styles like `color:var(--text-muted)`
+      straight into their template strings, and several pages have inline
+      `style="background:var(--bg-1)"`. Every token name that existed before
+      the redesign is kept below as an alias onto the new system. Renaming or
+      deleting one silently breaks rendered markup that no CSS file mentions.
+
+   2. CONTRAST IS CHECKED, NOT GUESSED. Every text token below is annotated
+      with its measured WCAG ratio against the darkest page background and
+      against --surface-3, the lightest surface text is ever placed on. Both
+      numbers must stay >= 4.5:1 for body text and >= 3:1 for large text and
+      non-text UI. If you change a colour, re-check both.
+   ========================================================================= */
+
+:root{
+
+  /* ---------------------------------------------------------------------
+     1. COLOUR — warm ink
+     The old palette was a cold blue-black (#0a0a0c) with a cold grey family
+     on top of it, which is most of why the site read as a generic dark
+     template. Everything here is pulled to a warm ~20-30deg hue so the
+     surfaces behave like printed ink and paper rather than like a console.
+     --------------------------------------------------------------------- */
+
+  /* Surfaces, darkest to lightest. No pure #000 anywhere. */
+  --surface-0:      #0b0908;   /* page background */
+  --surface-1:      #110d0c;   /* raised: bands, footers */
+  --surface-2:      #191412;   /* cards */
+  --surface-3:      #221d19;   /* card hover, inputs, wells */
+  --surface-4:      #2d2622;   /* pressed, dividers-as-fills */
+
+  /* Hairlines. Warm white at low alpha reads softer than pure white. */
+  --line:           rgba(246,242,236,0.08);
+  --line-strong:    rgba(246,242,236,0.16);
+  --line-accent:    rgba(244,103,125,0.34);
+
+  /* Ink.  ratio vs --surface-0  |  ratio vs --surface-3 */
+  --text-1:         #f6f2ec;   /*        18.4:1          |      14.6:1  */
+  --text-2:         #c2b9ad;   /*         9.2:1          |       8.5:1  */
+  --text-3:         #968d82;   /*         6.0:1          |       5.1:1  */
+  --text-on-accent: #fffaf8;   /*  6.1:1 on --accent-fill               */
+
+  /* Accent — one family, split by job.
+     `fill` is for solid blocks with white text on them.
+     `ink`  is for accent-coloured TEXT, which needs to be much lighter to
+     clear 4.5:1. The old single #c31432 was used for both and failed as
+     text at 3.2:1. */
+  --accent-fill:    #c1122f;   /* white on this: 6.2:1 */
+  --accent-hover:   #d81c3d;
+  --accent-ink:     #f4677d;   /* 6.7:1 on surface-0, 5.7:1 on surface-3 */
+  --accent-dim:     rgba(193,18,47,0.16);
+  --accent-glow:    rgba(244,103,125,0.20);
+
+  /* Support colours. Both clear 4.5:1 as text on every surface. */
+  --good:           #4ec38a;
+  --good-dim:       rgba(78,195,138,0.14);
+  --warn:           #e3a83c;
+  --warn-dim:       rgba(227,168,60,0.14);
+  --info:           #6fa8d6;
+  --info-dim:       rgba(111,168,214,0.14);
+
+  /* Editorial warm highlight, used sparingly in gradients and grain. */
+  --warm-glow:      #ffb37a;
+
+  /* ---------------------------------------------------------------------
+     2. TYPE
+     Bangla-first. The display face is a Bengali SERIF (Noto Serif Bengali)
+     and the body face is a Bengali SANS (Anek Bangla) — that pairing is the
+     whole typographic idea: it gives the page an editorial voice in the
+     script the audience actually reads, instead of borrowing a Latin display
+     face that the old `body *` override silently cancelled anyway.
+
+     --font-num is a Latin sans with TABULAR figures, used for every number,
+     price, rating and Latin fragment (bKash, PDF, 4.9/5). Bengali faces have
+     Latin glyphs, but they sit on a different optical baseline and at a
+     different weight, which is what made mixed-script lines look broken.
+     --------------------------------------------------------------------- */
+  --font-display:   "Noto Serif Bengali", "Tiro Bangla", "Bangla Fallback", Georgia, serif;
+  --font-body:      "Anek Bangla", "Hind Siliguri", "Bangla Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-num:       "Inter", "Latin Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:      ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
+
+  /* Mixed-script stack. Inter carries no Bengali glyphs, so Latin renders in
+     Inter and Bengali falls through to Anek Bangla *within the same line* —
+     which is what fixes "৳1490", "4.9/5", "bKash" and "PDF" sitting on a
+     different baseline and weight to the Bangla around them. Pair it with
+     font-size-adjust so the two faces share an x-height. */
+  --font-mixed:     "Inter", "Anek Bangla", "Bangla Fallback", ui-sans-serif, system-ui, sans-serif;
+  --xheight-match:  ex-height 0.52;
+
+  /* Fluid type scale. Bangla counters are large, so the small end of the
+     scale is held higher than a Latin-only scale would be — nothing below
+     0.82rem is ever used for reading text. */
+  --step--2:        clamp(0.75rem, 0.735rem + 0.08vw, 0.80rem);
+  --step--1:        clamp(0.84rem, 0.815rem + 0.13vw, 0.92rem);
+  --step-0:         clamp(1.00rem, 0.965rem + 0.18vw, 1.09rem);
+  --step-1:         clamp(1.12rem, 1.055rem + 0.33vw, 1.31rem);
+  --step-2:         clamp(1.31rem, 1.185rem + 0.62vw, 1.69rem);
+  --step-3:         clamp(1.55rem, 1.32rem + 1.15vw, 2.25rem);
+  --step-4:         clamp(1.85rem, 1.42rem + 2.05vw, 3.05rem);
+  --step-5:         clamp(2.15rem, 1.45rem + 3.30vw, 4.05rem);
+
+  /* Line heights. Bengali needs materially more leading than Latin at the
+     same size because of the matra (headline stroke) plus deep descenders. */
+  --lh-display:     1.22;
+  --lh-heading:     1.28;
+  --lh-body:        1.78;
+  --lh-tight:       1.45;
+
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide:  0.06em;
+
+  /* ---------------------------------------------------------------------
+     3. SPACE — 4px base
+     --------------------------------------------------------------------- */
+  --space-1:        4px;
+  --space-2:        8px;
+  --space-3:        12px;
+  --space-4:        16px;
+  --space-5:        20px;
+  --space-6:        24px;
+  --space-7:        32px;
+  --space-8:        40px;
+  --space-9:        48px;
+  --space-10:       64px;
+  --space-11:       80px;
+  --space-12:       104px;
+  --space-13:       136px;
+
+  /* Section rhythm. Three densities so not every band is the same height. */
+  --section-lg:     clamp(72px, 10vw, 132px);
+  --section-md:     clamp(52px, 7vw, 92px);
+  --section-sm:     clamp(36px, 5vw, 60px);
+
+  /* ---------------------------------------------------------------------
+     4. LAYOUT
+     --------------------------------------------------------------------- */
+  --container:      1240px;
+  --container-wide: 1440px;
+  --container-text: 720px;
+  --gutter:         clamp(20px, 5vw, 64px);
+  --nav-h:          72px;
+
+  /* ---------------------------------------------------------------------
+     5. RADIUS
+     --------------------------------------------------------------------- */
+  --radius-xs:      4px;
+  --radius-s:       8px;
+  --radius-m:       14px;
+  --radius-l:       22px;
+  --radius-xl:      32px;
+  --radius-pill:    999px;
+
+  /* ---------------------------------------------------------------------
+     6. SHADOW — tinted to the surface hue, never neutral black
+     --------------------------------------------------------------------- */
+  --shadow-1:       0 1px 2px rgba(8,4,2,0.40);
+  --shadow-2:       0 4px 14px rgba(8,4,2,0.42);
+  --shadow-3:       0 14px 38px rgba(8,4,2,0.48);
+  --shadow-4:       0 28px 70px rgba(8,4,2,0.55);
+  --shadow-accent:  0 12px 34px rgba(193,18,47,0.30);
+
+  /* ---------------------------------------------------------------------
+     7. MOTION
+     --------------------------------------------------------------------- */
+  --dur-1:          120ms;   /* micro: press, checkbox */
+  --dur-2:          200ms;   /* hover, focus */
+  --dur-3:          380ms;   /* panels, tabs */
+  --dur-4:          620ms;   /* entrances */
+  --dur-5:          900ms;   /* hero choreography */
+
+  --ease-out:       cubic-bezier(0.22, 0.90, 0.30, 1);
+  --ease-in-out:    cubic-bezier(0.62, 0.02, 0.28, 1);
+  --ease-spring:    cubic-bezier(0.16, 1.20, 0.32, 1);
+  --ease-exit:      cubic-bezier(0.55, 0.06, 0.68, 0.19);
+
+  /* Stagger unit for choreographed entrances (multiplied by --i). */
+  --stagger:        70ms;
+
+  /* ---------------------------------------------------------------------
+     8. Z-INDEX
+     --------------------------------------------------------------------- */
+  /* Grain sits ABOVE page content (so every surface shares the same tooth)
+     but below the nav, menus, modals and toasts. It is pointer-events:none,
+     so nothing under it loses interaction. */
+  --z-grain:        150;
+  --z-raised:       10;
+  --z-sticky:       100;
+  --z-nav:          200;
+  --z-mobile-menu:  300;
+  --z-drawer:       400;
+  --z-toast:        500;
+
+  /* =====================================================================
+     LEGACY ALIASES — DO NOT REMOVE
+     Referenced from js/render.js, js/dashboard.js, js/course-reviews.js,
+     js/course-progress.js and from inline style attributes in the pages.
+     Grep before touching:  grep -rn "var(--" js/ admin/js/ *.html
+     ===================================================================== */
+  --bg:             var(--surface-0);
+  --bg-1:           var(--surface-1);
+  --bg-2:           var(--surface-2);
+  --bg-3:           var(--surface-3);
+
+  --text:           var(--text-1);
+  --text-muted:     var(--text-2);
+  --text-faint:     var(--text-3);
+
+  --accent:         var(--accent-fill);
+  --accent-2:       var(--accent-ink);
+  --accent-line:    var(--line-accent);
+
+  --font-bn:        var(--font-body);
+
+  --radius-s-legacy: var(--radius-s);
+  --dur-s:          var(--dur-2);
+  --dur-m:          var(--dur-3);
+  --dur-l:          var(--dur-5);
+  --ease:           var(--ease-out);
+}
+
+/* -------------------------------------------------------------------------
+   Metric-matched fallback faces.
+   Google Fonts is loaded with `display=swap`, which means the fallback font
+   paints first. Without these overrides the swap shifts every line of the
+   page (bad CLS). The overrides make the local fallback occupy almost
+   exactly the same vertical space as the webfont, so the swap is a colour
+   change rather than a reflow.
+
+   A fully flash-free load would need the woff2 files self-hosted in assets/
+   with `font-display:optional`; that is the recommended next step and the
+   only thing standing between this and a zero-CLS font load.
+   ------------------------------------------------------------------------- */
+@font-face{
+  font-family: "Bangla Fallback";
+  src: local("Nirmala UI"), local("Noto Sans Bengali"), local("Vrinda"), local("Kalpurush"), local("Arial");
+  ascent-override: 92%;
+  descent-override: 30%;
+  line-gap-override: 0%;
+  size-adjust: 104%;
+}
+@font-face{
+  font-family: "Latin Fallback";
+  src: local("Segoe UI"), local("Roboto"), local("Helvetica Neue"), local("Arial");
+  ascent-override: 90%;
+  descent-override: 22%;
+  line-gap-override: 0%;
+  size-adjust: 100%;
+}

@@ -8,25 +8,124 @@
   "use strict";
   const D = () => window.SITE_DATA || { courses: [], products: [], videos: [], blogPosts: [] };
 
+  /* Every icon carries an explicit width/height. A bare <svg viewBox> with
+     neither will inflate to the replaced-element default width and scale its
+     height to match — which is what blew up the course preview caption.
+     css/style.css also has a zero-specificity safety net for this. */
+  const svg = (body, attrs) =>
+    `<svg class="icon" width="18" height="18" viewBox="0 0 24 24" ${attrs || 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"'} aria-hidden="true" focusable="false">${body}</svg>`;
+
   const ICON = {
-    play: `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`,
-    clock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`,
-    users: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-    star: `★`,
-    starOutline: `☆`,
-    arrow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
-    book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>`,
-    lock: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>`,
+    play: svg(`<path d="M8 5v14l11-7z"/>`, 'fill="currentColor"'),
+    clock: svg(`<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>`),
+    users: svg(`<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>`),
+    star: `<svg class="icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="m12 2.6 2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.7 6.1 20.8l1.2-6.6L2.5 9.6l6.6-.9z"/></svg>`,
+    starOutline: `<svg class="icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true" focusable="false" style="opacity:.4"><path d="m12 2.6 2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.7 6.1 20.8l1.2-6.6L2.5 9.6l6.6-.9z"/></svg>`,
+    arrow: svg(`<path d="M5 12h14M13 6l6 6-6 6"/>`, 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'),
+    book: svg(`<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>`),
+    check: svg(`<path d="M20 6 9 17l-5-5"/>`, 'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"'),
+    lock: svg(`<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>`),
+    inbox: svg(`<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.4 5.1 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.9A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.8 1.1z"/>`),
+    image: svg(`<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.6-4.6a2 2 0 0 0-2.8 0L3 21"/>`),
+    videoOff: svg(`<path d="M10.7 5H19a2 2 0 0 1 2 2v8.3M17 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 1.3-1.9M2 2l20 20"/>`),
+    person: svg(`<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>`),
   };
 
+  /* Rating.
+     Was: literal ★/☆ glyphs plus a bare "(4.8)". Screen readers announced
+     "star star star star star (4.8)" and the digits rendered Latin on a
+     Bangla page. Now: one labelled group, SVG stars, Bangla numerals. */
   function stars(rating) {
-    const full = Math.round(rating);
-    return ICON.star.repeat(full) + ICON.starOutline.repeat(5 - full) + ` <span style="color:var(--text-faint);font-size:.78rem;">(${rating})</span>`;
+    const value = Number(rating) || 0;
+    const full = Math.max(0, Math.min(5, Math.round(value)));
+    const shown = value.toFixed(1).replace(/\.0$/, "");
+    return `<span class="stars" role="img" aria-label="৫-এর মধ্যে ${bnNum(shown, { group: false })} রেটিং">${
+      ICON.star.repeat(full)
+    }${ICON.starOutline.repeat(5 - full)}<span class="rating-value" aria-hidden="true">${bnNum(shown, { group: false })}</span></span>`;
   }
 
   function escapeHtml(str) {
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+  }
+
+  /* ---------- Bangla presentation helpers ----------
+     The site is Bangla-only, but course rows carry English-ish values from
+     the database (`general`, `6 weeks`, `4.8`). These convert them for
+     display only — nothing is written back, and an unrecognised value is
+     passed through untouched rather than mangled. */
+
+  const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+
+  // "4.8" -> "৪.৮"   |   12400 -> "১২,৪০০"
+  function bnNum(value, opts) {
+    if (value === null || value === undefined || value === "") return "";
+    const group = !opts || opts.group !== false;
+    if (typeof value === "number" && group) {
+      try {
+        return value.toLocaleString("bn-BD");
+      } catch (e) {
+        /* fall through to digit mapping */
+      }
+    }
+    return String(value).replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
+  }
+
+  const CATEGORY_BN = {
+    politics: "রাজনীতি",
+    economy: "অর্থনীতি",
+    skills: "দক্ষতা",
+    exam: "পরীক্ষা প্রস্তুতি",
+    general: "সাধারণ",
+    career: "ক্যারিয়ার",
+    history: "ইতিহাস",
+    digital: "ডিজিটাল",
+    physical: "ফিজিক্যাল",
+    books: "বই",
+    notes: "নোট",
+    merch: "মার্চেন্ডাইজ",
+  };
+  function categoryLabel(slug) {
+    if (!slug) return "";
+    const key = String(slug).trim().toLowerCase();
+    return CATEGORY_BN[key] || slug;
+  }
+
+  // "3h 20m" -> "৩ ঘণ্টা ২০ মিনিট"  |  "6 weeks" -> "৬ সপ্তাহ"
+  const DURATION_UNITS = [
+    [/\b(\d+)\s*(?:h|hr|hrs|hour|hours|ঘণ্টা)\b/gi, "ঘণ্টা"],
+    [/\b(\d+)\s*(?:m|min|mins|minute|minutes|মিনিট)\b/gi, "মিনিট"],
+    [/\b(\d+)\s*(?:s|sec|secs|second|seconds)\b/gi, "সেকেন্ড"],
+    [/\b(\d+)\s*(?:d|day|days|দিন)\b/gi, "দিন"],
+    [/\b(\d+)\s*(?:w|wk|wks|week|weeks|সপ্তাহ)\b/gi, "সপ্তাহ"],
+    [/\b(\d+)\s*(?:mo|month|months|মাস)\b/gi, "মাস"],
+    [/\b(\d+)\s*(?:y|yr|yrs|year|years|বছর)\b/gi, "বছর"],
+    [/\b(\d+)\s*(?:lesson|lessons|লেসন)\b/gi, "লেসন"],
+  ];
+  function durationBn(raw) {
+    if (!raw) return "";
+    let out = String(raw).trim();
+    if (!/\d/.test(out)) return out;
+    let matched = false;
+    DURATION_UNITS.forEach(([re, unit]) => {
+      out = out.replace(re, (_m, n) => {
+        matched = true;
+        return bnNum(n, { group: false }) + " " + unit;
+      });
+    });
+    // "14:03" style lesson lengths: digits only, keep the colon form.
+    if (!matched && /^[\d:.\s]+$/.test(out)) return bnNum(out, { group: false });
+    return matched ? out.replace(/\s+/g, " ").trim() : out;
+  }
+
+  /* ---------- Shared empty / error state ---------- */
+  function emptyStateHTML(opts) {
+    const o = opts || {};
+    return `<div class="empty-state${o.variant === "error" ? " state-error" : ""}">
+      <span class="empty-icon">${o.icon || ICON.inbox}</span>
+      <h3>${escapeHtml(o.title || "কিছু পাওয়া যায়নি")}</h3>
+      ${o.body ? `<p>${escapeHtml(o.body)}</p>` : ""}
+      ${o.ctaHref ? `<a href="${escapeHtml(o.ctaHref)}" class="btn btn-ghost btn-sm">${escapeHtml(o.ctaText || "ফিরে যান")}</a>` : ""}
+    </div>`;
   }
 
   function youtubeEmbedId(url) {
@@ -353,6 +452,23 @@
     // Course detail
     const courseMount = document.querySelector("[data-mount='course-detail']");
     if (courseMount) {
+      // An empty courses table used to throw here (`data.courses[0].id` on an
+      // empty array), which killed every later mount on the page. Bail to a
+      // real empty state instead.
+      if (!data.courses.length) {
+        mount("[data-mount='course-detail']", emptyStateHTML({
+          title: "কোর্সটি খুঁজে পাওয়া যায়নি",
+          body: "এই কোর্সটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
+          ctaHref: "courses.html",
+          ctaText: "সব কোর্স দেখুন",
+        }));
+        const buyEl = document.querySelector("[data-mount='course-buy']");
+        if (buyEl) buyEl.remove();
+        const previewEl = document.querySelector("[data-mount='course-preview']");
+        if (previewEl) previewEl.remove();
+        document.dispatchEvent(new Event("contentready"));
+        return;
+      }
       const id = qs("id") || data.courses[0].id;
       const c = data.courses.find((x) => x.id === id) || data.courses[0];
       document.title = c.title + " — Shahedin";
@@ -363,7 +479,7 @@
          <span class="eyebrow">${c.category}</span>
          <h1>${c.title}</h1>
          <div class="meta-row">
-           <span class="stars">${stars(c.rating)}</span>
+           ${stars(c.rating)}
            <span>${ICON.users} ${c.students.toLocaleString()} শিক্ষার্থী</span>
            <span>${ICON.clock} ${c.duration}</span>
          </div>
@@ -399,6 +515,22 @@
     // Product detail
     const productMount = document.querySelector("[data-mount='product-detail']");
     if (productMount) {
+      if (!data.products.length) {
+        mount("[data-mount='product-detail']", emptyStateHTML({
+          title: "প্রোডাক্টটি খুঁজে পাওয়া যায়নি",
+          body: "এই প্রোডাক্টটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
+          ctaHref: "store.html",
+          ctaText: "স্টোরে ফিরে যান",
+        }));
+        ["product-buy", "gallery-main"].forEach((key) => {
+          const el = document.querySelector(`[data-mount='${key}']`);
+          if (el) el.remove();
+        });
+        const thumbs = document.querySelector(".gallery-thumbs");
+        if (thumbs) thumbs.remove();
+        document.dispatchEvent(new Event("contentready"));
+        return;
+      }
       const id = qs("id") || data.products[0].id;
       const p = data.products.find((x) => x.id === id) || data.products[0];
       document.title = p.title + " — Shahedin Store";

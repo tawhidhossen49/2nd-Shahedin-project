@@ -123,11 +123,11 @@
         <aside class="dash-side">
           ${TABS.map((t) => `
             <a href="#${t.id}" class="side-link ${t.id === activeTab ? "active" : ""}" data-tab-link="${t.id}">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${t.icon}"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${t.icon}"/></svg>
               <span>${t.label}</span>
             </a>`).join("")}
           <button type="button" class="side-link" id="dashSignOut" style="width:100%; text-align:left; background:none; border:none; cursor:pointer; margin-top:12px; border-top:1px solid var(--line); border-radius:0; padding-top:18px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span>লগ আউট</span>
           </button>
         </aside>
@@ -242,7 +242,7 @@
         (it) => `
       <div class="res-row">
         <div class="rleft">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           <span>${escapeHtml(it.block.title)} <span class="small-note">— ${escapeHtml(it.courseTitle)}</span></span>
         </div>
         ${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">দেখুন</a>` : `<span class="small-note">লিংক নেই</span>`}
@@ -265,7 +265,7 @@
         (x) => `
       <div class="res-row">
         <div class="rleft">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="6"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="6"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg>
           <span>${escapeHtml(x.c.title_en || x.c.title_bn)} — ${x.p.pct}% সম্পন্ন</span>
         </div>
         ${x.p.total > 0 && x.p.done >= x.p.total

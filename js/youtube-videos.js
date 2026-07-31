@@ -28,20 +28,29 @@
     return parts.map((p, i) => (i === 0 ? p : String(p).padStart(2, "0"))).join(":");
   }
 
+  const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+  const bn = (s) => String(s == null ? "" : s).replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
+  const esc = (s) =>
+    String(s == null ? "" : s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+  /* The play affordance is a <span>, not a <button>: the whole card is
+     already the link, so a nested button was an unreachable duplicate
+     control in the tab order. */
   function videoCardHTML(v) {
+    const title = esc(v.title);
     return `
-    <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener" class="card">
-      <div class="thumb" style="background:#111;">
-        <img src="${v.thumbnail}" alt="${v.title}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+    <a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener" class="card">
+      <div class="thumb has-image">
+        <img src="${esc(v.thumbnail)}" alt="${title}" loading="lazy" decoding="async">
         <div class="thumb-overlay"></div>
-        <button class="play-btn" aria-label="Play video">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <div class="thumb-badges"><span class="badge badge-dur" style="margin-left:auto;">${v.duration}</span></div>
+        <span class="play-btn" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <div class="thumb-badges"><span class="badge badge-dur">${bn(v.duration)}</span></div>
       </div>
       <div class="card-body">
-        <div class="card-title card-title-clamp">${v.title}</div>
-        <div class="card-meta">${v.views} views</div>
+        <div class="card-title card-title-clamp">${title}</div>
+        <div class="card-meta">${bn(v.views)} ভিউ</div>
       </div>
     </a>`;
   }

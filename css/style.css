@@ -562,11 +562,26 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .stars{color:var(--accent-ink); font-size:var(--step--1); letter-spacing:.06em;}
 .stars .rating-value{color:var(--text-3); font-size:var(--step--2); margin-inline-start:4px;}
 
+/* Catalogue / listing page head — a shallow band under the fixed nav. */
+.page-head{padding-block:calc(var(--nav-h) + clamp(44px,6vw,76px)) clamp(36px,5vw,60px);}
+.page-head .section-head{margin-bottom:0;}
+
+/* Section titles on the inner pages, replacing per-page inline margins. */
+.section-title{margin-block-end:var(--space-6);}
+.section-title-spaced{margin-block-start:var(--space-9);}
+
 /* Chips / filters  (.chip.active = LOAD-BEARING) */
 .filter-bar{
   display:flex; gap:var(--space-4); flex-wrap:wrap; align-items:center; justify-content:space-between;
   padding:var(--space-4) var(--space-5); border:1px solid var(--line); border-radius:var(--radius-m);
   background:var(--surface-1); margin-block-end:var(--space-8);
+}
+/* Filters stay reachable in a long catalogue. */
+.filter-bar.is-sticky{
+  position:sticky; inset-block-start:calc(var(--nav-h) + 8px); z-index:var(--z-sticky);
+  background:rgba(17,13,12,0.88);
+  backdrop-filter:blur(14px) saturate(140%); -webkit-backdrop-filter:blur(14px) saturate(140%);
+  box-shadow:var(--shadow-2);
 }
 .filter-group{display:flex; gap:var(--space-2); flex-wrap:wrap;}
 .chip{
@@ -1132,6 +1147,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink));
 }
 
+/* Curriculum + aside. Deliberately not a 1:1 split — the curriculum is the
+   page's substance and the mentor/reviews rail supports it. */
+.course-body-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:clamp(32px,4.5vw,64px); align-items:start;}
+.course-aside{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
+
 /* Course content blocks */
 .content-blocks{display:flex; flex-direction:column; gap:var(--space-4);}
 .content-block{
@@ -1487,7 +1507,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
 @media (max-width:1080px){
   .about-grid,.about-grid-text-first,
-  .product-grid,.contact-grid,.course-hero-grid,.two-col{grid-template-columns:minmax(0,1fr);}
+  .product-grid,.contact-grid,.course-hero-grid,.two-col,.course-body-grid{grid-template-columns:minmax(0,1fr);}
+  .course-aside{position:static;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
   .course-hero-main{min-block-size:0;}
   .course-buy-card{margin-block-start:var(--space-7);}
@@ -1536,6 +1557,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .bar-chart{block-size:140px;}
   .footer-inner{gap:var(--space-7);}
   .pdf-embed{block-size:420px;}
+  /* A sticky filter bar plus the fixed nav would eat a third of a phone
+     screen — let it scroll away below 760. */
+  .filter-bar.is-sticky{position:static; background:var(--surface-1); backdrop-filter:none; -webkit-backdrop-filter:none; box-shadow:none;}
 }
 
 @media (max-width:480px){

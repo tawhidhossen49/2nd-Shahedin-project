@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="bn" class="no-js">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 0 comps — index.html — editorial-v2</title>
+<meta name="theme-color" content="#0b0908">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- REAL palette. Not a copy, not a placeholder: the live token file. -->
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="comp.css">
+</head>
+<body class="cd-body">
+<div class="cd-wrap">
+
+  <header class="cd-masthead">
+    <div class="cd-kicker">Phase 0 · comp 1 of 2 · desktop 1440</div>
+    <h1>index.html — eight section comps</h1>
+    <p>One comp per section, each rendered at desktop width in real Bangla copy on the real
+      <code>css/tokens.css</code> palette. Nothing here is a screenshot or a mockup of HTML: it
+      <em>is</em> HTML, so what you approve is what gets built. Zero site files were touched.
+      <a href="index.html" style="color:var(--accent-ink)">← back to the cover</a></p>
+  </header>
+
+  <!-- ===================================================================
+       SECTION 1 of 8 — HERO. This is section 2.1 of the brief.
+       =================================================================== -->
+  <section class="cd-comp" id="s1">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 1 of 8</span>
+      <span class="cd-comp-name">Hero — the de-boxed portrait</span>
+      <span class="cd-comp-file">index.html · .hero</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+
+        <nav class="v2-nav">
+          <a href="#s1" class="v2-logo"><span class="dot"></span>Shahedin</a>
+          <div class="v2-nav-c">
+            <a href="#s1" class="on">হোম</a>
+            <a href="#s6">কোর্স</a>
+            <a href="#s1">স্টোর</a>
+            <a href="#s1">পোর্টফোলিও</a>
+          </div>
+          <div class="v2-nav-r">
+            <span class="v2-icon-btn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+            <a href="#s1" class="v2-btn v2-btn-ghost" style="padding:9px 20px;">যোগাযোগ</a>
+          </div>
+        </nav>
+
+        <section class="v2-hero">
+          <div class="v2-hero-rule"></div>
+          <div class="v2-hero-grid">
+
+            <div class="v2-hero-copy">
+              <span class="v2-eyebrow"><span class="pip"></span>ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক</span>
+              <h1>পাঠ্যবইয়ের বাইরের জগতে স্বাগতম</h1>
+              <p class="v2-hero-sub">জটিল বিষয়কে বাস্তব দক্ষতায় রূপান্তর করছি — বিশ্লেষণ, শিক্ষা আর একটি ক্রমবর্ধমান কমিউনিটির মাধ্যমে।</p>
+              <div class="v2-hero-ctas">
+                <a href="#s6" class="v2-btn v2-btn-primary">কোর্স দেখুন</a>
+                <a href="#s5" class="v2-btn v2-btn-ghost">ভিডিও দেখুন</a>
+              </div>
+            </div>
+
+            <!-- ===== 2.1 ===== the figure stands free. No border, no radius,
+                 no overflow:hidden, no background of its own. The arch behind
+                 is deliberately too small to hold him: his head clears its top
+                 edge and both shoulders clear its sides. -->
+            <div class="v2-figure">
+              <div class="v2-figure__shape"></div>
+              <div class="v2-figure__ground"></div>
+              <img class="v2-figure__img" src="../assets/img/shahedin-cutout.webp"
+                   alt="শাহেদীনের প্রতিকৃতি" fetchpriority="high" decoding="async">
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd><b>Off-grid editorial offset.</b> Not left-text / right-image: the figure breaks the grid on three edges and the arch is pushed past the right gutter.</dd></div>
+      <div><dt>Background mode</dt><dd>Micro-noise-free tonal gradient over <code>--surface-0</code>, warm glow at 74% 6%, accent bloom at 80% 44%.</dd></div>
+      <div><dt>CTA treatment</dt><dd>One primary pill, one ghost. Down from three equal CTAs.</dd></div>
+      <div><dt>Second-read moment</dt><dd>The full-bleed hairline at shoulder height, <b>interrupted by the figure</b>. Used once on the page.</dd></div>
+      <div><dt>Hero stack</dt><dd>4 elements: eyebrow, headline, subtext, CTAs. The stats block moved out.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>2.1 resolved, and how.</b> I measured the asset before designing to it. <code>shahedin-cutout.webp</code> carries a genuine subject matte — 33.6% of pixels fully transparent, 7.2% partial (anti-aliased hair edge), and the opaque span per row traces a human silhouette: 166px at the crown, flaring to 795px at the crossed arms. So a free-standing figure is real here, not faked with a clip-path.</div>
+    <div class="cd-flag"><b>Two constraints the asset imposes, designed around rather than hidden.</b> (1) The crown is clipped at source row 0, so a fully-visible figure shows a flat-topped head — the figure is therefore bled off the top of the band with the cut landing on the nav hairline, which reads as him standing behind the nav. (2) The arms touch both frame edges at row ~768, so the figure is cropped to a bust (rows 0-620) where clear transparent margin still exists on both sides, and dissolves below that. <b>The clean fix for both is one asset with headroom and side margin</b> — waist-up, 4:5, ≥1600px long edge. Until then this composition holds.</div>
+    <div class="cd-flag"><b>Decision for you:</b> the hero currently carries three CTAs and four audience figures. Both violate hero-stack discipline, so the comp keeps one primary + one ghost and moves every number into section 2. That demotes <b>প্রোডাক্টস কিনুন</b> out of the hero — it needs a home further down the page. Say the word if the store must stay above the fold.</div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 2 of 8 — METRICS
+       =================================================================== -->
+  <section class="cd-comp" id="s2">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 2 of 8</span>
+      <span class="cd-comp-name">By the numbers — ruled, not carded</span>
+      <span class="cd-comp-file">index.html · .trust-bar</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-metrics">
+          <div class="v2-metrics-grid">
+            <div class="v2-metric"><div class="v">1.8M</div><div class="l">সাবস্ক্রাইবার</div></div>
+            <div class="v2-metric"><div class="v">210M+</div><div class="l">ইউটিউব ভিউ</div></div>
+            <div class="v2-metric"><div class="v">42,000+</div><div class="l">নিবন্ধিত শিক্ষার্থী</div></div>
+            <div class="v2-metric"><div class="v">4.9/5</div><div class="l">গড় কোর্স রেটিং</div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Full-bleed ruled row. Oversized metrics strip.</dd></div>
+      <div><dt>Background mode</dt><dd>Flat <code>--surface-1</code> against the hero's <code>--surface-0</code>. Calm band after a rich one.</dd></div>
+      <div><dt>What changed</dt><dd>Circle icons dropped, card cells dropped. Hairlines carry the division. Figures set in <code>--font-num</code> with tabular figures.</dd></div>
+      <div><dt>Why here</dt><dd>Trust proof belongs directly under the hero, never inside it.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>Decision for you:</b> the live page shows <b>eight</b> figures across the hero and trust bar — 1.8M, 12.4M, 4.2M, 48K, then 4.9/5, 42,000+, 210M+, 96%. That is number soup and it dilutes all eight. This band keeps the four that carry the most weight. The other four (মাসিক ভিউ, গত ৩০ দিনের ভিউ, ওয়াচ আওয়ার, সন্তুষ্টির হার) are <b>not deleted</b> — they want a media-kit or portfolio placement. Confirm the four kept are the right four.</div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 3 of 8 — STORY
+       =================================================================== -->
+  <section class="cd-comp" id="s3">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 3 of 8</span>
+      <span class="cd-comp-name">Story — text column + ruled index</span>
+      <span class="cd-comp-file">index.html · [data-section-key="about"]</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-lg">
+          <div class="v2-container">
+            <div class="v2-head" style="margin-block-end:var(--space-8);">
+              <div>
+                <span class="v2-eyebrow"><span class="pip"></span>গল্পটা যেভাবে শুরু</span>
+                <h2 style="margin-block-start:var(--space-4);">একজন শিক্ষক হয়ে ওঠার গল্প</h2>
+              </div>
+            </div>
+
+            <div class="v2-story-grid">
+              <div class="body">
+                <p class="v2-story-lede">শাহেদীন একটি ছোট্ট ঘর থেকে ফোনের ক্যামেরা আর ভূ-রাজনীতির উপর কিছু লাইব্রেরির বই নিয়ে ভিডিও বানানো শুরু করেছিলেন — কারণ তখন কেউ সংবাদকে এমনভাবে ব্যাখ্যা করছিল না যা সহজে বোঝা যায়।</p>
+                <p>জোরে চিন্তা করার একটি উপায় হিসেবে শুরু হওয়া এই যাত্রা এখন এমন একটি চ্যানেলে পরিণত হয়েছে, যেখানে লাখো মানুষ সংবাদ পড়ার আগে ঘুরে আসেন। এই একই প্রবৃত্তি — জটিলতাকে স্পষ্টতায় রূপান্তর করা — এই সাইটের প্রতিটি কোর্সের ভিত্তি হয়ে উঠেছে।</p>
+                <p>আজ এই কাজ বিস্তৃত হয়েছে ভিডিও প্রবন্ধ, কাঠামোবদ্ধ কোর্স এবং ব্যবহারিক, কর্মজীবনে কাজে লাগার মতো দক্ষতার একটি ক্রমবর্ধমান লাইব্রেরিতে — দ্রুত পরিবর্তনশীল বিশ্বে চলার পথ খুঁজে পেতে চাওয়া একটি দর্শকগোষ্ঠীর জন্য।</p>
+              </div>
+              <div class="v2-pullquote">
+                <p>জটিলতাকে স্পষ্টতায় রূপান্তর করা।</p>
+                <div class="who">the instinct the whole platform is built on</div>
+              </div>
+            </div>
+
+            <div class="v2-index">
+              <div class="v2-index-item"><span class="yr">২০১৮</span><p>সাইড প্রজেক্ট হিসেবে সাপ্তাহিক এক্সপ্লেইনার আপলোড শুরু</p></div>
+              <div class="v2-index-item"><span class="yr">২০২০</span><p>আন্তর্জাতিক সম্পর্ক বিষয়ে স্নাতকোত্তর পড়াশোনা সম্পন্ন</p></div>
+              <div class="v2-index-item"><span class="yr">২০২২</span><p>৫ লাখ সাবস্ক্রাইবার অতিক্রম, প্রথম পেইড কোর্স চালু</p></div>
+              <div class="v2-index-item"><span class="yr">২০২৬</span><p>পরবর্তী প্রজন্মের জন্য একটি সম্পূর্ণ লার্নিং প্ল্যাটফর্ম তৈরি</p></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Asymmetric 7/4 text column with a pull-quote in the short column. The timeline runs full width beneath as a ruled index.</dd></div>
+      <div><dt>Background mode</dt><dd>Flat <code>--surface-0</code>. Typography carries this one.</dd></div>
+      <div><dt>Layout family</dt><dd>Distinct from every other section. No image, by design.</dd></div>
+      <div><dt>Eyebrow</dt><dd>2nd of 3 allowed across the page.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>Finding:</b> <code>shahedin-cutout.webp</code> appears <b>four times</b> on the live site — hero, this story block, the footer cutout, and the default mentor avatar on course pages. One face, four appearances, and the story block's copy does not need a portrait to work. The comp removes it here and lets the pull-quote carry the column. That is a composition call, not a content call — the copy is untouched and verbatim.</div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 4 of 8 — VIDEO SHELF
+       =================================================================== -->
+  <section class="cd-comp" id="s4">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 4 of 8</span>
+      <span class="cd-comp-name">Video shelf — asymmetric 1 + 2</span>
+      <span class="cd-comp-file">index.html · #videos</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-lg v2-raised">
+          <div class="v2-container">
+            <div class="v2-head">
+              <h2>ফিচার্ড ভিডিও</h2>
+              <a href="#s4" class="v2-link">সব ভিডিও দেখুন
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
+            </div>
+
+            <div class="v2-shelf">
+              <a href="#s4" class="v2-vid">
+                <div class="frame">
+                  <span class="dur num">১৪:০২</span>
+                  <span class="play"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                </div>
+                <h3>দক্ষিণ চীন সাগর নিয়ে উত্তেজনা: আসলে কী ঘটছে</h3>
+                <div class="meta">১২ লাখ ভিউ · ৩ দিন আগে</div>
+              </a>
+              <div class="v2-shelf-side">
+                <a href="#s4" class="v2-vid sm">
+                  <div class="frame">
+                    <span class="dur num">০৯:৩৮</span>
+                    <span class="play"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                  </div>
+                  <h3>রেমিট্যান্স কমছে কেন, আর তাতে আপনার কী</h3>
+                  <div class="meta">৮.৪ লাখ ভিউ · ১ সপ্তাহ আগে</div>
+                </a>
+                <a href="#s4" class="v2-vid sm">
+                  <div class="frame">
+                    <span class="dur num">১১:১৫</span>
+                    <span class="play"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+                  </div>
+                  <h3>বিসিএস লিখিত: উত্তর সাজানোর তিনটি নিয়ম</h3>
+                  <div class="meta">৬.১ লাখ ভিউ · ২ সপ্তাহ আগে</div>
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Asymmetric 1 + 2. One lead video at 16:9, two supporting at 16:10.</dd></div>
+      <div><dt>Background mode</dt><dd><code>--surface-1</code> band. Lifts the shelf onto its own surface.</dd></div>
+      <div><dt>What changed</dt><dd>Three equal cards replaced. The four-link button row in the section head reduced to one text link.</dd></div>
+      <div><dt>Eyebrow</dt><dd>Dropped. The headline names the section.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>Sample copy, flagged as such.</b> The live shelf is populated at runtime by <code>js/youtube-videos.js</code> — there is no static Bangla in the page to lift, only the loading string. The three titles above are representative placeholders so the layout can be judged at real text lengths. Every other string in this comp set is verbatim from the live pages.</div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 5 of 8 — COURSES
+       =================================================================== -->
+  <section class="cd-comp" id="s5">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 5 of 8</span>
+      <span class="cd-comp-name">Courses — ruled rows, not a card grid</span>
+      <span class="cd-comp-file">index.html · [data-mount="featured-courses"]</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-lg">
+          <div class="v2-container">
+            <div class="v2-head">
+              <h2>ফিচার্ড কোর্স</h2>
+              <a href="#s5" class="v2-link">সব কোর্স দেখুন
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></a>
+            </div>
+
+            <div class="v2-courses">
+              <a href="#s5" class="v2-course">
+                <span class="n">০১</span>
+                <div>
+                  <h3>Geopolitics 101: Reading the World Map</h3>
+                  <p class="desc">A foundational course on how global power actually moves — borders, resources, alliances.</p>
+                </div>
+                <div class="facts"><span><b>৩ ঘণ্টা ২০ মিনিট</b></span><span>১২,৪০০ শিক্ষার্থী</span><span>৪.৯</span></div>
+                <span class="price free">ফ্রি</span>
+              </a>
+              <a href="#s5" class="v2-course">
+                <span class="n">০২</span>
+                <div>
+                  <h3>The Political Analyst Toolkit</h3>
+                  <p class="desc">Frameworks, source-checking, and writing techniques used to break down real news, fast.</p>
+                </div>
+                <div class="facts"><span><b>৮ ঘণ্টা ৪৫ মিনিট</b></span><span>৩,৮০০ শিক্ষার্থী</span><span>৪.৮</span></div>
+                <span class="price">৳১,৪৯০</span>
+              </a>
+              <a href="#s5" class="v2-course">
+                <span class="n">০৩</span>
+                <div>
+                  <h3>Written Exam &amp; Viva Mastery (BCS Track)</h3>
+                  <p class="desc">Structuring answers, current affairs synthesis, and viva confidence for competitive exams.</p>
+                </div>
+                <div class="facts"><span><b>১২ ঘণ্টা ৩০ মিনিট</b></span><span>৯,১০০ শিক্ষার্থী</span><span>৪.৮</span></div>
+                <span class="price">৳১,৯৯০</span>
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Ruled index rows. Indexed numeral, title, facts, price — the dossier spine made literal.</dd></div>
+      <div><dt>Background mode</dt><dd>Flat <code>--surface-0</code>, row hover to <code>--surface-1</code>.</dd></div>
+      <div><dt>What changed</dt><dd>Three equal thumbnail cards replaced. Titles get real display size instead of clamped card text.</dd></div>
+      <div><dt>Numbers</dt><dd>Bangla numerals via the live <code>bnNum()</code> convention. Prices in <code>--font-mixed</code>.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>Course titles and descriptions are English</b> — verbatim from <code>js/data.js</code>, which is where the live page reads them. So <code>course-detail.html</code> and every course card render Bangla chrome around English content. That is a real content gap, not a comp shortcut, and it is worth a decision before build: translate the catalogue, or commit to English course names as a deliberate convention.</div>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 6 of 8 — GROWTH
+       =================================================================== -->
+  <section class="cd-comp" id="s6">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 6 of 8</span>
+      <span class="cd-comp-name">Growth track — poster-like indexed steps</span>
+      <span class="cd-comp-file">index.html · [data-section-key="growth"]</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-lg v2-raised">
+          <div class="v2-wide">
+            <div class="v2-head" style="margin-block-end:var(--space-9);">
+              <div>
+                <span class="v2-eyebrow"><span class="pip"></span>যাত্রা</span>
+                <h2 style="margin-block-start:var(--space-4);">শূন্য থেকে প্রভাব তৈরির গল্প</h2>
+              </div>
+            </div>
+            <div class="v2-track">
+              <div class="v2-step">
+                <span class="n">০১</span><span class="when">২০১৮ · আইডিয়া ফেজ</span>
+                <h3>একটি ক্যামেরা, একটি আইডিয়া</h3>
+                <p>একটি মাত্র আপলোড দিয়ে পরীক্ষা করা হয়েছিল মানুষ সহজভাবে ভূ-রাজনীতি বুঝতে চায় কিনা। কয়েকশ মানুষ চেয়েছিল।</p>
+              </div>
+              <div class="v2-step">
+                <span class="n">০২</span><span class="when">২০১৮ · প্রথম ১০০</span>
+                <h3>প্রথম প্রকৃত কমিউনিটি</h3>
+                <p>প্রথম ১০০ জন সাবস্ক্রাইবার যারা মন্তব্য করেছিলেন, ভুল ধরিয়ে দিয়েছিলেন এবং আরও কনটেন্ট চেয়েছিলেন।</p>
+              </div>
+              <div class="v2-step">
+                <span class="n">০৩</span><span class="when">২০২০ · ব্রেকথ্রু</span>
+                <h3>প্রথম ভাইরাল ভিডিও</h3>
+                <p>৯০ সেকেন্ডের একটি এক্সপ্লেইনার রাতারাতি ১০ লক্ষ ভিউ অতিক্রম করে চ্যানেলের গতিপথ পাল্টে দেয়।</p>
+              </div>
+              <div class="v2-step">
+                <span class="n">০৪</span><span class="when">২০২২ · প্রথম ১,০০০</span>
+                <h3>প্রথম ১,০০০ শিক্ষার্থী</h3>
+                <p>ওয়েটলিস্টে প্রথম কোর্স চালু হয় এবং মাত্র নয় দিনে প্রথম ১,০০০ সিট বিক্রি হয়ে যায়।</p>
+              </div>
+              <div class="v2-step">
+                <span class="n">০৫</span><span class="when">আজ</span>
+                <h3>সম্পূর্ণ প্ল্যাটফর্ম তৈরি</h3>
+                <p>একটি মিডিয়া ব্র্যান্ড, একটি লার্নিং প্ল্যাটফর্ম এবং একটি স্টোর — একই দর্শকগোষ্ঠীর জন্য তৈরি একক ইকোসিস্টেম।</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Five-column ruled track, oversized numerals carrying the structure rather than decorating it.</dd></div>
+      <div><dt>Background mode</dt><dd><code>--surface-1</code>, wide container so the track breathes past the text measure.</dd></div>
+      <div><dt>What changed</dt><dd>Filled accent dots replaced by numerals set in <code>--surface-4</code>, with only step 01 in accent so the eye starts in the right place.</dd></div>
+      <div><dt>Eyebrow</dt><dd>3rd and last of the 3 allowed.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 7 of 8 — TESTIMONIALS
+       =================================================================== -->
+  <section class="cd-comp" id="s7">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 7 of 8</span>
+      <span class="cd-comp-name">Quote wall — tabbed, ruled cells</span>
+      <span class="cd-comp-file">index.html · [data-section-key="testimonials"]</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-lg">
+          <div class="v2-container">
+            <div class="v2-head" style="margin-block-end:var(--space-7);">
+              <h2>মানুষ যা বলছেন</h2>
+            </div>
+            <div class="v2-tabs">
+              <button class="v2-tab on">শিক্ষার্থীদের মতামত</button>
+              <button class="v2-tab">দর্শকদের প্রতিক্রিয়া</button>
+            </div>
+            <div class="v2-quotes">
+              <div class="v2-quote">
+                <span class="mark">“</span>
+                <p>পলিটিক্যাল অ্যানালিস্ট কোর্সটি আমার লেখার ধরন সম্পূর্ণ পাল্টে দিয়েছে। আন্দাজের বদলে এখন আমার একটি সুনির্দিষ্ট ফ্রেমওয়ার্ক আছে।</p>
+                <div class="who"><span class="av">র</span><span><span class="nm">রফিক আহমেদ</span><span class="rl">অ্যানালিস্ট টুলকিট, ২০২৫ সালে সমাপ্ত</span></span></div>
+              </div>
+              <div class="v2-quote">
+                <span class="mark">“</span>
+                <p>বিসিএস কোর্সের উত্তর টেমপ্লেট ব্যবহার করে প্রথম চেষ্টাতেই লিখিত পরীক্ষায় পাস করেছি। প্রতিটি টাকা উশুল।</p>
+                <div class="who"><span class="av">ন</span><span><span class="nm">নুসরাত জাহান</span><span class="rl">এক্সাম প্রেপ ট্র্যাক</span></span></div>
+              </div>
+              <div class="v2-quote">
+                <span class="mark">“</span>
+                <p>অবশেষে এমন একটি কোর্স পেলাম যা অর্থনীতিকে মুখস্থ করার বিষয় নয়, বরং সত্যিই বোঝার বিষয় হিসেবে উপস্থাপন করে।</p>
+                <div class="who"><span class="av">শ</span><span><span class="nm">শাকিল হোসেন</span><span class="rl">ইকোনমি এক্সপ্লেইনড</span></span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Three ruled cells, no card elevation. Division by hairline only.</dd></div>
+      <div><dt>Background mode</dt><dd>Flat <code>--surface-0</code>.</dd></div>
+      <div><dt>What preserved</dt><dd>The two-tab structure stays — it is wired behaviour in <code>js/main.js</code>, and both quote sets are real content.</dd></div>
+      <div><dt>Quote length</dt><dd>All three fit within 3 lines at desktop measure.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ===================================================================
+       SECTION 8 of 8 — PRESS
+       =================================================================== -->
+  <section class="cd-comp" id="s8">
+    <div class="cd-comp-bar">
+      <span class="cd-comp-n">Section 8 of 8</span>
+      <span class="cd-comp-name">Press — mini minimalist</span>
+      <span class="cd-comp-file">index.html · [data-section-key="press"]</span>
+    </div>
+    <div class="cd-stage">
+      <div class="v2">
+        <section class="v2-band-md">
+          <div class="v2-container">
+            <div class="v2-head" style="margin-block-end:var(--space-9);">
+              <h2>প্রেস এবং উপস্থিতি</h2>
+            </div>
+            <div class="v2-press">
+              <div class="v2-press-item"><div class="org">দ্য ডেইলি অ্যানালিস্ট</div><div class="cap">ফিচার সাক্ষাৎকার, ২০২৫</div></div>
+              <div class="v2-press-item"><div class="org">পলিসি আওয়ার পডকাস্ট</div><div class="cap">গেস্ট এপিসোড, ২০২৪</div></div>
+              <div class="v2-press-item"><div class="org">চ্যানেল ৯ নিউজ</div><div class="cap">টিভি প্যানেল উপস্থিতি, ২০২৪</div></div>
+              <div class="v2-press-item"><div class="org">ঢাকা বিশ্ববিদ্যালয়</div><div class="cap">অতিথি লেকচার, আন্তর্জাতিক সম্পর্ক বিভাগ</div></div>
+            </div>
+          </div>
+        </section>
+
+        <footer class="v2-footer v2-band-md">
+          <div class="v2-container">
+            <div class="v2-footer-grid">
+              <div>
+                <a href="#s1" class="v2-logo"><span class="dot"></span>Shahedin</a>
+                <p>রাজনীতি ও দক্ষতা শিক্ষাকে সহজবোধ্য করে তোলা — একটি ভিডিও, একটি কোর্স একবারে।</p>
+                <div class="v2-social">
+                  <span class="v2-icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 6.2a2.8 2.8 0 0 0-2-2C18.9 3.7 12 3.7 12 3.7s-6.9 0-8.5.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 1 12a29 29 0 0 0 .5 5.8 2.8 2.8 0 0 0 2 2c1.6.5 8.5.5 8.5.5s6.9 0 8.5-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 23 12a29 29 0 0 0-.5-5.8zM9.8 15.5v-7l6 3.5z"/></svg></span>
+                  <span class="v2-icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.1c0-1 .3-1.6 1.7-1.6h1.7V3.5c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.5H7v3.3h2.9V22z"/></svg></span>
+                  <span class="v2-icon-btn"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></span>
+                </div>
+              </div>
+              <div class="v2-footer-col">
+                <h2>কুইক লিংক</h2>
+                <a href="#s1">হোম</a><a href="#s5">কোর্স</a><a href="#s1">পোর্টফোলিও</a><a href="#s1">যোগাযোগ</a>
+              </div>
+              <div class="v2-footer-col">
+                <h2>প্রতিষ্ঠান</h2>
+                <a href="#s1">স্টোর</a><a href="#s1">ড্যাশবোর্ড</a><a href="#s1">মিডিয়া কিট</a><a href="#s1">সহায়তা</a>
+              </div>
+            </div>
+            <div class="v2-footer-bottom">© 2026 Shahedin. সর্বস্বত্ব সংরক্ষিত।</div>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <dl class="cd-spec">
+      <div><dt>Composition anchor</dt><dd>Four ruled columns, mostly negative space. The calm close before the footer.</dd></div>
+      <div><dt>Background mode</dt><dd><code>--surface-0</code> into <code>--surface-1</code> footer. No third surface.</dd></div>
+      <div><dt>What changed</dt><dd>The footer's repeated portrait cutout is removed — see the flag below.</dd></div>
+      <div><dt>Captions</dt><dd>Kept. These name real outlets and dates, so they inform rather than decorate.</dd></div>
+    </dl>
+    <div class="cd-flag"><b>Decision for you:</b> the live footer carries a fourth instance of the portrait cutout with a tint and shadow stack. With the hero portrait now doing real compositional work, repeating the same face at the bottom of every page weakens it. The comp drops it. If you want a closing portrait moment, the honest version is a <b>different</b> photograph, not the same cutout again.</div>
+  </section>
+
+  <p class="cd-note">Layout families used across the eight sections: off-grid overlap, ruled metric row, asymmetric text column, 1+2 gallery, ruled index rows, indexed track, quote wall, minimal strip. Eight sections, eight distinct families, no zigzag repetition, three eyebrows total.</p>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phase 0 — direction + comps — editorial-v2</title>
+<meta name="theme-color" content="#0b0908">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../css/tokens.css">
+<link rel="stylesheet" href="comp.css">
+</head>
+<body class="cd-body">
+<div class="cd-wrap">
+
+  <header class="cd-masthead">
+    <div class="cd-kicker">Phase 0 · direction for approval · zero site files touched</div>
+    <h1>editorial-v2 — design read, dials, concept spine, twelve comps</h1>
+    <p>Everything below renders in real HTML on the live <code>css/tokens.css</code> palette with the real
+      Bangla copy from the pages. There is no placeholder colour and no lorem anywhere in this set.</p>
+  </header>
+
+  <h2 class="cd-h2">1 · Design Read</h2>
+  <div class="cd-prose">
+    <p style="font-family:var(--font-display); font-size:var(--step-2); line-height:1.5; color:var(--text-1);">
+      Reading this as: a <strong>redesign-preserve</strong> of a Bangla-first creator-education site for
+      YouTube-referred learners and exam candidates, with a <strong>warm-ink editorial</strong> language,
+      leaning toward native CSS on the existing token system, a Bengali serif display, and a portrait that
+      stands free of every box on the page.
+    </p>
+    <p style="margin-block-start:var(--space-6);">Preserve, not overhaul: the token system, the information
+      architecture, the copy voice and the accent family are already right and stay untouched. What changes
+      is composition — how the page is ruled, where the weight sits, and how many boxes there are.</p>
+  </div>
+
+  <h2 class="cd-h2">2 · The three dials</h2>
+  <div class="cd-dials">
+    <div class="cd-dial">
+      <div class="k">DESIGN_VARIANCE</div>
+      <div class="v">7<small> / 10</small></div>
+      <p>Up from the current site's ~5. The de-boxed portrait, the off-grid arch and the asymmetric text
+        columns need room to pull. Held at 7 rather than 9 because this is an education site that has to
+        stay legible and trustworthy first.</p>
+    </div>
+    <div class="cd-dial">
+      <div class="k">MOTION_INTENSITY</div>
+      <div class="v">6<small> / 10</small></div>
+      <p>Matched to what already ships — <code>js/motion.js</code> has real hero choreography, parallax and
+        staggered reveals, and the token file already carries five durations and four easings. Not raised:
+        Bangla webfonts on Bangladeshi mobile connections are the real budget.</p>
+    </div>
+    <div class="cd-dial">
+      <div class="k">VISUAL_DENSITY</div>
+      <div class="v">4<small> / 10</small></div>
+      <p>Down from ~5. Eight figures across the hero and trust bar become four; three equal card rows become
+        ruled index rows. The editorial voice needs air more than it needs another card.</p>
+    </div>
+  </div>
+
+  <h2 class="cd-h2">3 · The concept spine</h2>
+  <div class="cd-prose">
+    <p><strong>The record, and the man standing in front of it.</strong> The whole site is built as a filed
+      archive — hairlines instead of card borders, indexed numerals down the left of every list, tabular
+      figures, dated captions, years as anchors. Every section is something that has been catalogued: a
+      timeline is an index, a curriculum is a numbered register, press is a row of dated entries, the growth
+      story is five stamped steps. Against all of that ruled, filed, orderly material there is exactly one
+      element that refuses to be contained, and it is Shahedin himself: in the hero he stands free of any
+      frame, the arch behind him is deliberately too small to hold him, and the one hairline that runs the
+      full width of the band is visibly interrupted by his shoulder. That is the argument the page makes
+      before a word is read — the archive is the credential, the person is the reason to stay. It also does
+      the practical work: the ruled system gives eight otherwise-similar sections a shared grammar, and the
+      single break in it tells the eye exactly where to land first.</p>
+  </div>
+
+  <h2 class="cd-h2">4 · The comps</h2>
+  <p class="cd-prose" style="margin-block-end:var(--space-6);">One comp per section, each independently
+    labelled and specced. Open either document and scroll.</p>
+  <div class="cd-map">
+    <a href="comp-home.html"><span class="n">1–8</span><span class="t">index.html</span><span class="d">hero · metrics · story · videos · courses · growth · quotes · press</span></a>
+    <a href="comp-course.html"><span class="n">1–4</span><span class="t">course-detail.html</span><span class="d">course hero · curriculum · FAQ · related</span></a>
+  </div>
+
+  <h2 class="cd-h2">5 · Section 2.1 — resolved</h2>
+  <div class="cd-prose">
+    <p>The de-boxed, free-standing portrait is in <a href="comp-home.html#s1">comp 1 of 8</a>. I measured the
+      asset before designing to it rather than assuming the filename was accurate, and the measurement is
+      what made the composition possible:</p>
+    <ul style="line-height:1.8;">
+      <li><code>shahedin-cutout.webp</code> carries a <strong>genuine subject matte</strong>, not an edge
+        feather — 33.6% of pixels fully transparent, 59.2% opaque, 7.2% partial (the anti-aliased hair edge).</li>
+      <li>The opaque span per row traces a human silhouette: 166px at the crown, flaring through 400px at the
+        shoulder line (row 465), to 795px at the crossed arms (row 772).</li>
+    </ul>
+    <p>So the figure genuinely stands free — no border, no radius, no <code>overflow:hidden</code>, no
+      background of its own, a real <code>drop-shadow()</code> that follows the alpha, and an elliptical
+      contact shadow grounding it. The arch behind is sized so it <em>cannot</em> contain him: his head clears
+      its top edge and both shoulders clear its sides.</p>
+    <p>Two constraints fall out of the same measurement, and the composition is built around them rather than
+      hiding them. The crown is clipped at source row 0, so the figure is deliberately bled off the top of the
+      band with the cut landing on the nav hairline — it reads as him standing behind the nav. The arms touch
+      both frame edges at row 768, so the figure is cropped to a bust (rows 0–620, where transparent margin
+      still exists on both sides) and dissolves below that. <strong>Both are fixed cleanly by one new asset:
+      waist-up, plain backdrop, headroom above the crown and margin beside the arms, 4:5, ≥1600px long edge.</strong>
+      The composition holds without it; it gets better with it.</p>
+  </div>
+
+  <h2 class="cd-h2">6 · Things I need you to decide</h2>
+  <div class="cd-flag" style="border-block-start:1px solid var(--line-accent);"><b>The main brief is not in this session.</b> I have the patch you sent and the parenthetical description of 2.1, but not the numbered brief itself — it is not in the repo, not in git history, and not in my context here. Everything above is derived from the patch, the live pages and the token file. If the brief carries sections beyond 2.1, send it and I will check these comps against it before any build.</div>
+  <div class="cd-flag"><b>Course content is English.</b> All six course titles, descriptions, module names, FAQ text and includes lists in <code>js/data.js</code> are English, so every course surface renders Bangla chrome around English content. Translate the catalogue, or commit to English course names as a convention?</div>
+  <div class="cd-flag"><b>The hero loses a CTA and its stats.</b> Hero-stack discipline caps the hero at four text elements and one primary plus one secondary action. That demotes <b>প্রোডাক্টস কিনুন</b> and moves all four audience figures into section 2. The store needs a home further down the page.</div>
+  <div class="cd-flag"><b>Four figures are parked, not deleted.</b> মাসিক ভিউ, গত ৩০ দিনের ভিউ, ওয়াচ আওয়ার and সন্তুষ্টির হার come out of the home page. They belong on a media-kit or portfolio surface. Confirm the four that stayed are the right four.</div>
+  <div class="cd-flag"><b>The portrait stops appearing four times.</b> The same cutout currently runs in the hero, the story block, the footer and the mentor medallion. The comps keep it in the hero and the medallion only. A closing portrait moment is worth having — with a <b>different</b> photograph.</div>
+  <div class="cd-flag"><b>Em-dashes stay.</b> My anti-slop rules ban them outright, but your Bangla copy uses them throughout and redesign-preserve says the copy voice is not mine to rewrite. Every string in these comps is verbatim. Say so if you want them swept in a later copy pass.</div>
+  <div class="cd-flag"><b>Radius changes across the whole site.</b> The shape rule locks to: structural blocks and media at radius 0, interactive controls at pill, and the single arch behind the portrait as the one exception. That is a visible departure from the current soft-radius system and it is what makes the ruled-archive spine legible.</div>
+  <div class="cd-flag"><b>Asset requests, in priority order.</b> (1) One portrait with headroom and side margin. (2) Six course key images — no course record has an <code>image</code>, so every thumbnail on the site is a gradient panel. (3) A square head-and-shoulders crop ≥256px for the instructor medallion.</div>
+  <div class="cd-flag"><b>I have not seen these rendered.</b> There is no headless browser in this environment, so I authored the comps but could not view my own output. Open the two documents and the layout is the truth. If you want me self-verifying before the next pass, say so and I will set up Playwright first.</div>
+
+  <p class="cd-note">Files: <code>comps/index.html</code> (this page), <code>comps/comp-home.html</code>,
+    <code>comps/comp-course.html</code>, <code>comps/comp.css</code>. Nothing outside <code>comps/</code>
+    was created or modified. Delete the folder and the site is byte-identical to commit 9858739.</p>
+
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Phase 0 — direction + comps — editorial-v2</title>
+<title>Phase 0 rev.2 — direction + comps — editorial-v2</title>
 <meta name="theme-color" content="#0b0908">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,46 +15,49 @@
 <div class="cd-wrap">
 
   <header class="cd-masthead">
-    <div class="cd-kicker">Phase 0 · direction for approval · zero site files touched</div>
+    <div class="cd-kicker">Phase 0 rev.2 · direction for approval · zero site files touched</div>
     <h1>editorial-v2 — design read, dials, concept spine, twelve comps</h1>
-    <p>Everything below renders in real HTML on the live <code>css/tokens.css</code> palette with the real
-      Bangla copy from the pages. There is no placeholder colour and no lorem anywhere in this set.</p>
+    <p>Revised against the full brief. Everything renders in real HTML on the live
+      <code>css/tokens.css</code> palette with verbatim Bangla copy, and every frozen contract attribute is
+      carried on the same element so these comps are build-ready templates rather than pictures.</p>
   </header>
 
   <h2 class="cd-h2">1 · Design Read</h2>
   <div class="cd-prose">
     <p style="font-family:var(--font-display); font-size:var(--step-2); line-height:1.5; color:var(--text-1);">
-      Reading this as: a <strong>redesign-preserve</strong> of a Bangla-first creator-education site for
-      YouTube-referred learners and exam candidates, with a <strong>warm-ink editorial</strong> language,
-      leaning toward native CSS on the existing token system, a Bengali serif display, and a portrait that
-      stands free of every box on the page.
+      Reading this as: a <strong>brand-preserve / composition-overhaul</strong> redesign of a Bangla-first
+      creator-education site for YouTube-referred learners and exam candidates, with a
+      <strong>warm-ink editorial</strong> language, leaning toward native CSS on the existing token system,
+      a Bengali serif display, and a portrait that stands free of every box on the page.
     </p>
-    <p style="margin-block-start:var(--space-6);">Preserve, not overhaul: the token system, the information
-      architecture, the copy voice and the accent family are already right and stay untouched. What changes
-      is composition — how the page is ruled, where the weight sits, and how many boxes there are.</p>
+    <p style="margin-block-start:var(--space-6);">The token system, information architecture, copy voice,
+      accent family and JS contract are frozen and stay untouched. What changes is composition: how the page
+      is ruled, where the weight sits, how many boxes there are, and whether motion responds after the first
+      scroll.</p>
   </div>
 
   <h2 class="cd-h2">2 · The three dials</h2>
   <div class="cd-dials">
     <div class="cd-dial">
       <div class="k">DESIGN_VARIANCE</div>
-      <div class="v">7<small> / 10</small></div>
-      <p>Up from the current site's ~5. The de-boxed portrait, the off-grid arch and the asymmetric text
-        columns need room to pull. Held at 7 rather than 9 because this is an education site that has to
-        stay legible and trustworthy first.</p>
+      <div class="v">8<small> / 10</small></div>
+      <p>Raised from my first read of 7. Part 2.2 asks for three container breaks, real overlaps and a
+        headline at 2-3x scale bleeding off an edge. That is an 8, not a 7. Held below 9 because this is an
+        education site that still has to convert.</p>
     </div>
     <div class="cd-dial">
       <div class="k">MOTION_INTENSITY</div>
       <div class="v">6<small> / 10</small></div>
-      <p>Matched to what already ships — <code>js/motion.js</code> has real hero choreography, parallax and
-        staggered reveals, and the token file already carries five durations and four easings. Not raised:
-        Bangla webfonts on Bangladeshi mobile connections are the real budget.</p>
+      <p>Matched to what already ships. The number stays flat but its <em>composition</em> changes
+        completely: today it is 6 of arrival motion, and Part 2.3 correctly calls that dead. Same budget,
+        respent on response instead of entrance.</p>
     </div>
     <div class="cd-dial">
       <div class="k">VISUAL_DENSITY</div>
       <div class="v">4<small> / 10</small></div>
-      <p>Down from ~5. Eight figures across the hero and trust bar become four; three equal card rows become
-        ruled index rows. The editorial voice needs air more than it needs another card.</p>
+      <p>Down from ~5, achieved by treatment rather than deletion, since Part 1 freezes the content. Cards
+        become ruled rows, medallion icons come off the trust bar, and the section rhythm alternates dense
+        against airy.</p>
     </div>
   </div>
 
@@ -62,63 +65,120 @@
   <div class="cd-prose">
     <p><strong>The record, and the man standing in front of it.</strong> The whole site is built as a filed
       archive — hairlines instead of card borders, indexed numerals down the left of every list, tabular
-      figures, dated captions, years as anchors. Every section is something that has been catalogued: a
-      timeline is an index, a curriculum is a numbered register, press is a row of dated entries, the growth
-      story is five stamped steps. Against all of that ruled, filed, orderly material there is exactly one
-      element that refuses to be contained, and it is Shahedin himself: in the hero he stands free of any
-      frame, the arch behind him is deliberately too small to hold him, and the one hairline that runs the
-      full width of the band is visibly interrupted by his shoulder. That is the argument the page makes
-      before a word is read — the archive is the credential, the person is the reason to stay. It also does
-      the practical work: the ruled system gives eight otherwise-similar sections a shared grammar, and the
-      single break in it tells the eye exactly where to land first.</p>
+      figures, dated captions, years as anchors. Every section is something that has been catalogued: the
+      timeline is an index, the curriculum is a numbered register, press is a row of dated entries, the growth
+      story is five stamped steps. Against all of that ruled, orderly material there is exactly one element
+      that refuses to be contained, and it is Shahedin himself: in the hero he stands free of any frame, the
+      arc behind him is deliberately too small to hold him, and the one hairline that runs the full width of
+      the band is visibly interrupted by his shoulder. That is the argument the page makes before a word is
+      read — the archive is the credential, the person is the reason to stay. It also does the practical work:
+      the ruled system gives eight otherwise-similar sections a shared grammar, and the single break in it
+      tells the eye exactly where to land first.</p>
   </div>
 
   <h2 class="cd-h2">4 · The comps</h2>
-  <p class="cd-prose" style="margin-block-end:var(--space-6);">One comp per section, each independently
-    labelled and specced. Open either document and scroll.</p>
   <div class="cd-map">
-    <a href="comp-home.html"><span class="n">1–8</span><span class="t">index.html</span><span class="d">hero · metrics · story · videos · courses · growth · quotes · press</span></a>
+    <a href="comp-home.html"><span class="n">1–8</span><span class="t">index.html</span><span class="d">hero · trust bar · story · videos · courses · growth · quotes · press</span></a>
     <a href="comp-course.html"><span class="n">1–4</span><span class="t">course-detail.html</span><span class="d">course hero · curriculum · FAQ · related</span></a>
   </div>
 
   <h2 class="cd-h2">5 · Section 2.1 — resolved</h2>
   <div class="cd-prose">
-    <p>The de-boxed, free-standing portrait is in <a href="comp-home.html#s1">comp 1 of 8</a>. I measured the
-      asset before designing to it rather than assuming the filename was accurate, and the measurement is
-      what made the composition possible:</p>
+    <p>In <a href="comp-home.html#s1">comp 1 of 8</a>. I measured the asset before designing to it rather than
+      trusting the filename, and the measurement is what made the composition possible and what fixed my
+      first attempt.</p>
     <ul style="line-height:1.8;">
-      <li><code>shahedin-cutout.webp</code> carries a <strong>genuine subject matte</strong>, not an edge
-        feather — 33.6% of pixels fully transparent, 59.2% opaque, 7.2% partial (the anti-aliased hair edge).</li>
-      <li>The opaque span per row traces a human silhouette: 166px at the crown, flaring through 400px at the
-        shoulder line (row 465), to 795px at the crossed arms (row 772).</li>
+      <li><code>shahedin-cutout.webp</code> carries a <strong>genuine subject matte</strong> — 33.6% of pixels
+        fully transparent, 59.2% opaque, 7.2% partial (the anti-aliased hair edge).</li>
+      <li>The opaque span per row traces a human silhouette: 166px at the crown, 400px at the shoulder line
+        (row 465), 795px at the crossed arms (row 772).</li>
+      <li>Crop rows 0-800 puts the shoulder line at <strong>58%</strong> of the figure. The arc's top edge sits
+        at <strong>63%</strong>. Head and both shoulders clear it with 5% to spare — which is the specific
+        thing 2.1 asks for.</li>
     </ul>
-    <p>So the figure genuinely stands free — no border, no radius, no <code>overflow:hidden</code>, no
-      background of its own, a real <code>drop-shadow()</code> that follows the alpha, and an elliptical
-      contact shadow grounding it. The arch behind is sized so it <em>cannot</em> contain him: his head clears
-      its top edge and both shoulders clear its sides.</p>
-    <p>Two constraints fall out of the same measurement, and the composition is built around them rather than
-      hiding them. The crown is clipped at source row 0, so the figure is deliberately bled off the top of the
-      band with the cut landing on the nav hairline — it reads as him standing behind the nav. The arms touch
-      both frame edges at row 768, so the figure is cropped to a bust (rows 0–620, where transparent margin
-      still exists on both sides) and dissolves below that. <strong>Both are fixed cleanly by one new asset:
-      waist-up, plain backdrop, headroom above the crown and margin beside the arms, 4:5, ≥1600px long edge.</strong>
-      The composition holds without it; it gets better with it.</p>
+    <p>No card, no border, no rounded container, no <code>overflow:hidden</code> on the figure. One shape
+      behind it, not a stack. Warm glow spill from the arc onto the silhouette via a <code>drop-shadow</code>
+      that follows the alpha. Base feathered into the band. Grain rebuilt so it actually reads.</p>
+    <p><strong>Two constraints remain, worked around rather than hidden.</strong> The crown is clipped at
+      source row 0, so the figure is bled off the top with the cut landing on the nav hairline. The arms touch
+      both frame edges by row 768, so the crop stops at 800 and feathers out. One photograph with headroom
+      above the crown and margin beside the arms removes both workarounds. The composition holds without it.</p>
   </div>
 
-  <h2 class="cd-h2">6 · Things I need you to decide</h2>
-  <div class="cd-flag" style="border-block-start:1px solid var(--line-accent);"><b>The main brief is not in this session.</b> I have the patch you sent and the parenthetical description of 2.1, but not the numbered brief itself — it is not in the repo, not in git history, and not in my context here. Everything above is derived from the patch, the live pages and the token file. If the brief carries sections beyond 2.1, send it and I will check these comps against it before any build.</div>
-  <div class="cd-flag"><b>Course content is English.</b> All six course titles, descriptions, module names, FAQ text and includes lists in <code>js/data.js</code> are English, so every course surface renders Bangla chrome around English content. Translate the catalogue, or commit to English course names as a convention?</div>
-  <div class="cd-flag"><b>The hero loses a CTA and its stats.</b> Hero-stack discipline caps the hero at four text elements and one primary plus one secondary action. That demotes <b>প্রোডাক্টস কিনুন</b> and moves all four audience figures into section 2. The store needs a home further down the page.</div>
-  <div class="cd-flag"><b>Four figures are parked, not deleted.</b> মাসিক ভিউ, গত ৩০ দিনের ভিউ, ওয়াচ আওয়ার and সন্তুষ্টির হার come out of the home page. They belong on a media-kit or portfolio surface. Confirm the four that stayed are the right four.</div>
-  <div class="cd-flag"><b>The portrait stops appearing four times.</b> The same cutout currently runs in the hero, the story block, the footer and the mentor medallion. The comps keep it in the hero and the medallion only. A closing portrait moment is worth having — with a <b>different</b> photograph.</div>
-  <div class="cd-flag"><b>Em-dashes stay.</b> My anti-slop rules ban them outright, but your Bangla copy uses them throughout and redesign-preserve says the copy voice is not mine to rewrite. Every string in these comps is verbatim. Say so if you want them swept in a later copy pass.</div>
-  <div class="cd-flag"><b>Radius changes across the whole site.</b> The shape rule locks to: structural blocks and media at radius 0, interactive controls at pill, and the single arch behind the portrait as the one exception. That is a visible departure from the current soft-radius system and it is what makes the ruled-archive spine legible.</div>
-  <div class="cd-flag"><b>Asset requests, in priority order.</b> (1) One portrait with headroom and side margin. (2) Six course key images — no course record has an <code>image</code>, so every thumbnail on the site is a gradient panel. (3) A square head-and-shoulders crop ≥256px for the instructor medallion.</div>
-  <div class="cd-flag"><b>I have not seen these rendered.</b> There is no headless browser in this environment, so I authored the comps but could not view my own output. Open the two documents and the layout is the truth. If you want me self-verifying before the next pass, say so and I will set up Playwright first.</div>
+  <h2 class="cd-h2">6 · What I got wrong in rev.1, and fixed</h2>
+  <div class="cd-prose"><p>My first pass predated sight of Part 1 and proposed seven content changes that the
+    frozen contract does not permit. Part 1 wins; all seven are reverted. Listing them because you should know
+    what I tried to do.</p></div>
+  <div class="cd-flag" style="border-block-start:1px solid var(--line-accent);"><b>Dropped 21 contract-bound <code>data-field</code> attributes.</b> Cut <code>hero.cta3</code>, moved four <code>stats.*</code> out of the hero, cut four more from the trust bar, removed <code>about.image_url</code>, and deleted five <code>*.eyebrow</code> fields. All 21 are restored on the same elements with the same values, verified mechanically.</div>
+  <div class="cd-flag"><b>Removed the story portrait.</b> 2.1 explicitly asks for it to be de-boxed with a <i>different</i> treatment. It is back, using an outlined ring, a tighter head-and-shoulders crop and a cooler flatter grade, so it reads as a second photograph rather than the hero component reused.</div>
+  <div class="cd-flag"><b>Got the 2.1 geometry backwards.</b> My arc's top edge was <i>above</i> the shoulder line, so only the head broke past it — and I stacked two extra background gradients behind the figure, which is the "stack" 2.1 rules out. Both corrected.</div>
+  <div class="cd-flag"><b>Missed three items outright:</b> film grain over the composition, warm glow spill onto the figure's edge, and the oversized display moment. All three are in rev.2.</div>
 
-  <p class="cd-note">Files: <code>comps/index.html</code> (this page), <code>comps/comp-home.html</code>,
-    <code>comps/comp-course.html</code>, <code>comps/comp.css</code>. Nothing outside <code>comps/</code>
-    was created or modified. Delete the folder and the site is byte-identical to commit 9858739.</p>
+  <h2 class="cd-h2">7 · Where the brief conflicts with itself</h2>
+  <div class="cd-prose">
+    <p>One place, and it resolves cleanly, so I have resolved it rather than asking.</p>
+    <p><strong>Part 1</strong> freezes every Bangla string and every <code>data-field</code>, which includes
+      <code>about.eyebrow</code>, <code>growth.eyebrow</code>, <code>testimonials.eyebrow</code>,
+      <code>press.eyebrow</code> and <code>hero.eyebrow</code>. <strong>Part 3</strong> bans "the same eyebrow
+      + h2 pattern opening all nine sections". Deleting eyebrows satisfies Part 3 and breaks Part 1.</p>
+    <p><strong>Resolution:</strong> keep all five strings and all five <code>data-field</code> attributes in
+      the DOM, and vary the <em>treatment</em> so the repeated pattern disappears. Hero keeps the pulse pill;
+      story absorbs its eyebrow into the <code>h2</code> as a lead-in line; growth sets it tiny directly above
+      9rem display type; testimonials baseline-aligns it to the right of the headline; press prefixes it with
+      an accent hairline. Same strings, same contract, five different patterns, and three sections carry no
+      eyebrow at all.</p>
+  </div>
+
+  <h2 class="cd-h2">8 · Tier 2 motion — the five for the homepage</h2>
+  <div class="cd-prose">
+    <p>2.3 caps the homepage at five. Chosen, with the reason each earns its place:</p>
+    <ol style="line-height:1.9;">
+      <li><strong>Scrub-linked scroll on the hero portrait and its arc.</strong> Serves 2.1 directly — the
+        figure and the shape behind it separate as you scroll, which is what proves he is free-standing
+        rather than a placed image.</li>
+      <li><strong>Word-level stagger on the oversized growth headline.</strong> The one display moment on the
+        page earns the one type animation.</li>
+      <li><strong>Clip-path wipe on section headings.</strong> Reinforces the ruled-archive spine: headings
+        are revealed by a moving rule, not faded in.</li>
+      <li><strong>Magnetic hero primary CTA.</strong> One element, small radius. The single most important
+        click on the site.</li>
+      <li><strong>Card lift with tinted shadow and 1-2° tilt</strong> on course rows and video facades.
+        Response on the two things people actually point at.</li>
+    </ol>
+    <p><strong>Not chosen:</strong> the pinned section, because no section on this page has content that
+      changes while it holds; and the marquee, because a scrolling strip would fight the ruled-archive spine
+      that the whole design rests on. Other pages get two each.</p>
+  </div>
+
+  <h2 class="cd-h2">9 · Still open for you</h2>
+  <div class="cd-flag" style="border-block-start:1px solid var(--line-accent);"><b>Course content is English.</b> All six titles, descriptions, module names, FAQ text and includes lists in <code>js/data.js</code> are English, so every course surface renders Bangla chrome around English content. Part 1 says I am not a copywriter, so the comps show it honestly and change nothing. Your call whether the catalogue gets translated.</div>
+  <div class="cd-flag"><b>Assets, in priority order.</b> (1) One portrait with headroom above the crown and margin beside the arms. (2) Six course key images — no course record has an <code>image</code>, so every thumbnail sitewide is a gradient panel. (3) A square head-and-shoulders crop ≥256px for the instructor medallion.</div>
+  <div class="cd-flag"><b>One-question FAQ.</b> <code>analyst-pro</code> has exactly one FAQ entry, so that whole band renders as a single row under a heading. No composition fixes that. Either the records get 3-5 questions each, or the section renders conditionally — it changes the markup, so it is worth deciding before checkpoint 4.</div>
+  <div class="cd-flag"><b>Known soft spot, declared rather than hidden.</b> Sections 7 and 8 are both equal-column grids (3 and 4). They differ sharply in density, scale and function so they do not read as the same shape, but it is the weakest adjacency on the page and I will revisit it in checkpoint 2 rather than claim it is solved.</div>
+  <div class="cd-flag"><b>I have not seen these rendered.</b> No headless browser here, so I authored the comps but could not view my own output. Open the two documents and the layout is the truth. Say the word and I will install Playwright before checkpoint 1 so I am self-verifying from here on.</div>
+
+  <h2 class="cd-h2">10 · Contract audit</h2>
+  <div class="cd-prose">
+    <p>Run mechanically against <code>index.html</code>, not by eye:</p>
+    <ul style="line-height:1.8;">
+      <li><code>data-field</code> 35/35 · <code>data-repeat</code> 6/6 · <code>data-section-key</code> 8/8 ·
+        <code>data-mount</code> 2/2 · <code>data-tabs</code>, <code>data-tab-target</code>,
+        <code>data-tab-panel-group</code>, <code>data-tab-panel</code>, <code>data-parallax</code> all present.</li>
+      <li>Behavioural classes <code>.active .open .inview .reveal* .tab-panel .tab-btn .hscroll .card
+        .price-free .surface-raised .surface-inset .press-strip .timeline-h .growth-item .trust-item
+        .nav-link</code> — none missing.</li>
+      <li><code>YT_API_KEY</code>, <code>CHANNEL_ID</code>, <code>SUPABASE_URL</code>,
+        <code>SUPABASE_ANON_KEY</code> — untouched, still referenced exactly as before.</li>
+      <li>All nine sections present, in live order, at live count. All Bangla strings verbatim.
+        <code>lang="bn"</code> retained.</li>
+      <li><code>git diff 9858739 HEAD</code> outside <code>comps/</code> and <code>.claude/</code>: empty.
+        No site file has been created, modified, renamed or removed.</li>
+    </ul>
+  </div>
+
+  <p class="cd-note">Files: <code>comps/index.html</code>, <code>comps/comp-home.html</code>,
+    <code>comps/comp-course.html</code>, <code>comps/comp.css</code>. Delete the folder and the site is
+    byte-identical to commit 9858739.</p>
 
 </div>
 </body>

@@ -562,7 +562,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .stars{color:var(--accent-ink); font-size:var(--step--1); letter-spacing:.06em;}
 .stars .rating-value{color:var(--text-3); font-size:var(--step--2); margin-inline-start:4px;}
 
-/* Catalogue / listing page head — a shallow band under the fixed nav. */
+/* Catalogue / listing page head — a shallow full-bleed band under the fixed
+   nav. It is a wrapper DIV inside the page's existing <section>, not a second
+   section: the redesign brief fixes the section count per page. */
+.catalog-page{display:block;}
 .page-head{padding-block:calc(var(--nav-h) + clamp(44px,6vw,76px)) clamp(36px,5vw,60px);}
 .page-head .section-head{margin-bottom:0;}
 
@@ -668,10 +671,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .accordion-item:hover{border-color:var(--line-strong);}
 .accordion-item.open{background:var(--surface-2); border-color:var(--line-strong);}
+/* <button>, not <div>: these were click-handled divs, so the entire
+   curriculum and FAQ were unreachable by keyboard. */
 .accordion-head{
   display:flex; justify-content:space-between; align-items:center; gap:var(--space-4);
-  padding:var(--space-4) var(--space-5); cursor:pointer; font-weight:600; color:var(--text-1);
+  inline-size:100%; text-align:start; background:none; border:none;
+  padding:var(--space-4) var(--space-5); cursor:pointer;
+  font-family:var(--font-body); font-size:var(--step-0); font-weight:600; color:var(--text-1);
 }
+.accordion-head:hover{color:var(--accent-ink);}
 .accordion-head svg{inline-size:17px; block-size:17px; color:var(--text-3); transition:transform var(--dur-3) var(--ease-out), color var(--dur-2);}
 .accordion-item.open .accordion-head svg{transform:rotate(180deg); color:var(--accent-ink);}
 .accordion-body{max-height:0; overflow:hidden; transition:max-height var(--dur-4) var(--ease-in-out);}

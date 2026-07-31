@@ -3,102 +3,127 @@
 Plain **HTML / CSS / JavaScript**. No build step, no framework, no npm install.
 Open it with Live Server (VS Code / Antigravity) and everything just works.
 
-## Admin panel (new)
+## Admin panel
 
-`admin/` is a zero-code admin panel: log in, then add/edit/remove courses and
-store products, and view website analytics — changes show up on the live
-site immediately. It talks to a free Supabase database.
+`admin/` is a zero-code admin panel: log in, then edit homepage and portfolio
+copy, add/edit/remove courses and store products, moderate reviews, hide whole
+sections from the public, and view analytics — changes show up on the live site
+immediately. It talks to a free Supabase database.
 
-**It's not connected yet.** See `ADMIN_SETUP.md` for a step-by-step guide
-(~15 minutes, no coding). Until then, the public website keeps working
-exactly as before, using the sample content in `js/data.js`.
+**If it isn't connected yet**, see `ADMIN_SETUP.md` for a step-by-step guide
+(~15 minutes, no coding). Until then the public website keeps working exactly
+as before, using the sample content in `js/data.js`.
 
 ## How to run it
 
 1. Unzip this folder.
 2. Open the folder in VS Code (or Antigravity).
-3. Right-click `index.html` → **Open with Live Server** (or use the Live Share / Live Preview button your IDE gives you).
-4. That's it — the whole site, cart, language toggle, and hero effect run client-side.
+3. Right-click `index.html` → **Open with Live Server**.
 
-Don't just double-click `index.html` in your file explorer — a couple of features (fetching data, some relative paths) behave better over `http://localhost` than over `file://`. Live Server / Live Preview already serves it correctly.
+Don't just double-click `index.html` in your file explorer — a couple of
+features (fetching data, some relative paths) behave better over
+`http://localhost` than over `file://`.
 
 ## Folder structure
 
 ```
-index.html            Home page
-courses.html           Course catalog (filterable)
-course-detail.html     Single course page — reads ?id= from the URL
-store.html             Store catalog (filterable)
-product-detail.html    Single product page — reads ?id= from the URL
-checkout.html          Mock checkout (bKash / Nagad / Card placeholders)
-partner.html           Media kit / "Partner With Me" page
-blog.html              Knowledge hub listing (filterable)
-blog-post.html         Single article — reads ?slug= from the URL
+index.html             Home
+courses.html           Course catalogue (filterable)
+course-detail.html     Single course — reads ?id= from the URL
+store.html             Store catalogue (filterable)
+product-detail.html    Single product — reads ?id= from the URL
+checkout.html          Single-item checkout (bKash)
+portfolio.html         Media kit / partnership page
 contact.html           Contact form + booking calendar
-dashboard.html         Student dashboard (enrolled courses, resources, certs)
+dashboard.html         Student dashboard (courses, resources, certificates)
 
 admin/                 Zero-code admin panel (see ADMIN_SETUP.md)
-schema.sql              Supabase database schema — run once when setting up
-js/supabase-config.js   Paste your Supabase URL + anon key here (one file, used by site + admin)
+schema.sql             Supabase schema — run once when setting up
+js/supabase-config.js  Your Supabase URL + anon key (used by site and admin)
 
-css/style.css          Entire design system (tokens, components, responsive)
+css/tokens.css         Design tokens. Loaded by the public site AND the admin
+                        panel, so the two can never drift apart.
+css/style.css          The design system built on those tokens.
 
-js/data.js             All course/product/video/blog content lives here —
-                        edit this file to change what's on the site.
-js/render.js           Turns data.js into HTML cards + detail pages.
-js/i18n.js             English / Bangla toggle (dictionary + apply logic).
-js/cart.js             Cart + enrollment logic (saved in localStorage).
-js/main.js             Nav, mobile menu, scroll reveals, tabs, accordion,
-                        filters, toasts, calendar widget.
-js/section-visibility.js  Hides a <section data-section-key="..."> from the
-                        public when the admin panel turns it off (admins
-                        still see it, flagged).
+js/data.js             Sample course/product content (fallback when Supabase
+                        isn't connected).
+js/data-loader.js      Swaps in live Supabase content when it is.
+js/render.js           Turns that data into cards and detail pages.
+js/home-content.js     Applies admin-editable copy via data-field / data-repeat.
+js/section-visibility.js  Hides sections the admin has switched off.
+js/auth.js             Student accounts (name + phone + SMS OTP).
+js/main.js             Nav, mobile menu, reveals, tabs, accordion, filters.
+js/motion.js           Counters, parallax, scroll progress, staggered entrances.
+js/course-progress.js  Enrolment + per-lesson progress.
+js/course-reviews.js   Course reviews.
+js/checkout.js         Order + enrolment writes.
+js/dashboard.js        The whole student dashboard UI.
 
-assets/img/shahedin-cutout.png / .webp   Hero + footer cutout portrait
-assets/shahedin-media-kit.pdf  Downloadable media kit (Partner page)
+assets/img/shahedin-cutout.png / .webp   Portrait cutout (footer, hero, story)
+assets/shahedin-media-kit.pdf            Downloadable media kit
 ```
 
-## Editing content
+## The design system
 
-Almost everything repeatable (courses, products, videos, blog posts) is
-data-driven. To add/change a course, product, or article, edit the arrays
-in `js/data.js` — the catalog pages, cards, and detail pages update
-automatically, and every "View" link automatically points to a working
-detail page (`course-detail.html?id=your-id`).
+Everything visual derives from `css/tokens.css`. Change a value there and it
+propagates to every page and to the admin panel. Three things are worth knowing
+before editing it:
 
-## Language toggle
+**Legacy token aliases are load-bearing.** `js/render.js`, `js/dashboard.js` and
+`js/course-reviews.js` write inline styles like `color:var(--text-muted)` into
+their template strings. Every pre-redesign token name is kept as an alias onto
+the new system. Deleting one breaks rendered markup that no CSS file mentions.
 
-Click **EN / বাং** in the nav or footer. It's a real toggle: it swaps text
-via `data-i18n="key"` attributes (dictionary in `js/i18n.js`), switches the
-whole page to the **Anek Bangla** font, and remembers your choice in
-localStorage. Long-form content (blog articles, testimonial quotes) is
-English-only for now — add Bangla strings to the `DICT` object in
-`js/i18n.js` to extend it further.
+**Type is Bangla-first.** A Bengali serif (Noto Serif Bengali) for display, a
+Bengali sans (Anek Bangla) for text, and Inter for numerals and Latin
+fragments. Mixed-script lines use `--font-mixed`, which lists Inter first —
+Inter has no Bengali glyphs, so Bengali falls through to Anek Bangla within the
+same line. That plus `font-size-adjust` is what keeps `৳১,৪৯০`, `4.9/5`,
+`bKash` and `PDF` on the same baseline as the Bangla around them.
 
-## The two custom builds from the brief
+**Contrast is checked, not guessed.** Every text token is annotated with its
+measured WCAG ratio against every surface it is used on. If you change a
+colour, re-check both numbers. The accent is deliberately split: `--accent-fill`
+for solid blocks with white text, `--accent-ink` (much lighter) for accent
+*text*, which needs to clear 4.5:1 on its own.
 
-- **Two-column hero**: copy on the left (eyebrow, headline, three CTAs,
-  stat row) and the cutout portrait on the right, built on the same
-  `.about-grid` / `.about-portrait` pattern the About section uses. The
-  photo is swappable from the admin panel (`hero.image_url`).
-- **Footer cutout**: transparent PNG/WebP of Shahedin sitting directly on
-  the footer background (no card, no border), feathered at the feet,
-  color-graded to match the footer tone, with one soft contact shadow and
-  a subtle scroll parallax.
+## The JS ↔ HTML contract
 
-## No dead ends
+The pages and the JavaScript are joined by attributes, not by structure. These
+must survive any redesign, on the same element, with the same value:
 
-Every button on the site goes somewhere: nav links, CTAs, "Enroll",
-"Add to Cart" → cart drawer → `checkout.html`, contact form, newsletter
-signup, blog comments, and the calendar booking widget all respond with
-real (front-end) behavior. Payment (bKash/Nagad/SSLCommerz) and the
-backend for courses/e-commerce are mocked with `localStorage` — swap
-those calls for real API requests when the backend is ready (the brief
-asked for front-end structure + the two interactive builds first).
+- `data-mount="…"` — where render.js, checkout.js and dashboard.js inject HTML
+- `data-field="section.field"` / `data-repeat="section.list"` — admin-editable copy
+- `data-section-key="…"` — sections the admin can hide
+- behavioural hooks: `data-enroll`, `data-buy-product`, `data-qty-*`, `data-tabs`,
+  `data-tab-target`, `data-tab-panel`, `data-filterable`, `data-filter-group`,
+  `data-search-input`, `data-empty-state`, `data-cal-grid`, `data-quiz`, …
+- classes the JS toggles: `.active`, `.open`, `.inview`, `.show`, `.scrolled`,
+  `.selected`, `.is-correct`, `.is-wrong`, `.section-hidden-from-public`
+
+Restyle any of them freely. Renaming one silently breaks a page.
+
+## Motion
+
+`js/motion.js` runs every scroll-driven effect off **one** rAF loop and **one**
+passive scroll listener, and animates only `transform` and `opacity` — nothing
+in it can trigger layout. `prefers-reduced-motion: reduce` disables all of it
+and jumps every element to its final state.
 
 ## Responsive
 
-Tested breakpoints at 1080px, 760px, and 480px. Mobile gets a full-screen
-menu, a stacked hero stat grid, a single-column hero (photo below the
-copy), and a reflowed footer (portrait moves above the link columns instead of beside
-them).
+Verified at 1440 / 1280 / 1080 / 760 / 480 / 380, with both long and one-word
+content in every text field. Every grid uses `minmax(0, …)` so a long unbroken
+Bangla label can't push a column past its container.
+
+## Known follow-ups
+
+- **Fonts still swap.** Metric-matched fallback faces remove the layout shift,
+  but a truly flash-free load needs the woff2 files self-hosted in `assets/`
+  with `font-display:optional`.
+- **The YouTube API key in `js/youtube-videos.js` is public** — unavoidable in a
+  static site, but it should be restricted to your domain by HTTP referrer in
+  the Google Cloud console.
+- **The portrait asset is doing three jobs.** `shahedin-cutout.webp` was shot as
+  a footer cutout. Each of the three places it now appears is framed to suit it,
+  and the ideal replacement for each is commented at the CSS rule.

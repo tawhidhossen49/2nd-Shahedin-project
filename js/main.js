@@ -13,20 +13,63 @@
   window.addEventListener("scroll", onScroll, { passive: true });
   onScroll();
 
-  /* ---------- Mobile menu ---------- */
+  /* ---------- Mobile menu ----------
+     Keyboard-complete: the burger reports its state, Escape closes, focus
+     moves into the panel on open and back to the burger on close, and Tab
+     is trapped inside the panel while it is open (it covers the page, so
+     tabbing to what is underneath would be tabbing into nothing). */
   const burger = document.querySelector(".nav-burger");
   const mobileMenu = document.querySelector(".mobile-menu");
   const mobileClose = document.querySelector(".mobile-menu-close");
+  const FOCUSABLE = 'a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
   function toggleMenu(open) {
     if (!mobileMenu) return;
     mobileMenu.classList.toggle("open", open);
     document.body.style.overflow = open ? "hidden" : "";
+    mobileMenu.setAttribute("aria-hidden", open ? "false" : "true");
+    if (burger) burger.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) {
+      const first = mobileMenu.querySelector(FOCUSABLE);
+      if (first) first.focus();
+    } else if (burger) {
+      burger.focus();
+    }
   }
-  if (burger) burger.addEventListener("click", () => toggleMenu(true));
+
+  if (burger) {
+    burger.setAttribute("aria-expanded", "false");
+    burger.setAttribute("aria-controls", "mobileMenu");
+    burger.addEventListener("click", () => toggleMenu(true));
+  }
+  if (mobileMenu) {
+    mobileMenu.id = mobileMenu.id || "mobileMenu";
+    mobileMenu.setAttribute("aria-hidden", "true");
+  }
   if (mobileClose) mobileClose.addEventListener("click", () => toggleMenu(false));
   document.querySelectorAll(".mobile-menu .nav-link").forEach((l) =>
     l.addEventListener("click", () => toggleMenu(false))
   );
+
+  document.addEventListener("keydown", (e) => {
+    if (!mobileMenu || !mobileMenu.classList.contains("open")) return;
+    if (e.key === "Escape") {
+      toggleMenu(false);
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const items = Array.from(mobileMenu.querySelectorAll(FOCUSABLE)).filter((el) => el.offsetParent !== null);
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  });
 
   /* ---------- Scroll reveal ---------- */
   const revealEls = document.querySelectorAll(".reveal");
@@ -61,16 +104,57 @@
     growthItems.forEach((el) => go.observe(el));
   }
 
-  /* ---------- Generic Tabs (.tabs / .tab-btn / .tab-panel) ---------- */
+  /* ---------- Generic Tabs (.tabs / .tab-btn / .tab-panel) ----------
+     Now a real ARIA tablist: roles and aria-selected are wired up here
+     rather than in the markup (so every page that uses [data-tabs] gets it),
+     and Left/Right/Home/End move between tabs the way a tablist should. */
   document.querySelectorAll("[data-tabs]").forEach((group) => {
-    const btns = group.querySelectorAll(".tab-btn");
-    const panels = document.querySelectorAll(`[data-tab-panel-group="${group.dataset.tabs}"]`);
-    btns.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        btns.forEach((b) => b.classList.remove("active"));
+    const btns = Array.from(group.querySelectorAll(".tab-btn"));
+    const panels = Array.from(document.querySelectorAll(`[data-tab-panel-group="${group.dataset.tabs}"]`));
+    if (!btns.length) return;
+
+    group.setAttribute("role", "tablist");
+    btns.forEach((btn, i) => {
+      const target = btn.dataset.tabTarget;
+      const panel = panels.find((p) => p.dataset.tabPanel === target);
+      const tabId = `tab-${group.dataset.tabs}-${target}`;
+      const panelId = `panel-${group.dataset.tabs}-${target}`;
+      btn.id = tabId;
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("type", "button");
+      if (panel) {
+        panel.id = panelId;
+        panel.setAttribute("role", "tabpanel");
+        panel.setAttribute("aria-labelledby", tabId);
+        btn.setAttribute("aria-controls", panelId);
+      }
+      const isActive = btn.classList.contains("active");
+      btn.setAttribute("aria-selected", isActive ? "true" : "false");
+      btn.tabIndex = isActive ? 0 : -1;
+
+      function select() {
+        btns.forEach((b) => {
+          b.classList.remove("active");
+          b.setAttribute("aria-selected", "false");
+          b.tabIndex = -1;
+        });
         btn.classList.add("active");
-        const target = btn.dataset.tabTarget;
+        btn.setAttribute("aria-selected", "true");
+        btn.tabIndex = 0;
         panels.forEach((p) => p.classList.toggle("active", p.dataset.tabPanel === target));
+      }
+
+      btn.addEventListener("click", select);
+      btn.addEventListener("keydown", (e) => {
+        const keys = { ArrowRight: 1, ArrowLeft: -1 };
+        let next = null;
+        if (e.key in keys) next = btns[(i + keys[e.key] + btns.length) % btns.length];
+        else if (e.key === "Home") next = btns[0];
+        else if (e.key === "End") next = btns[btns.length - 1];
+        if (!next) return;
+        e.preventDefault();
+        next.focus();
+        next.click();
       });
     });
   });
@@ -88,15 +172,21 @@
       if (openItem !== item) {
         openItem.classList.remove("open");
         openItem.querySelector(".accordion-body").style.maxHeight = null;
+        const otherHead = openItem.querySelector(".accordion-head");
+        if (otherHead) otherHead.setAttribute("aria-expanded", "false");
       }
     });
     item.classList.toggle("open", !isOpen);
     body.style.maxHeight = !isOpen ? body.scrollHeight + "px" : null;
+    // The heads are <button aria-expanded> — keep the reported state honest.
+    head.setAttribute("aria-expanded", String(!isOpen));
   });
   function openFirstAccordion() {
     const firstAcc = document.querySelector(".accordion-item");
     if (firstAcc && !document.querySelector(".accordion-item.open")) {
       firstAcc.classList.add("open");
+      const head = firstAcc.querySelector(".accordion-head");
+      if (head) head.setAttribute("aria-expanded", "true");
       const b = firstAcc.querySelector(".accordion-body");
       if (b) requestAnimationFrame(() => (b.style.maxHeight = b.scrollHeight + "px"));
     }

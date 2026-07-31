@@ -75,7 +75,7 @@ window.Admin = (function () {
     if (!app) return;
     const navHtml = NAV.map(
       (n) => `<a href="${n.href}" class="${n.href === activeHref ? "active" : ""}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
         ${n.label}
       </a>`
     ).join("");

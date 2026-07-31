@@ -1,17 +1,23 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="bn" class="no-js">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>পোর্টফোলিও — Shahedin মিডিয়া কিট</title>
 <meta name="description" content="শাহেদীনের সাথে কাজ করতে আগ্রহী ব্র্যান্ড ও স্পনসরদের জন্য পোর্টফোলিও, পারফরম্যান্স ডেটা ও পার্টনারশিপের বিকল্প।">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%230b0908'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='%23c1122f'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0b0908">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=Anek+Bangla:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
-
-</head>
+<script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script>
+<script>/* no-flash bootstrap for admin-hidden sections; js/section-visibility.js always removes this again, so the page fails open */
+(function(){try{var h=JSON.parse(localStorage.getItem('sv-hidden')||'[]');if(!h.length)return;var s=document.createElement('style');s.id='sv-pre';s.textContent=h.map(function(k){return '[data-section-key="'+String(k).replace(/[^a-z0-9_-]/gi,'')+'"]{display:none!important}';}).join('');document.head.appendChild(s);}catch(e){}})();</script></head>
 <body>
+
+  <a class="skip-link" href="#main">মূল কনটেন্টে যান</a>
 
   <nav class="site-nav" id="siteNav">
     <a href="index.html" class="nav-logo"><span class="dot"></span>Shahedin</a>
@@ -22,16 +28,16 @@
       <a href="portfolio.html" class="nav-link active" data-page="portfolio.html">পোর্টফোলিও</a>
     </div>
     <div class="nav-right">
-      <a href="dashboard.html" class="icon-btn" aria-label="Dashboard" title="Dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></a>
+      <a href="dashboard.html" class="icon-btn" aria-label="Dashboard" title="Dashboard"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg></a>
       <a href="contact.html" class="nav-cta">যোগাযোগ</a>
-      <button class="nav-burger" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <button class="nav-burger" aria-label="Open menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
     </div>
   </nav>
 
   <div class="mobile-menu">
     <div class="mobile-menu-top">
       <a href="index.html" class="nav-logo"><span class="dot"></span>Shahedin</a>
-      <button class="icon-btn mobile-menu-close" aria-label="Close menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <button class="icon-btn mobile-menu-close" aria-label="Close menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
     </div>
     <nav>
       <a href="index.html" class="nav-link" data-page="index.html">হোম</a>
@@ -46,30 +52,32 @@
     </div>
   </div>
 
+  <main id="main">
 
 
-  <section class="kit-hero section-pad container" data-section-key="portfolio_hero">
+
+  <section class="kit-hero container" data-section-key="portfolio_hero">
     <div class="about-grid about-grid-text-first">
       <div class="hero-copy reveal">
-        <div class="section-head" style="margin-bottom:28px;">
+        <div class="section-head section-head-compact">
           <span class="eyebrow" data-field="portfolio.eyebrow">মিডিয়া কিট</span>
           <h1 data-field="portfolio.title">শাহেদীনের সাথে পার্টনারশিপ করুন</h1>
           <p data-field="portfolio.sub">একটি নিবেদিত, উচ্চ-বিশ্বাসযোগ্য দর্শকগোষ্ঠীর কাছে পৌঁছান।</p>
         </div>
-        <div class="hero-ctas" style="margin-bottom:0;">
+        <div class="hero-ctas hero-ctas-flush">
           <a href="assets/shahedin-media-kit.pdf" class="btn btn-primary" download><span data-field="portfolio.cta1">মিডিয়া কিট ডাউনলোড করুন (PDF)</span></a>
           <a href="#partner-options" class="btn btn-ghost"><span data-field="portfolio.cta2">চলুন একসাথে কাজ করি</span></a>
         </div>
       </div>
       <div class="about-portrait hero-portrait reveal reveal-delay-1">
-        <img src="assets/img/shahedin-cutout.webp" alt="Portrait of Shahedin" data-field="portfolio.image_url">
+        <img src="assets/img/shahedin-cutout.webp" alt="শাহেদীনের প্রতিকৃতি" data-field="portfolio.image_url" loading="lazy" decoding="async" data-parallax="0.1">
       </div>
     </div>
   </section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="portfolio_glance">
-    <h2 class="reveal" style="margin-bottom:24px;" data-field="portfolio.glance_title">এক নজরে পারফরম্যান্স</h2>
-    <div class="kit-stat-grid reveal">
+  <section class="section-pad surface-raised" data-section-key="portfolio_glance"><div class="container">
+    <h2 class="section-title reveal" data-field="portfolio.glance_title">এক নজরে পারফরম্যান্স</h2>
+    <div class="kit-stat-grid reveal-stagger">
       <div class="kit-stat-card"><div class="stat-mini"><div class="n" data-field="stats.views_30d_value">4.2M</div><div class="l" data-field="stats.views_30d_label">গত ৩০ দিনের ভিউ</div></div><div class="trend" data-field="stats.views_30d_trend">↑ আগের মাসের তুলনায় ১৮%</div></div>
       <div class="kit-stat-card"><div class="stat-mini"><div class="n" data-field="stats.total_reach_value">210M+</div><div class="l" data-field="stats.total_reach_label">মোট ইউটিউব ভিউ</div></div><div class="trend" data-field="portfolio.total_reach_trend">↑ ২০১৮ থেকে ধারাবাহিক প্রবৃদ্ধি</div></div>
       <div class="kit-stat-card"><div class="stat-mini"><div class="n" data-field="stats.website_traffic_value">680K</div><div class="l" data-field="stats.website_traffic_label">মাসিক ওয়েবসাইট ট্র্যাফিক</div></div><div class="trend" data-field="stats.website_traffic_trend">↑ আগের মাসের তুলনায় ৯%</div></div>
@@ -78,7 +86,7 @@
 
     <div class="two-col mt-lg">
       <div class="reveal">
-        <h3 style="margin-bottom:16px;" data-field="portfolio.campaigns_title">পূর্ববর্তী ক্যাম্পেইনের পারফরম্যান্স</h3>
+        <h3 class="chart-title" data-field="portfolio.campaigns_title">পূর্ববর্তী ক্যাম্পেইনের পারফরম্যান্স</h3>
         <div class="bar-chart" data-repeat="portfolio.campaigns">
           <div class="bar" style="height:55%;"><span>2.1M</span></div>
           <div class="bar" style="height:72%;"><span>3.4M</span></div>
@@ -86,25 +94,25 @@
           <div class="bar" style="height:88%;"><span>4.6M</span></div>
           <div class="bar" style="height:65%;"><span>3.0M</span></div>
         </div>
-        <p class="small-note" style="margin-top:14px;" data-field="portfolio.campaign_note">প্রতি স্পনসরড ক্যাম্পেইনে রিচ, সর্বশেষ ৫টি ব্র্যান্ড পার্টনারশিপ · গড় CTR ৩.৮% · গড় কনভার্সন হার ৬.১%</p>
+        <p class="small-note chart-note" data-field="portfolio.campaign_note">প্রতি স্পনসরড ক্যাম্পেইনে রিচ, সর্বশেষ ৫টি ব্র্যান্ড পার্টনারশিপ · গড় CTR ৩.৮% · গড় কনভার্সন হার ৬.১%</p>
       </div>
       <div class="reveal reveal-delay-1">
-        <h3 style="margin-bottom:16px;" data-field="portfolio.audience_title">দর্শক সম্পর্কিত তথ্য</h3>
+        <h3 class="chart-title" data-field="portfolio.audience_title">দর্শক সম্পর্কিত তথ্য</h3>
         <div class="audience-bars" data-repeat="portfolio.audience_age">
           <div class="audience-row"><span class="albl">18–24</span><div class="atrack"><div class="afill" style="width:34%;"></div></div><span class="aval">34%</span></div>
           <div class="audience-row"><span class="albl">25–34</span><div class="atrack"><div class="afill" style="width:41%;"></div></div><span class="aval">41%</span></div>
           <div class="audience-row"><span class="albl">35–44</span><div class="atrack"><div class="afill" style="width:17%;"></div></div><span class="aval">17%</span></div>
           <div class="audience-row"><span class="albl">45+</span><div class="atrack"><div class="afill" style="width:8%;"></div></div><span class="aval">8%</span></div>
         </div>
-        <p class="small-note" style="margin:18px 0 8px;" data-field="portfolio.top_locations">শীর্ষ অবস্থান: বাংলাদেশ (৭৮%), ভারত (৭%), যুক্তরাজ্য (৪%), যুক্তরাষ্ট্র (৩%), অন্যান্য (৮%)</p>
+        <p class="small-note chart-note" data-field="portfolio.top_locations">শীর্ষ অবস্থান: বাংলাদেশ (৭৮%), ভারত (৭%), যুক্তরাজ্য (৪%), যুক্তরাষ্ট্র (৩%), অন্যান্য (৮%)</p>
         <p class="small-note" data-field="portfolio.top_interests">শীর্ষ আগ্রহ: রাজনীতি ও সাম্প্রতিক ঘটনা, ক্যারিয়ার উন্নয়ন, অর্থনীতি, প্রতিযোগিতামূলক পরীক্ষা</p>
       </div>
     </div>
-  </section>
+  </div></section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="portfolio_collaborations">
-    <h2 class="reveal" style="margin-bottom:24px;" data-field="portfolio.collaborations_title">পূর্ববর্তী পার্টনারশিপ</h2>
-    <div class="case-grid reveal" data-repeat="portfolio.collaborations">
+  <section class="section-pad container" data-section-key="portfolio_collaborations">
+    <h2 class="section-title reveal" data-field="portfolio.collaborations_title">পূর্ববর্তী পার্টনারশিপ</h2>
+    <div class="case-grid reveal-stagger" data-repeat="portfolio.collaborations">
       <div class="case-card">
         <span class="case-type">স্পনসরড ভিডিও</span>
         <span class="case-brand">Brand One</span>
@@ -129,12 +137,12 @@
     </div>
   </section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="press">
+  <section class="section-pad-sm container" data-section-key="press">
     <div class="section-head reveal">
       <span class="eyebrow" data-field="press.eyebrow">মিডিয়া</span>
       <h2 data-field="press.title">প্রেস এবং উপস্থিতি</h2>
     </div>
-    <div class="press-strip reveal" data-repeat="press.items">
+    <div class="press-strip reveal-stagger" data-repeat="press.items">
       <div class="press-item"><span class="p-logo">দ্য ডেইলি অ্যানালিস্ট</span><span class="p-cap">ফিচার সাক্ষাৎকার, ২০২৫</span></div>
       <div class="press-item"><span class="p-logo">পলিসি আওয়ার পডকাস্ট</span><span class="p-cap">গেস্ট এপিসোড, ২০২৪</span></div>
       <div class="press-item"><span class="p-logo">চ্যানেল ৯ নিউজ</span><span class="p-cap">টিভি প্যানেল উপস্থিতি, ২০২৪</span></div>
@@ -142,21 +150,23 @@
     </div>
   </section>
 
-  <section class="section-pad container" id="partner-options" style="padding-top:0;" data-section-key="portfolio_types">
-    <h2 class="reveal" style="margin-bottom:24px;" data-field="portfolio.types_title">পার্টনারশিপের ধরন</h2>
-    <div class="grid grid-4 reveal" data-repeat="portfolio.partnership_types">
-      <div class="partner-card"><h3 style="font-size:1.05rem;">স্পনসরড ভিডিও</h3><p style="font-size:.88rem; margin-top:8px;">আপনার প্রোডাক্ট নিয়ে একটি নিবেদিত ভিডিও বা ইন্টিগ্রেটেড সেগমেন্ট।</p></div>
-      <div class="partner-card"><h3 style="font-size:1.05rem;">কোর্স কোলাবোরেশন</h3><p style="font-size:.88rem; margin-top:8px;">আপনার দর্শকদের জন্য কো-ব্র্যান্ডেড বা যৌথভাবে তৈরি কোর্স কনটেন্ট।</p></div>
-      <div class="partner-card"><h3 style="font-size:1.05rem;">ব্র্যান্ড ইন্টিগ্রেশন</h3><p style="font-size:.88rem; margin-top:8px;">বিদ্যমান এক্সপ্লেইনার ফরম্যাটে স্বাভাবিকভাবে মিশিয়ে দেওয়া উল্লেখ।</p></div>
-      <div class="partner-card"><h3 style="font-size:1.05rem;">অ্যাফিলিয়েট ক্যাম্পেইন</h3><p style="font-size:.88rem; margin-top:8px;">ট্র্যাক করা অ্যাফিলিয়েট লিংকসহ পারফরম্যান্স-ভিত্তিক প্রমোশন।</p></div>
+  <section class="section-pad container" id="partner-options" data-section-key="portfolio_types">
+    <h2 class="section-title reveal" data-field="portfolio.types_title">পার্টনারশিপের ধরন</h2>
+    <div class="grid grid-4 reveal-stagger" data-repeat="portfolio.partnership_types">
+      <div class="partner-card"><h3>স্পনসরড ভিডিও</h3><p>আপনার প্রোডাক্ট নিয়ে একটি নিবেদিত ভিডিও বা ইন্টিগ্রেটেড সেগমেন্ট।</p></div>
+      <div class="partner-card"><h3>কোর্স কোলাবোরেশন</h3><p>আপনার দর্শকদের জন্য কো-ব্র্যান্ডেড বা যৌথভাবে তৈরি কোর্স কনটেন্ট।</p></div>
+      <div class="partner-card"><h3>ব্র্যান্ড ইন্টিগ্রেশন</h3><p>বিদ্যমান এক্সপ্লেইনার ফরম্যাটে স্বাভাবিকভাবে মিশিয়ে দেওয়া উল্লেখ।</p></div>
+      <div class="partner-card"><h3>অ্যাফিলিয়েট ক্যাম্পেইন</h3><p>ট্র্যাক করা অ্যাফিলিয়েট লিংকসহ পারফরম্যান্স-ভিত্তিক প্রমোশন।</p></div>
     </div>
 
     <div class="cta-band reveal">
       <h2 data-field="portfolio.cta_title">চলুন একসাথে কাজ করি</h2>
-      <p style="margin:12px auto 24px; max-width:480px;" data-field="portfolio.cta_sub">ব্র্যান্ড পার্টনারশিপ, স্পনসরশিপ বা কোলাবোরেশন নিয়ে কথা বলতে চান?</p>
+      <p data-field="portfolio.cta_sub">ব্র্যান্ড পার্টনারশিপ, স্পনসরশিপ বা কোলাবোরেশন নিয়ে কথা বলতে চান?</p>
       <a href="contact.html?type=partnership" class="btn btn-primary">কথা শুরু করুন</a>
     </div>
   </section>
+  </main>
+
 
 
   <footer class="site-footer">
@@ -165,28 +175,33 @@
         <a href="index.html" class="nav-logo"><span class="dot"></span>Shahedin</a>
         <p data-field="footer.tagline">রাজনীতি ও দক্ষতা শিক্ষাকে সহজবোধ্য করে তোলা — একটি ভিডিও, একটি কোর্স একবারে।</p>
         <div class="footer-social">
-          <a href="https://youtube.com" target="_blank" rel="noopener" class="icon-btn" aria-label="YouTube"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 6.2a2.8 2.8 0 0 0-2-2C18.9 3.7 12 3.7 12 3.7s-6.9 0-8.5.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 1 12a29 29 0 0 0 .5 5.8 2.8 2.8 0 0 0 2 2c1.6.5 8.5.5 8.5.5s6.9 0 8.5-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 23 12a29 29 0 0 0-.5-5.8zM9.8 15.5v-7l6 3.5z"/></svg></a>
-          <a href="https://facebook.com" target="_blank" rel="noopener" class="icon-btn" aria-label="Facebook"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.1c0-1 .3-1.6 1.7-1.6h1.7V3.5c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.5H7v3.3h2.9V22z"/></svg></a>
-          <a href="https://instagram.com" target="_blank" rel="noopener" class="icon-btn" aria-label="Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
-          <a href="https://linkedin.com" target="_blank" rel="noopener" class="icon-btn" aria-label="LinkedIn"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM3 9h4v12H3zM9 9h3.6v1.7h.05c.5-.9 1.8-1.9 3.6-1.9 3.9 0 4.6 2.5 4.6 5.9V21h-4v-5.4c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9V21H9z"/></svg></a>
+          <a href="https://youtube.com" target="_blank" rel="noopener" class="icon-btn" aria-label="YouTube"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.5 6.2a2.8 2.8 0 0 0-2-2C18.9 3.7 12 3.7 12 3.7s-6.9 0-8.5.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 1 12a29 29 0 0 0 .5 5.8 2.8 2.8 0 0 0 2 2c1.6.5 8.5.5 8.5.5s6.9 0 8.5-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 23 12a29 29 0 0 0-.5-5.8zM9.8 15.5v-7l6 3.5z"/></svg></a>
+          <a href="https://facebook.com" target="_blank" rel="noopener" class="icon-btn" aria-label="Facebook"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.1c0-1 .3-1.6 1.7-1.6h1.7V3.5c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.5H7v3.3h2.9V22z"/></svg></a>
+          <a href="https://instagram.com" target="_blank" rel="noopener" class="icon-btn" aria-label="Instagram"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg></a>
+          <a href="https://linkedin.com" target="_blank" rel="noopener" class="icon-btn" aria-label="LinkedIn"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM3 9h4v12H3zM9 9h3.6v1.7h.05c.5-.9 1.8-1.9 3.6-1.9 3.9 0 4.6 2.5 4.6 5.9V21h-4v-5.4c0-1.3 0-3-1.8-3s-2.1 1.4-2.1 2.9V21H9z"/></svg></a>
         </div>
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <h4>কুইক লিংক</h4>
+          <h2>কুইক লিংক</h2>
           <a href="index.html">হোম</a>
           <a href="courses.html">কোর্স</a>
           <a href="portfolio.html">পোর্টফোলিও</a>
           <a href="contact.html">যোগাযোগ</a>
         </div>
         <div class="footer-col">
-          <h4>প্রতিষ্ঠান</h4>
+          <h2>প্রতিষ্ঠান</h2>
           <a href="store.html">স্টোর</a>
           <a href="dashboard.html">ড্যাশবোর্ড</a>
           <a href="portfolio.html">মিডিয়া কিট</a>
           <a href="contact.html">সহায়তা</a>
         </div>
 </div>
+    </div>
+    <div class="footer-cutout-wrap" aria-hidden="true">
+      <div class="footer-cutout-shadow"></div>
+      <img src="assets/img/shahedin-cutout.webp" alt="" loading="lazy" decoding="async" data-parallax="0.1">
+      <div class="footer-cutout-tint"></div>
     </div>
     <div class="footer-bottom">
       <small>© 2026 Shahedin. <span>সর্বস্বত্ব সংরক্ষিত।</span></small>
@@ -204,6 +219,7 @@
   <script src="js/auth.js"></script>
   <script src="js/section-visibility.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/support-widget.js"></script>
   
   <script src="js/render.js"></script>

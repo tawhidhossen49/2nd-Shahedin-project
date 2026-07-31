@@ -61,7 +61,7 @@
                 <td class="row-sub">${date}</td>
                 <td class="row-actions">
                   <button type="button" class="btn btn-ghost btn-sm" data-toggle="${r.id}">${r.is_approved ? "Unpublish" : "Approve"}</button>
-                  <button type="button" class="icon-btn" data-delete="${r.id}" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg></button>
+                  <button type="button" class="icon-btn" data-delete="${r.id}" title="Delete"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg></button>
                 </td>
               </tr>`;
             })

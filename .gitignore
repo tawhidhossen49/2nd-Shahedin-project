@@ -2,3 +2,5 @@ node_modules/
 .vscode/
 .env
 .DS_Store
+# Client hand-off archives — never part of the site build
+*.zip

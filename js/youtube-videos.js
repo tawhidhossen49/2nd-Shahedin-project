@@ -28,20 +28,29 @@
     return parts.map((p, i) => (i === 0 ? p : String(p).padStart(2, "0"))).join(":");
   }
 
+  const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
+  const bn = (s) => String(s == null ? "" : s).replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
+  const esc = (s) =>
+    String(s == null ? "" : s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+  /* The play affordance is a <span>, not a <button>: the whole card is
+     already the link, so a nested button was an unreachable duplicate
+     control in the tab order. */
   function videoCardHTML(v) {
+    const title = esc(v.title);
     return `
-    <a href="https://www.youtube.com/watch?v=${v.id}" target="_blank" rel="noopener" class="card">
-      <div class="thumb" style="background:#111;">
-        <img src="${v.thumbnail}" alt="${v.title}" style="width:100%;height:100%;object-fit:cover;" loading="lazy">
+    <a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener" class="card">
+      <div class="thumb has-image">
+        <img src="${esc(v.thumbnail)}" alt="${title}" loading="lazy" decoding="async">
         <div class="thumb-overlay"></div>
-        <button class="play-btn" aria-label="Play video">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <div class="thumb-badges"><span class="badge badge-dur" style="margin-left:auto;">${v.duration}</span></div>
+        <span class="play-btn" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        </span>
+        <div class="thumb-badges"><span class="badge badge-dur">${bn(v.duration)}</span></div>
       </div>
       <div class="card-body">
-        <div class="card-title card-title-clamp">${v.title}</div>
-        <div class="card-meta">${v.views} views</div>
+        <div class="card-title card-title-clamp">${title}</div>
+        <div class="card-meta">${bn(v.views)} ভিউ</div>
       </div>
     </a>`;
   }
@@ -88,16 +97,52 @@
     });
   }
 
+  /* Loading placeholder: three cards at the real aspect ratio, so the grid
+     doesn't jump when the API answers (and doesn't look broken while it
+     hasn't). The <p data-yt-loading> hook stays in the markup for anything
+     that keys off it. */
+  function skeletonHTML() {
+    return Array.from({ length: MAX_VIDEOS })
+      .map(
+        () => `<div class="card skeleton-video" aria-hidden="true">
+          <div class="skeleton" style="aspect-ratio:16/9;border:0;border-radius:0;"></div>
+          <div class="card-body">
+            <div class="skeleton skeleton-line" style="width:92%"></div>
+            <div class="skeleton skeleton-line" style="width:64%"></div>
+          </div>
+        </div>`
+      )
+      .join("");
+  }
+
+  function errorHTML() {
+    return `<div class="empty-state state-error" style="grid-column:1/-1;">
+      <span class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5H19a2 2 0 0 1 2 2v8.3M17 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 1.3-1.9M2 2l20 20"/></svg></span>
+      <p class="small-note">এই মুহূর্তে ভিডিও লোড করা যায়নি। <a class="text-link" href="https://www.youtube.com/@sorolkothok" target="_blank" rel="noopener">ইউটিউবে দেখুন →</a></p>
+    </div>`;
+  }
+
+  function emptyHTML() {
+    return `<div class="empty-state" style="grid-column:1/-1;">
+      <span class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/></svg></span>
+      <p class="small-note">এখনো কোনো ভিডিও প্রকাশ করা হয়নি।</p>
+    </div>`;
+  }
+
   async function init() {
     const el = mountEl();
     if (!el) return;
+    const loadingNote = el.querySelector("[data-yt-loading]");
+    el.insertAdjacentHTML("beforeend", skeletonHTML());
+    if (loadingNote) loadingNote.classList.add("visually-hidden"); // keep it for screen readers
     try {
       const videos = await fetchLatestVideos();
-      el.innerHTML = videos.map(videoCardHTML).join("");
+      el.innerHTML = videos.length ? videos.map(videoCardHTML).join("") : emptyHTML();
     } catch (err) {
       console.error("YouTube fetch failed:", err);
-      el.innerHTML = `<p class="small-note">এই মুহূর্তে ভিডিও লোড করা যায়নি। <a href="https://www.youtube.com/@sorolkothok" target="_blank" rel="noopener">ইউটিউবে দেখুন →</a></p>`;
+      el.innerHTML = errorHTML();
     }
+    document.dispatchEvent(new Event("contentready"));
   }
 
   document.addEventListener("DOMContentLoaded", init);

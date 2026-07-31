@@ -24,12 +24,19 @@
   const get = (section, field, fallback) => (HOME[section] && HOME[section][field] !== undefined ? HOME[section][field] : fallback || "");
 
   /* ---------- generic helpers (same pattern as admin-home.js) ---------- */
+  /* B5 — these values render straight onto Bangla pages, so the inputs show
+     a Bangla example rather than leaving the admin to guess. Typing English
+     ("Monthly Views") still works and is never overwritten; the placeholder
+     just makes the house style obvious, and the public-side label/number
+     styling is built to hold either script. */
   function field(id, label, value, opts) {
     opts = opts || {};
+    const ph = opts.placeholder ? ` placeholder="${Admin.escapeHtml(opts.placeholder)}"` : "";
     const openTag = opts.textarea
-      ? `<textarea id="${id}">${Admin.escapeHtml(value)}</textarea>`
-      : `<input type="text" id="${id}" value="${Admin.escapeHtml(value)}">`;
-    return `<div class="form-field${opts.full ? " full" : ""}"><label>${label}</label>${openTag}</div>`;
+      ? `<textarea id="${id}"${ph}>${Admin.escapeHtml(value)}</textarea>`
+      : `<input type="text" id="${id}" value="${Admin.escapeHtml(value)}"${ph}>`;
+    const hint = opts.hint ? ` <span class="hint">${Admin.escapeHtml(opts.hint)}</span>` : "";
+    return `<div class="form-field${opts.full ? " full" : ""}"><label for="${id}">${label}${hint}</label>${openTag}</div>`;
   }
 
   function listWrap(id, addLabel) {
@@ -111,24 +118,24 @@
     </div>
 
     <form class="panel" data-section="stats">
-      <div class="panel-head"><div><h2>Shared Stats</h2><p>Used on: Home (hero + trust bar), Portfolio, and Contact.</p></div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
+      <div class="panel-head"><div><h2>Shared Stats</h2><p>Used on: Home (hero + trust bar), Portfolio, and Contact. Labels appear beside Bangla text — the placeholders show the house style.</p></div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
       <div class="form-grid">
-        ${field("s_subv", "Subscribers — value", get("stats", "subscribers_value"))}${field("s_subl", "Subscribers — label", get("stats", "subscribers_label"))}
-        ${field("s_mvv", "Monthly views — value", get("stats", "monthly_views_value"))}${field("s_mvl", "Monthly views — label", get("stats", "monthly_views_label"))}
-        ${field("s_trv", "Total reach / YouTube views — value", get("stats", "total_reach_value"))}${field("s_trl", "Total reach / YouTube views — label", get("stats", "total_reach_label"))}
-        ${field("s_whv", "Watch hours — value", get("stats", "watch_hours_value"))}${field("s_whl", "Watch hours — label", get("stats", "watch_hours_label"))}
-        ${field("s_rav", "Rating — value", get("stats", "rating_value"))}${field("s_ral", "Rating — label", get("stats", "rating_label"))}
-        ${field("s_stv", "Students — value", get("stats", "students_value"))}${field("s_stl", "Students — label", get("stats", "students_label"))}
-        ${field("s_sav", "Satisfaction — value", get("stats", "satisfaction_value"))}${field("s_sal", "Satisfaction — label", get("stats", "satisfaction_label"))}
+        ${field("s_subv", "Subscribers — value", get("stats", "subscribers_value"), { placeholder: "১.৮M" })}${field("s_subl", "Subscribers — label", get("stats", "subscribers_label"), { placeholder: "সাবস্ক্রাইবার" })}
+        ${field("s_mvv", "Monthly views — value", get("stats", "monthly_views_value"), { placeholder: "১২.৪M" })}${field("s_mvl", "Monthly views — label", get("stats", "monthly_views_label"), { placeholder: "মাসিক ভিউ" })}
+        ${field("s_trv", "Total reach / YouTube views — value", get("stats", "total_reach_value"), { placeholder: "২১০M+" })}${field("s_trl", "Total reach / YouTube views — label", get("stats", "total_reach_label"), { placeholder: "মোট রিচ" })}
+        ${field("s_whv", "Watch hours — value", get("stats", "watch_hours_value"), { placeholder: "৪৮K" })}${field("s_whl", "Watch hours — label", get("stats", "watch_hours_label"), { placeholder: "ওয়াচ আওয়ার" })}
+        ${field("s_rav", "Rating — value", get("stats", "rating_value"), { placeholder: "৪.৯/৫" })}${field("s_ral", "Rating — label", get("stats", "rating_label"), { placeholder: "গড় কোর্স রেটিং" })}
+        ${field("s_stv", "Students — value", get("stats", "students_value"), { placeholder: "৪২,০০০+" })}${field("s_stl", "Students — label", get("stats", "students_label"), { placeholder: "নিবন্ধিত শিক্ষার্থী" })}
+        ${field("s_sav", "Satisfaction — value", get("stats", "satisfaction_value"), { placeholder: "৯৬%" })}${field("s_sal", "Satisfaction — label", get("stats", "satisfaction_label"), { placeholder: "সন্তুষ্টির হার" })}
       </div>
       <p style="font-size:.8rem; color:var(--text-faint); margin:18px 0 8px;">Portfolio-only performance numbers (still shared with nothing else, but kept here since they're the same kind of stat):</p>
       <div class="form-grid">
-        ${field("s_v30v", "30-day views — value", get("stats", "views_30d_value"))}${field("s_v30l", "30-day views — label", get("stats", "views_30d_label"))}
-        ${field("s_v30t", "30-day views — trend note", get("stats", "views_30d_trend"), { full: true })}
-        ${field("s_wtv", "Website traffic — value", get("stats", "website_traffic_value"))}${field("s_wtl", "Website traffic — label", get("stats", "website_traffic_label"))}
-        ${field("s_wtt", "Website traffic — trend note", get("stats", "website_traffic_trend"), { full: true })}
-        ${field("s_env", "Engagement rate — value", get("stats", "engagement_value"))}${field("s_enl", "Engagement rate — label", get("stats", "engagement_label"))}
-        ${field("s_ent", "Engagement rate — trend note", get("stats", "engagement_trend"), { full: true })}
+        ${field("s_v30v", "30-day views — value", get("stats", "views_30d_value"), { placeholder: "৪.২M" })}${field("s_v30l", "30-day views — label", get("stats", "views_30d_label"), { placeholder: "গত ৩০ দিনের ভিউ" })}
+        ${field("s_v30t", "30-day views — trend note", get("stats", "views_30d_trend"), { full: true, placeholder: "↑ আগের মাসের তুলনায় ১৮%" })}
+        ${field("s_wtv", "Website traffic — value", get("stats", "website_traffic_value"), { placeholder: "৬৮০K" })}${field("s_wtl", "Website traffic — label", get("stats", "website_traffic_label"), { placeholder: "মাসিক ওয়েবসাইট ট্র্যাফিক" })}
+        ${field("s_wtt", "Website traffic — trend note", get("stats", "website_traffic_trend"), { full: true, placeholder: "↑ আগের মাসের তুলনায় ৯%" })}
+        ${field("s_env", "Engagement rate — value", get("stats", "engagement_value"), { placeholder: "৭.৮%" })}${field("s_enl", "Engagement rate — label", get("stats", "engagement_label"), { placeholder: "গড় এনগেজমেন্ট হার" })}
+        ${field("s_ent", "Engagement rate — trend note", get("stats", "engagement_trend"), { full: true, placeholder: "ক্যাটাগরির গড়ের চেয়ে বেশি" })}
       </div>
     </form>
 

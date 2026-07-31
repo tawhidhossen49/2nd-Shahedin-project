@@ -42,13 +42,16 @@
   ];
 
   /* ---------- generic helpers ---------- */
+  /* B5 — the values typed here land on Bangla pages, so every input carries
+     a Bangla example. English input is still accepted and never rewritten. */
   function field(id, label, value, opts) {
     opts = opts || {};
-    const tag = opts.textarea ? "textarea" : "input";
+    const ph = opts.placeholder ? ` placeholder="${Admin.escapeHtml(opts.placeholder)}"` : "";
     const openTag = opts.textarea
-      ? `<textarea id="${id}" ${opts.full ? "" : ""}>${Admin.escapeHtml(value)}</textarea>`
-      : `<input type="text" id="${id}" value="${Admin.escapeHtml(value)}">`;
-    return `<div class="form-field${opts.full ? " full" : ""}"><label>${label}</label>${openTag}</div>`;
+      ? `<textarea id="${id}"${ph}>${Admin.escapeHtml(value)}</textarea>`
+      : `<input type="text" id="${id}" value="${Admin.escapeHtml(value)}"${ph}>`;
+    const hint = opts.hint ? ` <span class="hint">${Admin.escapeHtml(opts.hint)}</span>` : "";
+    return `<div class="form-field${opts.full ? " full" : ""}"><label for="${id}">${label}${hint}</label>${openTag}</div>`;
   }
 
   function listWrap(id, addLabel) {
@@ -157,12 +160,12 @@
     <form class="panel" data-section="hero">
       <div class="panel-head"><div><h2>Hero</h2><p>The big banner at the very top of the homepage.</p></div><button type="submit" class="btn btn-primary btn-sm">Save</button></div>
       <div class="form-grid">
-        ${field("h_eyebrow", "Eyebrow text", get("hero", "eyebrow"))}
-        ${field("h_title", "Title", get("hero", "title"))}
-        ${field("h_sub", "Subtitle", get("hero", "sub"), { textarea: true, full: true })}
-        ${field("h_cta2", "Button 1 text (goes to the course catalog)", get("hero", "cta2"))}
-        ${field("h_cta1", "Button 2 text (jumps to the videos section)", get("hero", "cta1"))}
-        ${field("h_cta3", "Button 3 text (goes to the store)", get("hero", "cta3"))}
+        ${field("h_eyebrow", "Eyebrow text", get("hero", "eyebrow"), { placeholder: "ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক" })}
+        ${field("h_title", "Title", get("hero", "title"), { placeholder: "পাঠ্যবইয়ের বাইরের জগতে স্বাগতম" })}
+        ${field("h_sub", "Subtitle", get("hero", "sub"), { textarea: true, full: true, placeholder: "এক-দুই বাক্যে আপনি কী করেন" })}
+        ${field("h_cta2", "Button 1 text (goes to the course catalog)", get("hero", "cta2"), { placeholder: "কোর্স দেখুন" })}
+        ${field("h_cta1", "Button 2 text (jumps to the videos section)", get("hero", "cta1"), { placeholder: "ভিডিও দেখুন" })}
+        ${field("h_cta3", "Button 3 text (goes to the store)", get("hero", "cta3"), { placeholder: "প্রোডাক্টস কিনুন" })}
       </div>
       <div class="form-field full">
         <label>Hero photo <span class="hint">optional — leave empty to keep the current photo</span></label>

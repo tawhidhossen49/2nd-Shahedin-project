@@ -30,7 +30,7 @@
   async function init() {
     if (!window.ShahedinAuth || !window.ShahedinAuth.configured()) {
       app.innerHTML = `
-        <div class="dash-main" style="padding-top:150px; max-width:520px; margin:0 auto; text-align:center;">
+        <div class="dash-main dash-centered">
           <div class="notice">সাইটটি এখনো Supabase-এর সাথে সংযুক্ত নয়, তাই অ্যাকাউন্ট ও ড্যাশবোর্ড এখন কাজ করবে না। <code>js/supabase-config.js</code>-এ আপনার Supabase তথ্য যোগ করুন।</div>
         </div>`;
       return;
@@ -53,10 +53,10 @@
 
   function renderLoggedOut() {
     app.innerHTML = `
-      <div class="dash-main" style="padding-top:140px; max-width:420px; margin:0 auto;">
-        <div class="modal" style="position:static; max-width:none; padding:36px 32px;">
+      <div class="dash-main dash-centered dash-centered-narrow">
+        <div class="modal modal-inline">
           <div class="auth-modal-brand"><span class="dot"></span>Shahedin</div>
-          <p style="text-align:center; color:var(--text-faint); font-size:.88rem; margin:-14px 0 22px;">আপনার কোর্স ও অগ্রগতি দেখতে লগ ইন করুন।</p>
+          <p class="dash-auth-note">আপনার কোর্স ও অগ্রগতি দেখতে লগ ইন করুন।</p>
           <div id="dashAuthForm"></div>
         </div>
       </div>`;
@@ -126,7 +126,7 @@
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="${t.icon}"/></svg>
               <span>${t.label}</span>
             </a>`).join("")}
-          <button type="button" class="side-link" id="dashSignOut" style="width:100%; text-align:left; background:none; border:none; cursor:pointer; margin-top:12px; border-top:1px solid var(--line); border-radius:0; padding-top:18px;">
+          <button type="button" class="side-link side-link-signout" id="dashSignOut">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
             <span>লগ আউট</span>
           </button>
@@ -170,15 +170,15 @@
       .slice(0, 3);
 
     main.innerHTML = `
-      <h1 style="margin-bottom:6px;"><span>স্বাগতম</span>, ${escapeHtml(name)}</h1>
-      <p style="margin-bottom:32px;">আপনি যেখানে রেখেছিলেন সেখান থেকে শুরু করুন।</p>
-      <div class="grid grid-4" style="margin-bottom:44px;">
+      <h1 class="dash-greeting"><span>স্বাগতম</span>, ${escapeHtml(name)}</h1>
+      <p class="dash-greeting-sub">আপনি যেখানে রেখেছিলেন সেখান থেকে শুরু করুন।</p>
+      <div class="grid grid-4 dash-stat-row reveal-stagger">
         <div class="stat-mini"><div class="n">${s.enrolledCount}</div><div class="l">ভর্তি হওয়া কোর্স</div></div>
         <div class="stat-mini"><div class="n">${s.avgProgress}%</div><div class="l">গড় অগ্রগতি</div></div>
         <div class="stat-mini"><div class="n">${s.resourcesCount}</div><div class="l">সংরক্ষিত রিসোর্স</div></div>
         <div class="stat-mini"><div class="n">${s.certificatesCount}</div><div class="l">অর্জিত সার্টিফিকেট</div></div>
       </div>
-      <h2 style="font-size:1.3rem; margin-bottom:18px;">চলমান কোর্স</h2>
+      <h2 class="dash-section-title">চলমান কোর্স</h2>
       <div id="overviewCourses"></div>`;
 
     const wrap = document.getElementById("overviewCourses");
@@ -199,14 +199,14 @@
         <div class="dinfo">
           <h3>${escapeHtml(course.title_en || course.title_bn)}</h3>
           <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%;"></div></div>
-          <div class="small-note" style="margin-top:6px;">${p.pct}% সম্পন্ন${p.total ? ` · ${p.done}/${p.total} আইটেম` : ""}</div>
+          <div class="small-note dash-progress-note">${p.pct}% সম্পন্ন${p.total ? ` · ${p.done}/${p.total} আইটেম` : ""}</div>
         </div>
         <a href="course-detail.html?id=${encodeURIComponent(course.slug)}" class="btn btn-ghost btn-sm">চালিয়ে যান</a>
       </div>`;
   }
 
   function renderCourses(main) {
-    main.innerHTML = `<h1 style="margin-bottom:28px;">আমার কোর্স</h1><div id="allCourses"></div>`;
+    main.innerHTML = `<h1 class="dash-page-title">আমার কোর্স</h1><div id="allCourses"></div>`;
     const wrap = document.getElementById("allCourses");
     if (!state.enrollments.length) {
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
@@ -220,7 +220,7 @@
   }
 
   function renderResources(main) {
-    main.innerHTML = `<h1 style="margin-bottom:28px;">রিসোর্স</h1><div id="resList"></div>`;
+    main.innerHTML = `<h1 class="dash-page-title">রিসোর্স</h1><div id="resList"></div>`;
     const wrap = document.getElementById("resList");
     const items = [];
     state.enrollments.forEach((e) => {
@@ -252,7 +252,7 @@
   }
 
   function renderCertificates(main) {
-    main.innerHTML = `<h1 style="margin-bottom:28px;">সার্টিফিকেট</h1><div id="certList"></div>`;
+    main.innerHTML = `<h1 class="dash-page-title">সার্টিফিকেট</h1><div id="certList"></div>`;
     const wrap = document.getElementById("certList");
     const rows = state.enrollments.map((e) => ({ e, p: progressFor(e), c: courseFor(e) })).filter((x) => x.c);
 
@@ -289,7 +289,7 @@
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = `
-      <div class="modal" style="max-width:640px;">
+      <div class="modal modal-wide">
         <button type="button" class="modal-close" id="certClose">&times;</button>
         <div class="certificate">
           <div class="cert-brand"><span class="dot"></span>Shahedin</div>
@@ -300,7 +300,7 @@
           <h3 class="cert-course">${escapeHtml(course.title_en || course.title_bn)}</h3>
           <p class="cert-date">${date}</p>
         </div>
-        <div style="display:flex; gap:10px; margin-top:20px;">
+        <div class="dash-modal-actions">
           <button type="button" class="btn btn-primary btn-block" id="certPrint">প্রিন্ট / সেভ করুন</button>
         </div>
       </div>`;
@@ -311,14 +311,14 @@
   }
 
   function renderOrders(main) {
-    main.innerHTML = `<h1 style="margin-bottom:28px;">অর্ডার</h1><div id="orderList"></div>`;
+    main.innerHTML = `<h1 class="dash-page-title">অর্ডার</h1><div id="orderList"></div>`;
     const wrap = document.getElementById("orderList");
     if (!state.orders.length) {
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো অর্ডার নেই। <a class="text-link" href="store.html">স্টোর দেখুন →</a></p></div>`;
       return;
     }
     wrap.innerHTML = `
-      <table class="admin-table" style="width:100%;">
+      <table class="admin-table">
         <thead><tr><th>আইটেম</th><th>ধরন</th><th>পরিমাণ</th><th>মূল্য</th><th>তারিখ</th><th>অবস্থা</th></tr></thead>
         <tbody>
           ${state.orders
@@ -340,8 +340,8 @@
 
   function renderSettings(main) {
     main.innerHTML = `
-      <h1 style="margin-bottom:28px;">সেটিংস</h1>
-      <form id="settingsForm" style="max-width:440px; margin-bottom:36px;">
+      <h1 class="dash-page-title">সেটিংস</h1>
+      <form id="settingsForm" class="dash-settings-form">
         <div class="field"><label>প্রদর্শিত নাম</label><input type="text" name="name" value="${escapeHtml(window.ShahedinAuth.displayName(state.user))}"></div>
         <div class="field"><label>ফোন নম্বর</label><input type="tel" value="${escapeHtml(window.ShahedinAuth.formatPhone(state.user.phone))}" disabled></div>
         <button type="submit" class="btn btn-primary">পরিবর্তন সংরক্ষণ করুন</button>

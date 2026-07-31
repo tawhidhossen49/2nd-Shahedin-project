@@ -1316,7 +1316,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* =========================================================================
    17. PORTFOLIO / CONTACT / DASHBOARD
    ========================================================================= */
-.kit-hero{padding-block-start:calc(var(--nav-h) + clamp(48px,7vw,90px));}
+.kit-hero{padding-block:calc(var(--nav-h) + clamp(48px,7vw,90px)) var(--section-lg);}
+.section-head-compact{margin-bottom:var(--space-7);}
+.hero-ctas-flush{margin-block-end:0;}
+.chart-title{font-size:var(--step-1); margin-block-end:var(--space-4);}
+.chart-note{margin-block-start:var(--space-4);}
 .kit-stat-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--space-4);}
 .kit-stat-card{
   background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius-m);
@@ -1362,6 +1366,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   transition:border-color var(--dur-2) var(--ease-out), transform var(--dur-3) var(--ease-out), background var(--dur-2);
 }
 .partner-card:hover{border-color:var(--line-accent); transform:translateY(-4px); background:var(--surface-2);}
+.partner-card h3{font-family:var(--font-body); font-size:var(--step-0); font-weight:600;}
+.partner-card p{font-size:var(--step--1); margin-block-start:var(--space-2);}
 
 .case-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:var(--space-5);}
 .case-card{
@@ -1386,6 +1392,12 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .cta-band p{margin:var(--space-3) auto var(--space-6); max-inline-size:50ch;}
 
 .contact-grid{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr); gap:clamp(32px,5vw,64px);}
+.contact-stats{margin-block-end:var(--space-9);}
+.c-item-text{font-size:var(--step--1);}
+.cal-head{display:flex; align-items:center; gap:var(--space-3);}
+.cal-note{margin-block-start:var(--space-2);}
+.inline-link{text-decoration:underline; text-underline-offset:3px; text-decoration-color:var(--line-strong); transition:color var(--dur-2), text-decoration-color var(--dur-2);}
+.inline-link:hover{color:var(--accent-ink); text-decoration-color:var(--accent-ink);}
 .contact-side .c-item{display:flex; gap:var(--space-4); padding-block:var(--space-5); border-block-start:1px solid var(--line);}
 .contact-side .c-item:first-child{border-block-start:none; padding-block-start:0;}
 .contact-side svg{inline-size:20px; block-size:20px; color:var(--accent-ink); flex:0 0 auto; margin-block-start:3px;}
@@ -1425,6 +1437,25 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .dash-side .side-link:hover{background:var(--surface-2); color:var(--text-1);}
 .dash-side .side-link.active{background:var(--surface-3); color:var(--text-1);}
 .dash-main{padding:calc(var(--nav-h) + 48px) var(--gutter) var(--space-11); min-inline-size:0;}
+/* Signed-out / not-configured dashboard states. */
+.dash-centered{max-inline-size:560px; margin-inline:auto; text-align:center;}
+.dash-centered-narrow{max-inline-size:440px; text-align:start;}
+.modal-inline{position:static; max-inline-size:none; padding:var(--space-8); box-shadow:none; animation:none;}
+.modal-wide{max-inline-size:640px;}
+.dash-auth-note{text-align:center; color:var(--text-3); font-size:var(--step--1); margin:calc(var(--space-4) * -1) 0 var(--space-6);}
+.dash-greeting{font-size:var(--step-3); margin-block-end:var(--space-2);}
+.dash-greeting-sub{margin-block-end:var(--space-8);}
+.dash-page-title{font-size:var(--step-3); margin-block-end:var(--space-7);}
+.dash-section-title{font-size:var(--step-2); margin-block-end:var(--space-5);}
+.dash-stat-row{margin-block-end:var(--space-10);}
+.dash-progress-note{margin-block-start:var(--space-2);}
+.dash-modal-actions{display:flex; gap:var(--space-3); margin-block-start:var(--space-5); flex-wrap:wrap;}
+.dash-settings-form{max-inline-size:460px; margin-block-end:var(--space-9);}
+.side-link-signout{
+  inline-size:100%; text-align:start; margin-block-start:auto;
+  border-block-start:1px solid var(--line); border-radius:0;
+  padding-block-start:var(--space-4);
+}
 
 .dash-course-row{
   display:flex; gap:var(--space-5); align-items:center;

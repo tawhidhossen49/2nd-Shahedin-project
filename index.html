@@ -60,42 +60,45 @@
   <section class="hero" id="hero" data-section-key="hero">
     <div class="hero-inner">
       <div class="about-grid about-grid-text-first">
-        <div class="hero-copy reveal">
+        <div class="hero-copy hero-seq">
           <span class="hero-eyebrow"><span class="pulse"></span><span data-field="hero.eyebrow">ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক</span></span>
           <h1 class="hero-title" data-field="hero.title">পাঠ্যবইয়ের বাইরের জগতে স্বাগতম</h1>
           <p class="hero-sub" data-field="hero.sub">জটিল বিষয়কে বাস্তব দক্ষতায় রূপান্তর করছি — বিশ্লেষণ, শিক্ষা আর একটি ক্রমবর্ধমান কমিউনিটির মাধ্যমে।</p>
           <div class="hero-ctas">
-            <a href="courses.html" class="btn btn-primary" data-field="hero.cta2">কোর্স দেখুন</a>
-            <a href="#videos" class="btn btn-ghost" data-field="hero.cta1">ভিডিও দেখুন</a>
-            <a href="store.html" class="btn btn-ghost" data-field="hero.cta3">প্রোডাক্টস কিনুন</a>
+            <a href="courses.html" class="btn btn-primary btn-lg" data-field="hero.cta2">কোর্স দেখুন</a>
+            <a href="#videos" class="btn btn-ghost btn-lg" data-field="hero.cta1">ভিডিও দেখুন</a>
+            <a href="store.html" class="btn btn-ghost btn-lg" data-field="hero.cta3">প্রোডাক্টস কিনুন</a>
           </div>
+          <!-- Audience-scale figures. The proof figures (rating, students,
+               total reach, satisfaction) live in the trust bar below, so no
+               number is repeated inside one screen. -->
           <div class="hero-stats">
             <div class="hero-stat"><b data-field="stats.subscribers_value">1.8M</b><span data-field="stats.subscribers_label">সাবস্ক্রাইবার</span></div>
             <div class="hero-stat"><b data-field="stats.monthly_views_value">12.4M</b><span data-field="stats.monthly_views_label">মাসিক ভিউ</span></div>
-            <div class="hero-stat"><b data-field="stats.total_reach_value">210M+</b><span data-field="stats.total_reach_label">মোট রিচ</span></div>
+            <div class="hero-stat"><b data-field="stats.views_30d_value">4.2M</b><span data-field="stats.views_30d_label">গত ৩০ দিনের ভিউ</span></div>
             <div class="hero-stat"><b data-field="stats.watch_hours_value">48K</b><span data-field="stats.watch_hours_label">ওয়াচ আওয়ার</span></div>
           </div>
         </div>
-        <div class="about-portrait hero-portrait reveal reveal-delay-1">
-          <img src="assets/img/shahedin-cutout.webp" alt="Portrait of Shahedin" data-field="hero.image_url">
+        <div class="about-portrait hero-portrait">
+          <img src="assets/img/shahedin-cutout.webp" alt="শাহেদীনের প্রতিকৃতি" data-field="hero.image_url" data-parallax="0.14" fetchpriority="high" decoding="async">
         </div>
       </div>
     </div>
   </section>
 
   <section class="trust-bar" data-section-key="trust_bar">
-    <div class="trust-grid container" style="padding-inline:0;">
-      <div class="trust-item"><span class="ic">⭐</span><div class="num" data-field="stats.rating_value">4.9/5</div><div class="lbl" data-field="stats.rating_label">গড় কোর্স রেটিং</div></div>
-      <div class="trust-item"><span class="ic">🎓</span><div class="num" data-field="stats.students_value">42,000+</div><div class="lbl" data-field="stats.students_label">নিবন্ধিত শিক্ষার্থী</div></div>
-      <div class="trust-item"><span class="ic">🎥</span><div class="num" data-field="stats.total_reach_value">210M+</div><div class="lbl" data-field="stats.total_reach_label">ইউটিউব ভিউ</div></div>
-      <div class="trust-item"><span class="ic">📈</span><div class="num" data-field="stats.satisfaction_value">96%</div><div class="lbl" data-field="stats.satisfaction_label">সন্তুষ্টির হার</div></div>
+    <div class="trust-grid container">
+      <div class="trust-item"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2.6 2.9 6.1 6.6.9-4.8 4.6 1.2 6.6L12 17.7 6.1 20.8l1.2-6.6L2.5 9.6l6.6-.9z"/></svg></span><div class="num" data-field="stats.rating_value">4.9/5</div><div class="lbl" data-field="stats.rating_label">গড় কোর্স রেটিং</div></div>
+      <div class="trust-item"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 1 8l11 5 9-4.1V16h2V8z"/><path d="M5 12.2V16c0 2 3.1 3.6 7 3.6s7-1.6 7-3.6v-3.8"/></svg></span><div class="num" data-field="stats.students_value">42,000+</div><div class="lbl" data-field="stats.students_label">নিবন্ধিত শিক্ষার্থী</div></div>
+      <div class="trust-item"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="m17 10 5-3v10l-5-3"/></svg></span><div class="num" data-field="stats.total_reach_value">210M+</div><div class="lbl" data-field="stats.total_reach_label">ইউটিউব ভিউ</div></div>
+      <div class="trust-item"><span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/></svg></span><div class="num" data-field="stats.satisfaction_value">96%</div><div class="lbl" data-field="stats.satisfaction_label">সন্তুষ্টির হার</div></div>
     </div>
   </section>
 
   <section class="section-pad container" data-section-key="about">
     <div class="about-grid">
       <div class="about-portrait reveal">
-        <img src="assets/img/shahedin-cutout.webp" alt="Portrait of Shahedin" style="object-position:top;" data-field="about.image_url">
+        <img src="assets/img/shahedin-cutout.webp" alt="শাহেদীনের প্রতিকৃতি" data-field="about.image_url" loading="lazy" decoding="async">
       </div>
       <div class="about-copy reveal reveal-delay-1">
         <span class="eyebrow" data-field="about.eyebrow">গল্পটা যেভাবে শুরু</span>
@@ -115,36 +118,41 @@
     </div>
   </section>
 
-  <section class="section-pad container" id="videos" style="padding-top:0;" data-section-key="videos">
-    <div class="link-row reveal" style="margin-top:0; margin-bottom:12px; align-items:flex-end;">
-      <div class="section-head" style="margin-bottom:0;">
-        <span class="eyebrow">সর্বশেষ কনটেন্ট</span>
-        <h2>ফিচার্ড ভিডিও</h2>
+  <!-- Band: pulls the video shelf onto its own surface so the page stops
+       reading as one uniform column of identical sections. -->
+  <section class="section-pad surface-raised" id="videos" data-section-key="videos">
+    <div class="container">
+      <div class="link-row section-head-row reveal">
+        <div class="section-head">
+          <span class="eyebrow">সর্বশেষ কনটেন্ট</span>
+          <h2>ফিচার্ড ভিডিও</h2>
+        </div>
+        <div class="section-head-links">
+          <a href="https://youtube.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ইউটিউব চ্যানেল</a>
+          <a href="https://facebook.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ফেইসবুক পেইজ</a>
+          <a href="https://facebook.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ফেইসবুক প্রোফাইল</a>
+          <a href="https://youtube.com" target="_blank" rel="noopener" class="text-link">সব ভিডিও দেখুন</a>
+        </div>
       </div>
-      <div class="section-head-links">
-        <a href="https://youtube.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ইউটিউব চ্যানেল</a>
-        <a href="https://facebook.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ফেইসবুক পেইজ</a>
-        <a href="https://facebook.com" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">ফেইসবুক প্রোফাইল</a>
-        <a href="https://youtube.com" target="_blank" rel="noopener" class="text-link">সব ভিডিও দেখুন</a>
+      <div class="grid grid-3 reveal-stagger" data-mount="featured-videos">
+        <p class="small-note" data-yt-loading>সর্বশেষ ভিডিও লোড হচ্ছে…</p>
       </div>
-    </div>
-    <div class="grid grid-3 reveal" data-mount="featured-videos">
-      <p class="small-note" data-yt-loading>সর্বশেষ ভিডিও লোড হচ্ছে…</p>
     </div>
   </section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="featured_courses">
-    <div class="link-row reveal" style="margin-top:0;margin-bottom:12px; align-items:flex-end;">
-      <div class="section-head" style="margin-bottom:0;">
+  <section class="section-pad container" data-section-key="featured_courses">
+    <div class="link-row section-head-row reveal">
+      <div class="section-head">
         <span class="eyebrow">লার্নিং প্ল্যাটফর্ম</span>
         <h2>ফিচার্ড কোর্স</h2>
       </div>
       <a href="courses.html" class="text-link">সব কোর্স দেখুন</a>
     </div>
-    <div class="grid grid-3 reveal" data-mount="featured-courses"></div>
+    <div class="grid grid-3 reveal-stagger" data-mount="featured-courses"></div>
   </section>
 
-  <section class="section-pad container" data-section-key="growth" style="padding-top:0; background:var(--bg-1); border-top:1px solid var(--line); border-bottom:1px solid var(--line);">
+  <section class="section-pad surface-inset" data-section-key="growth">
+    <div class="container">
     <div class="section-head center reveal">
       <span class="eyebrow" data-field="growth.eyebrow">যাত্রা</span>
       <h2 data-field="growth.title">শূন্য থেকে প্রভাব তৈরির গল্প</h2>
@@ -156,9 +164,10 @@
       <div class="growth-item reveal reveal-delay-3"><div class="growth-dot">৪</div><div class="g-mark">২০২২ · প্রথম ১,০০০</div><h3>প্রথম ১,০০০ শিক্ষার্থী</h3><p>ওয়েটলিস্টে প্রথম কোর্স চালু হয় এবং মাত্র নয় দিনে প্রথম ১,০০০ সিট বিক্রি হয়ে যায়।</p></div>
       <div class="growth-item reveal"><div class="growth-dot">৫</div><div class="g-mark">আজ</div><h3>সম্পূর্ণ প্ল্যাটফর্ম তৈরি</h3><p>একটি মিডিয়া ব্র্যান্ড, একটি লার্নিং প্ল্যাটফর্ম এবং একটি স্টোর — একই দর্শকগোষ্ঠীর জন্য তৈরি একক ইকোসিস্টেম।</p></div>
     </div>
+    </div>
   </section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="testimonials">
+  <section class="section-pad container" data-section-key="testimonials">
     <div class="section-head reveal">
       <span class="eyebrow" data-field="testimonials.eyebrow">সামাজিক প্রমাণ</span>
       <h2 data-field="testimonials.title">মানুষ যা বলছেন</h2>
@@ -183,12 +192,12 @@
     </div>
   </section>
 
-  <section class="section-pad container" style="padding-top:0;" data-section-key="press">
-    <div class="section-head reveal">
+  <section class="section-pad-sm container" data-section-key="press">
+    <div class="section-head center reveal">
       <span class="eyebrow" data-field="press.eyebrow">মিডিয়া</span>
       <h2 data-field="press.title">প্রেস এবং উপস্থিতি</h2>
     </div>
-    <div class="press-strip reveal" data-repeat="press.items">
+    <div class="press-strip reveal-stagger" data-repeat="press.items">
       <div class="press-item"><span class="p-logo">দ্য ডেইলি অ্যানালিস্ট</span><span class="p-cap">ফিচার সাক্ষাৎকার, ২০২৫</span></div>
       <div class="press-item"><span class="p-logo">পলিসি আওয়ার পডকাস্ট</span><span class="p-cap">গেস্ট এপিসোড, ২০২৪</span></div>
       <div class="press-item"><span class="p-logo">চ্যানেল ৯ নিউজ</span><span class="p-cap">টিভি প্যানেল উপস্থিতি, ২০২৪</span></div>
@@ -214,14 +223,14 @@
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <h4>কুইক লিংক</h4>
+          <h2>কুইক লিংক</h2>
           <a href="index.html">হোম</a>
           <a href="courses.html">কোর্স</a>
           <a href="portfolio.html">পোর্টফোলিও</a>
           <a href="contact.html">যোগাযোগ</a>
         </div>
         <div class="footer-col">
-          <h4>প্রতিষ্ঠান</h4>
+          <h2>প্রতিষ্ঠান</h2>
           <a href="store.html">স্টোর</a>
           <a href="dashboard.html">ড্যাশবোর্ড</a>
           <a href="portfolio.html">মিডিয়া কিট</a>

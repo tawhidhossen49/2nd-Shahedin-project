@@ -1274,8 +1274,30 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* =========================================================================
    16. STORE / PRODUCT / CHECKOUT
    ========================================================================= */
-.product-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(28px,4vw,56px);}
-.gallery-main{aspect-ratio:1/1; border-radius:var(--radius-l); overflow:hidden; margin-block-end:var(--space-3); position:relative; border:1px solid var(--line);}
+.product-page{padding-block:calc(var(--nav-h) + clamp(44px,6vw,80px)) var(--section-lg);}
+.product-grid{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(28px,4vw,56px); align-items:start;}
+.product-media{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
+.product-info h1{font-size:var(--step-3); margin-block:var(--space-3) 0;}
+.gallery-main{
+  aspect-ratio:1/1; border-radius:var(--radius-l); overflow:hidden;
+  margin-block-end:var(--space-3); position:relative; border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center;
+}
+.gallery-main img{inline-size:100%; block-size:100%; object-fit:cover;}
+.gallery-thumbs[hidden]{display:none;}
+
+/* Checkout */
+.checkout-page{padding-block:calc(var(--nav-h) + clamp(44px,6vw,80px)) var(--section-lg);}
+.checkout-form fieldset{border:none; min-inline-size:0;}
+.checkout-form .two-col{gap:clamp(24px,3vw,48px);}
+.checkout-form .btn{margin-block-start:var(--space-6);}
+.field-label{display:block; font-size:var(--step--1); font-weight:600; margin-block-end:var(--space-2); color:var(--text-2);}
+.payment-locked{
+  display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;
+  padding:var(--space-4); border:1px solid var(--line); border-radius:var(--radius-s);
+  background:var(--surface-1);
+}
+.payment-locked .pay-icon{margin:0;}
 .gallery-thumbs{display:flex; gap:var(--space-2);}
 .gallery-thumbs .g-thumb{
   inline-size:70px; aspect-ratio:1/1; border-radius:var(--radius-s); overflow:hidden;

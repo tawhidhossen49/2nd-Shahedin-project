@@ -54,34 +54,39 @@
 
 
 
-  <section class="section-pad container" style="padding-top:150px; max-width:760px;">
+  <section class="checkout-page container container-text">
     <div class="section-head">
       <span class="eyebrow">চেকআউট</span>
       <h1>আপনার অর্ডার সম্পন্ন করুন</h1>
       <p>এটি একটি মক পেমেন্ট সিস্টেম — bKash-এর সাথে সরাসরি যুক্ত না হওয়া পর্যন্ত অর্ডার সাথে সাথে সম্পন্ন হিসেবে সংরক্ষিত হয়।</p>
     </div>
     <div data-mount="order-summary"></div>
-    <form id="checkoutForm">
+    <form id="checkoutForm" class="checkout-form">
       <div class="two-col">
-        <div>
-          <div class="field"><label>পূর্ণ নাম</label><input type="text" name="name" required></div>
-          <div class="field"><label>ফোন</label><input type="tel" name="phone" required></div>
-          <div class="field"><label>ইমেইল <span class="small-note">(ঐচ্ছিক — অর্ডার কনফার্মেশনের জন্য)</span></label><input type="email" name="email"></div>
-          <div class="field"><label>ডেলিভারি ঠিকানা (শুধু ডিজিটাল অর্ডারের ক্ষেত্রে বাদ দিন)</label><textarea name="address"></textarea></div>
-        </div>
-        <div>
-          <div class="field"><label>কুপন কোড</label><input type="text" placeholder="ঐচ্ছিক"></div>
+        <fieldset>
+          <legend class="visually-hidden">যোগাযোগ ও ডেলিভারি</legend>
+          <div class="field"><label for="coName">পূর্ণ নাম</label><input type="text" id="coName" name="name" autocomplete="name" required></div>
+          <div class="field"><label for="coPhone">ফোন</label><input type="tel" id="coPhone" name="phone" inputmode="tel" autocomplete="tel" required></div>
+          <div class="field"><label for="coEmail">ইমেইল <span class="small-note">(ঐচ্ছিক — অর্ডার কনফার্মেশনের জন্য)</span></label><input type="email" id="coEmail" name="email" autocomplete="email"></div>
+          <div class="field"><label for="coAddress">ডেলিভারি ঠিকানা (শুধু ডিজিটাল অর্ডারের ক্ষেত্রে বাদ দিন)</label><textarea id="coAddress" name="address" autocomplete="street-address"></textarea></div>
+        </fieldset>
+        <fieldset>
+          <legend class="visually-hidden">পেমেন্ট</legend>
+          <div class="field"><label for="coCoupon">কুপন কোড</label><input type="text" id="coCoupon" placeholder="ঐচ্ছিক"></div>
           <div class="field">
-            <label>পেমেন্ট পদ্ধতি</label>
-            <input type="text" value="bKash" readonly style="cursor:default;">
+            <!-- Only one payment method exists, so this is stated rather than
+                 offered — it used to be a readonly text input styled exactly
+                 like the editable fields next to it. -->
+            <span class="field-label">পেমেন্ট পদ্ধতি</span>
+            <div class="payment-locked">
+              <span class="pay-icon pay-bkash">bKash</span>
+              <span class="small-note">এই মুহূর্তে bKash-এ পেমেন্ট নেওয়া হচ্ছে।</span>
+            </div>
             <input type="hidden" name="payment_method" value="bKash">
           </div>
-          <div class="pay-icons">
-            <span class="pay-icon pay-bkash">bKash</span>
-          </div>
-        </div>
+        </fieldset>
       </div>
-      <button type="submit" class="btn btn-primary btn-block" id="checkoutSubmitBtn" style="margin-top:20px;">অর্ডার করুন</button>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="checkoutSubmitBtn">অর্ডার করুন</button>
     </form>
   </section>
   </main>

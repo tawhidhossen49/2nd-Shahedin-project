@@ -622,16 +622,19 @@
       const id = qs("id") || data.products[0].id;
       const p = data.products.find((x) => x.id === id) || data.products[0];
       document.title = p.title + " — Shahedin Store";
-      mount("[data-mount='gallery-main']", "");
       const galleryMain = document.querySelector("[data-mount='gallery-main']");
       if (galleryMain) {
         galleryMain.className = `gallery-main thumb thumb-tone-${p.tone}${p.image ? " has-image" : ""}`;
-        if (p.image) {
-          galleryMain.style.backgroundImage = `url('${p.image}')`;
-          galleryMain.style.backgroundSize = "cover";
-          galleryMain.style.backgroundPosition = "center";
-        }
+        galleryMain.innerHTML = p.image
+          ? `<img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.title)}" decoding="async">`
+          : `<span class="thumb-icon">${ICON.image}</span>`;
       }
+      // A product row carries exactly one image, so the three tone swatches
+      // below the gallery had nothing to switch between and no handler —
+      // a control that looked live and was not. Hide the strip until the
+      // schema supports a real gallery.
+      const galleryThumbs = document.querySelector(".gallery-thumbs");
+      if (galleryThumbs) galleryThumbs.hidden = true;
       mount(
         "[data-mount='product-detail']",
         `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="index.html">হোম</a><span aria-hidden="true">/</span><a href="store.html">স্টোর</a><span aria-hidden="true">/</span><span>${escapeHtml(p.title)}</span></nav>

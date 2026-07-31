@@ -54,17 +54,22 @@
 
 
 
-  <section class="section-pad container" style="padding-top:150px;">
+  <section class="product-page container">
     <div class="product-grid">
-      <div>
+      <div class="product-media">
         <div class="gallery-main thumb thumb-tone-1" data-mount="gallery-main"><div class="thumb-overlay"></div></div>
+        <!-- The thumbnail strip is markup-ready for a multi-image product,
+             but the products table only carries a single image_url, so
+             render.js hides it rather than leaving three swatches that look
+             clickable and do nothing. Restore it by removing that call once
+             the schema grows a gallery. -->
         <div class="gallery-thumbs">
           <div class="g-thumb thumb thumb-tone-1 active" data-gallery-thumb data-tone="1"></div>
           <div class="g-thumb thumb thumb-tone-2" data-gallery-thumb data-tone="2"></div>
           <div class="g-thumb thumb thumb-tone-3" data-gallery-thumb data-tone="3"></div>
         </div>
       </div>
-      <div>
+      <div class="product-info">
         <div data-mount="product-detail"></div>
         <div data-mount="product-buy"></div>
       </div>

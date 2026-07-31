@@ -54,27 +54,35 @@
 
 
 
-  <section class="section-pad container" style="padding-top:150px;">
-    <div class="section-head reveal">
-      <span class="eyebrow">Store</span>
-      <h1>স্টোর</h1>
-      <p>বই, ডিজিটাল গাইড ও মার্চেন্ডাইজ — একই জায়গায়।</p>
+  <section class="page-head surface-inset">
+    <div class="container">
+      <div class="section-head reveal">
+        <span class="eyebrow">Store</span>
+        <h1>স্টোর</h1>
+        <p>বই, ডিজিটাল গাইড ও মার্চেন্ডাইজ — একই জায়গায়।</p>
+      </div>
     </div>
+  </section>
 
-    <div class="filter-bar reveal">
-      <div class="filter-group" data-filter-group="type">
-        <button class="chip active" data-filter-value="all">সব</button>
-        <button class="chip" data-filter-value="digital">ডিজিটাল</button>
-        <button class="chip" data-filter-value="physical">ফিজিক্যাল</button>
+  <section class="section-pad container">
+    <div class="filter-bar is-sticky">
+      <div class="filter-group" data-filter-group="type" role="group" aria-label="ধরন অনুযায়ী ফিল্টার">
+        <button type="button" class="chip active" data-filter-value="all">সব</button>
+        <button type="button" class="chip" data-filter-value="digital">ডিজিটাল</button>
+        <button type="button" class="chip" data-filter-value="physical">ফিজিক্যাল</button>
       </div>
       <div class="search-input-wrap">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-        <input type="text" class="search-input" data-search-input placeholder="প্রোডাক্ট খুঁজুন...">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <label class="visually-hidden" for="productSearch">প্রোডাক্ট খুঁজুন</label>
+        <input type="search" id="productSearch" class="search-input" data-search-input placeholder="প্রোডাক্ট খুঁজুন...">
       </div>
     </div>
 
-    <div class="grid grid-3" data-mount="product-grid"></div>
-    <div class="empty-state" data-empty-state style="display:none;"><p>এই ফিল্টারে কোনো প্রোডাক্ট পাওয়া যায়নি।</p></div>
+    <div class="grid grid-3 reveal-stagger" data-mount="product-grid"></div>
+    <div class="empty-state" data-empty-state style="display:none;">
+      <span class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+      <p>এই ফিল্টারে কোনো প্রোডাক্ট পাওয়া যায়নি।</p>
+    </div>
   </section>
   </main>
 

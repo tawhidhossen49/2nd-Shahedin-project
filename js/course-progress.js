@@ -85,12 +85,37 @@
     enrollment = data || null;
   }
 
+  /* The whole buy card changes state, not just the button.
+     Previously the button said "ভর্তি হয়েছেন ✓" while the price and the
+     "একবার পেমেন্ট, আজীবন অ্যাক্সেস" line sat right above it, still selling
+     a course the visitor had already bought. .is-enrolled hides the price
+     row, swaps the accent for the confirmation green and reveals the
+     enrolled banner (see .course-buy-card.is-enrolled in css/style.css). */
   function paintEnrollButton(btn, course, loggedIn) {
+    const card = btn.closest(".course-buy-card") || document.querySelector("[data-mount='course-buy']");
+
     if (enrollment) {
       btn.textContent = "ভর্তি হয়েছেন ✓";
       btn.disabled = true;
+      if (card) {
+        card.classList.add("is-enrolled");
+        // Point the primary action at the curriculum instead of a dead button.
+        if (!card.querySelector("[data-goto-curriculum]")) {
+          const go = document.createElement("a");
+          go.className = "btn btn-primary btn-block";
+          go.style.marginTop = "14px";
+          go.href = "#course-curriculum";
+          go.setAttribute("data-goto-curriculum", "");
+          go.textContent = "কোর্স শুরু করুন";
+          btn.insertAdjacentElement("afterend", go);
+          btn.hidden = true;
+        }
+      }
       return;
     }
+
+    if (card) card.classList.remove("is-enrolled");
+    btn.hidden = false;
     btn.disabled = false;
     btn.textContent = course.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন";
   }

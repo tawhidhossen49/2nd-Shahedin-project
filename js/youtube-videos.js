@@ -88,16 +88,52 @@
     });
   }
 
+  /* Loading placeholder: three cards at the real aspect ratio, so the grid
+     doesn't jump when the API answers (and doesn't look broken while it
+     hasn't). The <p data-yt-loading> hook stays in the markup for anything
+     that keys off it. */
+  function skeletonHTML() {
+    return Array.from({ length: MAX_VIDEOS })
+      .map(
+        () => `<div class="card skeleton-video" aria-hidden="true">
+          <div class="skeleton" style="aspect-ratio:16/9;border:0;border-radius:0;"></div>
+          <div class="card-body">
+            <div class="skeleton skeleton-line" style="width:92%"></div>
+            <div class="skeleton skeleton-line" style="width:64%"></div>
+          </div>
+        </div>`
+      )
+      .join("");
+  }
+
+  function errorHTML() {
+    return `<div class="empty-state state-error" style="grid-column:1/-1;">
+      <span class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.7 5H19a2 2 0 0 1 2 2v8.3M17 17H5a2 2 0 0 1-2-2V7a2 2 0 0 1 1.3-1.9M2 2l20 20"/></svg></span>
+      <p class="small-note">এই মুহূর্তে ভিডিও লোড করা যায়নি। <a class="text-link" href="https://www.youtube.com/@sorolkothok" target="_blank" rel="noopener">ইউটিউবে দেখুন →</a></p>
+    </div>`;
+  }
+
+  function emptyHTML() {
+    return `<div class="empty-state" style="grid-column:1/-1;">
+      <span class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="15" height="14" rx="2"/><path d="M17 10l5-3v10l-5-3"/></svg></span>
+      <p class="small-note">এখনো কোনো ভিডিও প্রকাশ করা হয়নি।</p>
+    </div>`;
+  }
+
   async function init() {
     const el = mountEl();
     if (!el) return;
+    const loadingNote = el.querySelector("[data-yt-loading]");
+    el.insertAdjacentHTML("beforeend", skeletonHTML());
+    if (loadingNote) loadingNote.classList.add("visually-hidden"); // keep it for screen readers
     try {
       const videos = await fetchLatestVideos();
-      el.innerHTML = videos.map(videoCardHTML).join("");
+      el.innerHTML = videos.length ? videos.map(videoCardHTML).join("") : emptyHTML();
     } catch (err) {
       console.error("YouTube fetch failed:", err);
-      el.innerHTML = `<p class="small-note">এই মুহূর্তে ভিডিও লোড করা যায়নি। <a href="https://www.youtube.com/@sorolkothok" target="_blank" rel="noopener">ইউটিউবে দেখুন →</a></p>`;
+      el.innerHTML = errorHTML();
     }
+    document.dispatchEvent(new Event("contentready"));
   }
 
   document.addEventListener("DOMContentLoaded", init);

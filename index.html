@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
 <script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script>
+<script>/* no-flash bootstrap for admin-hidden sections; js/section-visibility.js always removes this again, so the page fails open */
+(function(){try{var h=JSON.parse(localStorage.getItem('sv-hidden')||'[]');if(!h.length)return;var s=document.createElement('style');s.id='sv-pre';s.textContent=h.map(function(k){return '[data-section-key="'+String(k).replace(/[^a-z0-9_-]/gi,'')+'"]{display:none!important}';}).join('');document.head.appendChild(s);}catch(e){}})();</script>
 </head>
 <body>
 
@@ -227,6 +229,11 @@
         </div>
 </div>
     </div>
+    <div class="footer-cutout-wrap" aria-hidden="true">
+      <div class="footer-cutout-shadow"></div>
+      <img src="assets/img/shahedin-cutout.webp" alt="" loading="lazy" decoding="async" data-parallax="0.1">
+      <div class="footer-cutout-tint"></div>
+    </div>
     <div class="footer-bottom">
       <small>© 2026 Shahedin. <span>সর্বস্বত্ব সংরক্ষিত।</span></small>
     </div>
@@ -244,6 +251,7 @@
   <script src="js/section-visibility.js"></script>
   <script src="js/youtube-videos.js"></script>
   <script src="js/main.js"></script>
+  <script src="js/motion.js"></script>
   <script src="js/support-widget.js"></script>
   
   <script src="js/render.js"></script>

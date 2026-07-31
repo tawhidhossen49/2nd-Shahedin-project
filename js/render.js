@@ -254,7 +254,7 @@
             ${m.lessons
               .map(
                 ([title, len, preview]) => `
-              <div class="lesson-row ${preview ? "preview" : ""}">${ICON.play}<span>${title}</span>${preview ? '<span class="badge badge-free" style="margin:0 8px;">প্রিভিউ</span>' : ""}<span class="len">${len}</span></div>`
+              <div class="lesson-row ${preview ? "preview" : ""}">${ICON.play}<span>${escapeHtml(title)}</span>${preview ? '<span class="badge badge-free">প্রিভিউ</span>' : ""}<span class="len">${escapeHtml(durationBn(len))}</span></div>`
               )
               .join("")}
           </div>
@@ -278,10 +278,10 @@
         <div class="course-preview-cap">${CB_ICON.video} <span>${escapeHtml(first.title || "কোর্স প্রিভিউ")}</span></div>`;
     }
     const poster = c.image
-      ? ` style="background-image:url('${escapeHtml(c.image)}');"`
-      : "";
-    return `<div class="course-preview-poster"${poster}><span class="lock-icon">${ICON.lock}</span></div>
-      <div class="course-preview-cap"><span>${blocks.length ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।" : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।"}</span></div>`;
+      ? ` class="course-preview-poster has-image" style="background-image:url('${escapeHtml(c.image)}');"`
+      : ` class="course-preview-poster"`;
+    return `<div${poster}><span class="lock-icon">${blocks.length ? ICON.lock : ICON.videoOff}</span></div>
+      <div class="course-preview-cap">${blocks.length ? ICON.lock : ICON.videoOff}<span>${blocks.length ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।" : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।"}</span></div>`;
   }
 
   const DEFAULT_MENTOR = {
@@ -290,16 +290,23 @@
     avatar_url: "assets/img/shahedin-cutout.webp",
   };
 
+  /* ASSET NOTE (mentor avatar): the default falls back to
+     shahedin-cutout.webp, which is a full-body footer cutout — inside a 64px
+     circle it crops to a forehead. `.mentor-avatar` therefore frames it with
+     a wide top-weighted crop and a gradient bed so it reads as a portrait
+     medallion rather than a mis-cropped photo. A proper replacement is a
+     square head-and-shoulders crop, >=256px, face centred.
+     If there is no avatar at all we draw a monogram instead of a hole. */
   function courseMentorHTML(c) {
     const m = c.mentor && c.mentor.name ? c.mentor : DEFAULT_MENTOR;
     const avatarInner = m.avatar_url
-      ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(m.name || "")}" style="width:100%;height:100%;object-fit:cover;object-position:top;">`
-      : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--font-display);">${escapeHtml((m.name || "?").slice(0, 1))}</div>`;
-    return `<div class="card" style="padding:26px; flex-direction:row; align-items:center; gap:20px; display:flex;">
-      <div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-3);">${avatarInner}</div>
-      <div>
-        <h3 style="font-size:1.05rem;">${escapeHtml(m.name || "")}</h3>
-        <p style="font-size:.88rem;">${escapeHtml(m.bio || "")}</p>
+      ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(m.name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
+      : `<span class="mentor-monogram">${escapeHtml((m.name || "?").slice(0, 1))}</span>`;
+    return `<div class="mentor-card">
+      <div class="mentor-avatar">${avatarInner}</div>
+      <div class="mentor-body">
+        <h3>${escapeHtml(m.name || "")}</h3>
+        ${m.bio ? `<p>${escapeHtml(m.bio)}</p>` : ""}
       </div>
     </div>`;
   }
@@ -356,23 +363,42 @@
     });
   }
 
+  /* ---------- Shared card artwork ----------
+     Real <img> rather than a CSS background so the artwork can carry alt
+     text, and a drawn placeholder when a course/product has no image at all
+     instead of a bare gradient. */
+  function thumbArt(item, alt) {
+    if (item.image) {
+      return `<img src="${escapeHtml(item.image)}" alt="${escapeHtml(alt || "")}" loading="lazy" decoding="async">`;
+    }
+    return `<span class="thumb-icon">${ICON.image}</span>`;
+  }
+
+  function priceLabel(item) {
+    if (item.free || Number(item.price) === 0) return `<span class="price price-free">ফ্রি</span>`;
+    return `<span class="price">৳${bnNum(Number(item.price))}</span>`;
+  }
+
   /* ---------- Course card ---------- */
   function courseCard(c) {
+    const title = escapeHtml(c.title);
+    const duration = durationBn(c.duration);
     return `
-    <a href="course-detail.html?id=${c.id}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${c.category}" data-title="${c.title}">
-      <div class="thumb thumb-tone-${c.tone}${c.image ? " has-image" : ""}"${c.image ? ` style="background-image:url('${c.image}');background-size:cover;background-position:center;"` : ""}>
+    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}">
+      <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
+        ${thumbArt(c, c.title)}
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
           ${c.free ? `<span class="badge badge-free">ফ্রি</span>` : ``}
-          <span class="badge badge-dur">${c.duration}</span>
+          ${duration ? `<span class="badge badge-dur">${escapeHtml(duration)}</span>` : ``}
         </div>
       </div>
       <div class="card-body">
-        <div class="card-meta">${stars(c.rating)}</div>
-        <div class="card-title">${c.title}</div>
-        <p class="card-desc">${c.desc}</p>
+        <div class="card-meta">${stars(c.rating)}<span>${escapeHtml(categoryLabel(c.category))}</span></div>
+        <div class="card-title card-title-clamp">${title}</div>
+        <p class="card-desc">${escapeHtml(c.desc)}</p>
         <div class="card-foot">
-          <span class="price">${c.free ? "Free" : "৳" + c.price}</span>
+          ${priceLabel(c)}
           <span class="text-link">কোর্স দেখুন ${ICON.arrow}</span>
         </div>
       </div>
@@ -381,21 +407,23 @@
 
   /* ---------- Product card ---------- */
   function productCard(p) {
+    const title = escapeHtml(p.title);
     return `
-    <a href="product-detail.html?id=${p.id}" class="card" data-filterable data-type="${p.type}" data-category="${p.category}" data-title="${p.title}">
-      <div class="thumb thumb-tone-${p.tone}${p.image ? " has-image" : ""}"${p.image ? ` style="background-image:url('${p.image}');background-size:cover;background-position:center;"` : ""}>
+    <a href="product-detail.html?id=${encodeURIComponent(p.id)}" class="card" data-filterable data-type="${escapeHtml(p.type)}" data-category="${escapeHtml(p.category)}" data-title="${title}">
+      <div class="thumb thumb-tone-${escapeHtml(p.tone)}${p.image ? " has-image" : ""}">
+        ${thumbArt(p, p.title)}
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
-          <span class="badge badge-level">${p.type === "digital" ? "Digital" : "Physical"}</span>
-          ${p.oldPrice ? `<span class="badge" style="background:var(--accent);color:#fff;">সেল</span>` : ""}
+          <span class="badge badge-level">${p.type === "digital" ? "ডিজিটাল" : "ফিজিক্যাল"}</span>
+          ${p.oldPrice ? `<span class="badge badge-accent" style="margin-inline-start:auto;">সেল</span>` : ""}
         </div>
       </div>
       <div class="card-body">
-        <div class="card-title">${p.title}</div>
-        <p class="card-desc">${p.desc}</p>
+        <div class="card-title card-title-clamp">${title}</div>
+        <p class="card-desc">${escapeHtml(p.desc)}</p>
         <div class="card-foot">
-          <span class="price">${p.oldPrice ? `<span class="old">৳${p.oldPrice}</span>` : ""}৳${p.price}</span>
-          <span class="text-link">View ${ICON.arrow}</span>
+          <span class="price">${p.oldPrice ? `<span class="old">৳${bnNum(Number(p.oldPrice))}</span>` : ""}৳${bnNum(Number(p.price))}</span>
+          <span class="text-link">দেখুন ${ICON.arrow}</span>
         </div>
       </div>
     </a>`;
@@ -404,15 +432,15 @@
   /* ---------- Video card ---------- */
   function videoCard(v) {
     return `
-    <div class="card" data-filterable data-tag="${v.tag}" style="min-width:280px;">
-      <div class="thumb thumb-tone-${v.tone}">
+    <div class="card" data-filterable data-tag="${escapeHtml(v.tag)}" style="min-width:280px;">
+      <div class="thumb thumb-tone-${escapeHtml(v.tone)}">
         <div class="thumb-overlay"></div>
-        <button class="play-btn" aria-label="Play video">${ICON.play}</button>
-        <div class="thumb-badges"><span class="badge badge-dur" style="margin-left:auto;">${v.duration}</span></div>
+        <button class="play-btn" aria-label="ভিডিও চালান">${ICON.play}</button>
+        <div class="thumb-badges"><span class="badge badge-dur">${escapeHtml(durationBn(v.duration))}</span></div>
       </div>
       <div class="card-body">
-        <div class="card-title">${v.title}</div>
-        <div class="card-meta">${v.views} views</div>
+        <div class="card-title card-title-clamp">${escapeHtml(v.title)}</div>
+        <div class="card-meta">${bnNum(v.views)} ভিউ</div>
       </div>
     </div>`;
   }
@@ -431,21 +459,57 @@
     window.__shahedinRendered = true;
     const data = D();
 
+    // A grid whose data source is empty gets a designed state, not a blank
+    // rectangle. `span` keeps the state centred across the whole grid.
+    function gridOrEmpty(items, cardFn, empty) {
+      if (!items.length) {
+        return `<div style="grid-column:1/-1;">${emptyStateHTML(empty)}</div>`;
+      }
+      return items.map(cardFn).join("");
+    }
+
     // Home: featured (videos are now handled by js/youtube-videos.js)
     if (document.querySelector("[data-mount='featured-courses']")) {
-      mount("[data-mount='featured-courses']", data.courses.slice(0, 3).map(courseCard).join(""));
+      mount(
+        "[data-mount='featured-courses']",
+        gridOrEmpty(data.courses.slice(0, 3), courseCard, {
+          icon: ICON.book,
+          title: "কোর্স শীঘ্রই আসছে",
+          body: "প্রথম কোর্সগুলো তৈরি হচ্ছে — ইউটিউব চ্যানেলে চোখ রাখুন।",
+          ctaHref: "index.html#videos",
+          ctaText: "ফ্রি ভিডিও দেখুন",
+        })
+      );
     }
 
     // Course catalog
     if (document.querySelector("[data-mount='course-grid']")) {
-      mount("[data-mount='course-grid']", data.courses.map(courseCard).join(""));
+      mount(
+        "[data-mount='course-grid']",
+        gridOrEmpty(data.courses, courseCard, {
+          icon: ICON.book,
+          title: "এখনো কোনো কোর্স প্রকাশ করা হয়নি",
+          body: "নতুন কোর্স যুক্ত হলে এখানেই দেখতে পাবেন।",
+          ctaHref: "index.html",
+          ctaText: "হোমে ফিরে যান",
+        })
+      );
       window.dispatchEvent(new Event("resize")); // nudge filter re-eval if needed
       document.dispatchEvent(new Event("contentready"));
     }
 
     // Store
     if (document.querySelector("[data-mount='product-grid']")) {
-      mount("[data-mount='product-grid']", data.products.map(productCard).join(""));
+      mount(
+        "[data-mount='product-grid']",
+        gridOrEmpty(data.products, productCard, {
+          icon: ICON.inbox,
+          title: "স্টোর এখন খালি",
+          body: "নতুন বই, নোট ও মার্চেন্ডাইজ শীঘ্রই যুক্ত হবে।",
+          ctaHref: "courses.html",
+          ctaText: "কোর্স দেখুন",
+        })
+      );
       document.dispatchEvent(new Event("contentready"));
     }
 
@@ -473,17 +537,18 @@
       const c = data.courses.find((x) => x.id === id) || data.courses[0];
       document.title = c.title + " — Shahedin";
       window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price };
+      const durationLabel = durationBn(c.duration);
       mount(
         "[data-mount='course-detail']",
-        `<div class="crumb"><a href="index.html">হোম</a> / <a href="courses.html">কোর্স</a> / ${c.title}</div>
-         <span class="eyebrow">${c.category}</span>
-         <h1>${c.title}</h1>
+        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="index.html">হোম</a><span aria-hidden="true">/</span><a href="courses.html">কোর্স</a><span aria-hidden="true">/</span><span>${escapeHtml(c.title)}</span></nav>
+         <span class="eyebrow">${escapeHtml(categoryLabel(c.category))}</span>
+         <h1>${escapeHtml(c.title)}</h1>
          <div class="meta-row">
            ${stars(c.rating)}
-           <span>${ICON.users} ${c.students.toLocaleString()} শিক্ষার্থী</span>
-           <span>${ICON.clock} ${c.duration}</span>
+           <span>${ICON.users} ${bnNum(Number(c.students) || 0)} শিক্ষার্থী</span>
+           ${durationLabel ? `<span>${ICON.clock} ${escapeHtml(durationLabel)}</span>` : ""}
          </div>
-         <p style="font-size:1.05rem;">${c.desc}</p>`
+         ${c.desc ? `<p class="course-desc">${escapeHtml(c.desc)}</p>` : ""}`
       );
       mount("[data-mount='course-preview']", coursePreviewHTML(c));
       mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
@@ -491,24 +556,47 @@
       if (curriculumEl) wireQuizzes(curriculumEl);
       mount("[data-mount='course-faq']", courseFaqHTML(c));
       mount("[data-mount='course-mentor']", courseMentorHTML(c));
+      // Layout note: the price + enrol block lives in the hero's LEFT column
+      // with the title and description. `.enrolled-banner` is hidden until
+      // course-progress.js adds .is-enrolled to the card (B9).
+      const includes = Array.isArray(c.includes) && c.includes.length
+        ? c.includes
+        : [
+            { text: `${durationLabel || c.duration} অন-ডিমান্ড ভিডিও` },
+            { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
+            { text: "সম্পন্নতার সার্টিফিকেট" },
+            { text: "বাংলা সাপোর্ট" },
+          ];
       mount(
         "[data-mount='course-buy']",
-        `<div class="price">${c.free ? "ফ্রি" : "৳" + c.price}</div>
-         <div class="small-note">${c.free ? "কোনো পেমেন্ট লাগবে না" : "একবার পেমেন্ট, আজীবন অ্যাক্সেস"}</div>
-         <button class="btn btn-primary btn-block" style="margin-top:20px;" data-enroll="${c.id}">${c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
+        `<div class="buy-price-row">
+           <span class="price${c.free ? " price-free" : ""}">${c.free ? "ফ্রি" : "৳" + bnNum(Number(c.price) || 0)}</span>
+           <span class="small-note">${c.free ? "কোনো পেমেন্ট লাগবে না" : "একবার পেমেন্ট, আজীবন অ্যাক্সেস"}</span>
+         </div>
+         <div class="enrolled-banner">
+           <span class="enrolled-check">${ICON.check}</span>
+           <span><b>ভর্তি হয়েছেন</b><span>আজীবন অ্যাক্সেস</span></span>
+         </div>
+         <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}">${c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
          <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>
          <ul>
-           ${(Array.isArray(c.includes) && c.includes.length ? c.includes : [{ text: `${c.duration} অন-ডিমান্ড ভিডিও` }, { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" }, { text: "সম্পন্নতার সার্টিফিকেট" }, { text: "বাংলা সাপোর্ট" }])
-             .map((item) => `<li>${ICON.check} ${escapeHtml(item.text)}</li>`)
-             .join("")}
+           ${includes.map((item) => `<li>${ICON.check} <span>${escapeHtml(item.text)}</span></li>`).join("")}
          </ul>
          ${c.free ? "" : `<div class="pay-icons">
            <span class="pay-icon pay-bkash">bKash</span>
          </div>`}`
       );
-      // Related
+      // Related — hide the whole section rather than show one empty shelf.
       const related = data.courses.filter((x) => x.id !== c.id).slice(0, 3);
-      mount("[data-mount='related-courses']", related.map(courseCard).join(""));
+      const relatedMount = document.querySelector("[data-mount='related-courses']");
+      if (relatedMount) {
+        if (related.length) {
+          relatedMount.innerHTML = related.map(courseCard).join("");
+        } else {
+          const section = relatedMount.closest("section");
+          if (section) section.hidden = true;
+        }
+      }
       document.dispatchEvent(new Event("course-mounted"));
     }
 
@@ -546,11 +634,11 @@
       }
       mount(
         "[data-mount='product-detail']",
-        `<div class="crumb"><a href="index.html">হোম</a> / <a href="store.html">স্টোর</a> / ${p.title}</div>
-         <span class="badge badge-level" style="margin:0 0 12px;display:inline-block;">${p.type === "digital" ? "ডিজিটাল ডাউনলোড" : "ফিজিক্যাল প্রোডাক্ট"}</span>
-         <h1>${p.title}</h1>
-         <div class="price" style="margin:14px 0;">${p.oldPrice ? `<span class="old">৳${p.oldPrice}</span>` : ""}৳${p.price}</div>
-         <p>${p.desc}</p>
+        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="index.html">হোম</a><span aria-hidden="true">/</span><a href="store.html">স্টোর</a><span aria-hidden="true">/</span><span>${escapeHtml(p.title)}</span></nav>
+         <span class="badge badge-level" style="margin:0 0 12px;display:inline-flex;">${p.type === "digital" ? "ডিজিটাল ডাউনলোড" : "ফিজিক্যাল প্রোডাক্ট"}</span>
+         <h1>${escapeHtml(p.title)}</h1>
+         <div class="price" style="margin:14px 0;">${p.oldPrice ? `<span class="old">৳${bnNum(Number(p.oldPrice))}</span>` : ""}৳${bnNum(Number(p.price))}</div>
+         <p>${escapeHtml(p.desc)}</p>
          ${p.type === "physical" ? '<p class="small-note" style="margin-top:10px;">সারা বাংলাদেশে ৩–৫ কার্যদিবসে ডেলিভারি। ডেলিভারি ট্র্যাকিং সহ।</p>' : '<p class="small-note" style="margin-top:10px;">চেকআউটের পর আপনার ইমেইলে সাথে সাথে ডাউনলোড লিংক পাঠানো হবে।</p>'}`
       );
       const buyMount = document.querySelector("[data-mount='product-buy']");

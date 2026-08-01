@@ -32,11 +32,8 @@
     person: svg(`<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>`),
   };
 
-  /* Rating.
-     Was: literal ★/☆ glyphs plus a bare "(4.8)". Screen readers announced
-     "star star star star star (4.8)" and the digits rendered Latin on a
-     Bangla page. Now: one labelled group, SVG stars, Bangla numerals. */
-  /* Precise fill, not Math.round. Rounding meant 4.6 through 4.9 all rendered
+  /* Rating. One labelled group, SVG stars, Bangla numerals.
+     Precise fill, not Math.round. Rounding meant 4.6 through 4.9 all rendered
      five solid stars — so five of the six seeded courses looked identical and
      the catalogue became a wall of flat 5/5, while the numeral beside them
      said ৪.৬. A filled row clipped to value/5 over an outline row shows the
@@ -339,7 +336,7 @@
     const sections = groups
       .map((g, gi) => {
         const rows = g.blocks.map((b) => courseLessonHTML(b, ++n)).join("");
-        const title = g.title || "কোর্স কনটেন্ট";
+        const title = g.title || "সব লেসন";
         return `<section class="cp-section" data-cp-section="${gi}">
           <h3 class="cp-section-h">
             <button type="button" class="cp-section-head" aria-expanded="true" data-cp-toggle="${gi}">
@@ -348,7 +345,7 @@
               <span class="cp-chev">${ICON.chevron}</span>
             </button>
           </h3>
-          <div class="cp-section-body" data-cp-body="${gi}">${rows}</div>
+          <div class="cp-section-body" data-cp-body="${gi}"><div class="cp-section-inner">${rows}</div></div>
         </section>`;
       })
       .join("");
@@ -376,14 +373,14 @@
           (m, i) => `
         <div class="accordion-item">
           <button type="button" class="accordion-head" aria-expanded="false"><span>মডিউল ${bnNum(i + 1, { group: false })}: ${escapeHtml(m.title)}</span>${ICON.chevron}</button>
-          <div class="accordion-body">
+          <div class="accordion-body"><div class="accordion-inner">
             ${m.lessons
               .map(
                 ([title, len, preview]) => `
               <div class="lesson-row ${preview ? "preview" : ""}">${ICON.play}<span>${escapeHtml(title)}</span>${preview ? '<span class="badge badge-free">প্রিভিউ</span>' : ""}<span class="len">${escapeHtml(durationBn(len))}</span></div>`
               )
               .join("")}
-          </div>
+          </div></div>
         </div>`
         )
         .join("");

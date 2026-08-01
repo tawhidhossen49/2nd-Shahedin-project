@@ -704,6 +704,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    engines without the interpolation. This is the ONE deliberate exception to
    the transform/opacity-only rule — there is no transform-only way to animate
    an auto height without distorting the content inside it. */
+/* Same single-wrapper rule as .cp-section-body above: one explicit 0fr track
+   only collapses one child, so the legacy module list wraps its lesson rows. */
 .accordion-body{display:grid; grid-template-rows:0fr; overflow:hidden; transition:grid-template-rows var(--dur-4) var(--ease-in-out);}
 .accordion-body > *{min-block-size:0;}
 .accordion-item.open .accordion-body{grid-template-rows:1fr;}
@@ -2356,6 +2358,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
 /* Same grid-template-rows technique the site accordion uses, so an open
    section animates without a scrollHeight read or a magic max-height. */
+/* The lessons live in ONE wrapper child on purpose. grid-template-rows:0fr
+   defines a single EXPLICIT row — with several children straight in here, only
+   the first collapsed and the rest fell into implicit auto-sized rows and
+   stayed visible, so hitting the chevron hid lesson 1 and left the others on
+   screen. One child means one track, and the whole section collapses. */
 .cp-section-body{display:grid; grid-template-rows:0fr; overflow:hidden;
   transition:grid-template-rows var(--dur-3) var(--ease-in-out);}
 .cp-section-body > *{min-block-size:0;}

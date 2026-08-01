@@ -704,6 +704,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    engines without the interpolation. This is the ONE deliberate exception to
    the transform/opacity-only rule — there is no transform-only way to animate
    an auto height without distorting the content inside it. */
+/* Same single-wrapper rule as .cp-section-body above: one explicit 0fr track
+   only collapses one child, so the legacy module list wraps its lesson rows. */
 .accordion-body{display:grid; grid-template-rows:0fr; overflow:hidden; transition:grid-template-rows var(--dur-4) var(--ease-in-out);}
 .accordion-body > *{min-block-size:0;}
 .accordion-item.open .accordion-body{grid-template-rows:1fr;}
@@ -2265,6 +2267,144 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18i. COURSE PLAYER
+   -------------------------------------------------------------------------
+   Two columns: the selected block's content on the left, a grouped checklist
+   of every block on the right. The interaction pattern is the familiar one;
+   the surfaces, hairlines, radii, type and accent are all ours, so it reads
+   as part of this site rather than as a transplant.
+
+   The sidebar rows are what js/course-progress.js finds — they carry
+   data-block-id, .cb-title and the [data-cb-progress] checkbox — so nothing
+   here invents a second progress mechanism.
+   ========================================================================= */
+/* LAYOUT NOTE — why .has-player exists.
+   .course-player is a two-column grid that mounts inside the LEFT column of
+   .course-body-grid, which is itself a 1.35fr / 1fr split. Its CSS was first
+   written as if it owned the container, so at 1440px the video pane resolved
+   to ~230px while the instructor bio next to it got ~446px:
+
+     container inner  1240 - 128 gutter        = 1112
+     body-grid left   (1112 - 64) * 1.35/2.35  =  602
+     pane             602 - 32 gap - 340 side  =  230   <- the video
+
+   js/render.js adds .has-player to the enclosing .course-body-grid when a
+   player mounts. A class rather than :has() so the fix is deterministic on
+   every engine, including the ones that would silently keep the broken
+   layout. The player then spans the container and the mentor/reviews rail
+   drops below it. */
+.course-body-grid.has-player{grid-template-columns:minmax(0,1fr);}
+.course-body-grid.has-player .course-aside{
+  position:static;                       /* no longer a rail, so not sticky */
+  display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr);
+  column-gap:var(--space-10); row-gap:0;
+  align-items:start; margin-block-start:var(--space-10);
+  padding-block-start:var(--space-8); border-block-start:1px solid var(--line-strong);
+}
+/* The aside's markup is flat — h2, mentor mount, h2, form mount, list mount —
+   so the two columns are placed by position rather than by wrapper divs. */
+.course-body-grid.has-player .course-aside > :nth-child(-n+2){grid-column:1;}
+.course-body-grid.has-player .course-aside > :nth-child(n+3){grid-column:2;}
+.course-body-grid.has-player .course-aside > :nth-child(3){margin-block-start:0;}
+
+.course-player{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px);
+  gap:var(--space-7); align-items:start;
+}
+.cp-main{min-inline-size:0;}
+.cp-pane{min-inline-size:0;}
+.cp-pane:focus{outline:none;}
+.cp-pane:focus-visible{outline:2px solid var(--accent-ink); outline-offset:6px;}
+.cp-pane .content-block{border:0; padding:0; background:transparent;}
+
+.cp-side{
+  min-inline-size:0; border:1px solid var(--line-strong);
+  border-radius:var(--radius-m); background:var(--surface-1); overflow:hidden;
+}
+.cp-side-head{
+  padding:var(--space-5) var(--space-5) var(--space-4);
+  border-block-end:1px solid var(--line-strong); background:var(--surface-2);
+}
+.cp-side-title{
+  display:block; font-family:var(--font-display); font-weight:600;
+  font-size:var(--step-0); color:var(--text-1);
+}
+.cp-side-head .progress-summary{margin-block-start:var(--space-4);}
+
+.cp-sections{max-block-size:min(70vh,720px); overflow-y:auto; overscroll-behavior:contain;}
+.cp-sections::-webkit-scrollbar{inline-size:8px;}
+.cp-sections::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:99px;}
+
+.cp-section{border-block-end:1px solid var(--line);}
+.cp-section:last-child{border-block-end:0;}
+.cp-section-h{margin:0; font-family:var(--font-body); font-size:inherit; font-weight:inherit;}
+.cp-section-head{
+  inline-size:100%; display:flex; align-items:center; gap:var(--space-3);
+  background:none; border:0; cursor:pointer; text-align:start;
+  padding:var(--space-5); color:var(--text-1);
+  font-family:var(--font-body); font-size:var(--step--1); font-weight:600;
+  transition:background var(--dur-2) var(--ease-out);
+}
+.cp-section-head:hover{background:var(--surface-2);}
+.cp-section-head:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px;}
+.cp-section-title{flex:1; min-inline-size:0; line-height:var(--lh-tight);}
+.cp-section-meta{
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); color:var(--text-3); flex:0 0 auto;
+}
+.cp-section.is-complete .cp-section-meta{color:var(--good);}
+.cp-chev{display:flex; color:var(--text-3); transition:transform var(--dur-3) var(--ease-out);}
+.cp-section.is-open .cp-chev{transform:rotate(180deg);}
+
+/* Same grid-template-rows technique the site accordion uses, so an open
+   section animates without a scrollHeight read or a magic max-height. */
+/* The lessons live in ONE wrapper child on purpose. grid-template-rows:0fr
+   defines a single EXPLICIT row — with several children straight in here, only
+   the first collapsed and the rest fell into implicit auto-sized rows and
+   stayed visible, so hitting the chevron hid lesson 1 and left the others on
+   screen. One child means one track, and the whole section collapses. */
+.cp-section-body{display:grid; grid-template-rows:0fr; overflow:hidden;
+  transition:grid-template-rows var(--dur-3) var(--ease-in-out);}
+.cp-section-body > *{min-block-size:0;}
+.cp-section.is-open .cp-section-body{grid-template-rows:1fr;}
+
+.cp-lesson{
+  display:flex; align-items:flex-start; gap:var(--space-2);
+  padding-inline:var(--space-4) var(--space-3);
+  border-block-start:1px solid var(--line);
+  transition:background var(--dur-2) var(--ease-out);
+}
+.cp-lesson:hover{background:var(--surface-2);}
+.cp-lesson.is-current{background:var(--surface-3); box-shadow:inset 3px 0 0 var(--accent-fill);}
+.cp-lesson .cb-progress{margin:0; padding-block-start:14px; flex:0 0 auto;}
+.cp-lesson .cb-complete-check{inline-size:16px; block-size:16px;}
+.cp-lesson-btn{
+  flex:1; min-inline-size:0; display:flex; align-items:flex-start; gap:var(--space-3);
+  background:none; border:0; cursor:pointer; text-align:start;
+  padding:var(--space-4) 0; color:var(--text-2);
+  font-family:var(--font-body); font-size:var(--step--1); line-height:var(--lh-tight);
+}
+.cp-lesson-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px;}
+.cp-lesson-ic{display:flex; flex:0 0 auto; color:var(--text-3); margin-block-start:1px;}
+.cp-lesson-ic svg{inline-size:15px; block-size:15px;}
+.cp-lesson.is-current .cp-lesson-btn{color:var(--text-1); font-weight:600;}
+.cp-lesson.is-current .cp-lesson-ic{color:var(--accent-ink);}
+.cp-lesson .cb-title{flex:1; min-inline-size:0; overflow-wrap:anywhere;}
+.cp-lesson.is-done .cb-title{color:var(--text-3);}
+.cp-lesson-len{
+  flex:0 0 auto; font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); color:var(--text-3);
+}
+/* Locked blocks keep today's treatment — no checkbox, a lock glyph, and the
+   pane shows the same "enrol to unlock" notice it always has. */
+.cp-lesson.is-locked .cp-lesson-btn{color:var(--text-3); cursor:pointer;}
+.cp-lesson.is-locked .cp-lesson-ic{color:var(--text-3);}
+
+@media (prefers-reduced-motion: reduce){
+  .cp-section-body,.cp-chev,.cp-lesson,.cp-section-head{transition:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2566,4 +2706,116 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 @media (prefers-reduced-transparency: reduce){
   .vfacade-dur{backdrop-filter:none; -webkit-backdrop-filter:none; background:rgb(8 4 2 / .92);}
   .site-nav{backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-0);}
+}
+
+/* --- 19e. RESPONSIVE for the course player (section 18i) ----------------- */
+@media (max-width:1080px){
+  /* Video on top, checklist below — the stacking order the brief asks for.
+     The sidebar keeps its own scroll so a 60-lesson course doesn't push the
+     rest of the page into the distance. */
+  .course-player{grid-template-columns:minmax(0,1fr); gap:var(--space-6);}
+  .cp-side{order:2;}
+  .cp-main{order:1;}
+  .cp-sections{max-block-size:min(56vh,520px);}
+}
+@media (max-width:760px){
+  .cp-sections{max-block-size:none;}   /* let the page scroll instead */
+  .cp-section-head{padding:var(--space-4);}
+  .cp-lesson-btn{padding-block:var(--space-3);}
+}
+@media (pointer: coarse){
+  .cp-section-head{min-block-size:48px;}
+  .cp-lesson-btn{min-block-size:44px;}
+  .cp-lesson .cb-complete-check{inline-size:20px; block-size:20px;}
+}
+
+/* =========================================================================
+   18j. COURSE PLAYER — navigation, completion, ratings
+   ========================================================================= */
+
+/* --- Prev / next, so advancing never requires going back to the sidebar --- */
+.cp-nav{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);
+  margin-block-start:var(--space-7);
+  padding-block-start:var(--space-6); border-block-start:1px solid var(--line);
+}
+.cp-nav-btn{
+  display:flex; flex-direction:column; gap:4px; min-inline-size:0;
+  padding:var(--space-4) var(--space-5); cursor:pointer;
+  background:var(--surface-1); border:1px solid var(--line);
+  border-radius:var(--radius-m); color:var(--text-1); text-align:start;
+  font-family:var(--font-body);
+  transition:background var(--dur-2) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             transform var(--dur-1) var(--ease-out);
+}
+.cp-nav-btn.is-empty{background:none; border-color:transparent; cursor:default;}
+.cp-nav-next{text-align:end;}
+.cp-nav-btn:hover:not(.is-empty){background:var(--surface-2); border-color:var(--line-strong);}
+.cp-nav-btn:active:not(.is-empty){transform:translateY(1px);}
+.cp-nav-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:3px;}
+.cp-nav-dir{
+  font-size:var(--step--2); color:var(--accent-ink); font-weight:600;
+  letter-spacing:var(--tracking-wide);
+}
+.cp-nav-title{
+  font-size:var(--step--1); color:var(--text-2); line-height:var(--lh-tight);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* --- Lesson / section / course completion (brief 2.6) ------------------- */
+.cp-lesson.is-done .cp-lesson-ic{color:var(--good);}
+.cp-lesson.is-done .cp-lesson-ic svg{transform:scale(1.06);}
+.cp-lesson .cp-lesson-ic svg{transition:transform var(--dur-3) var(--ease-spring);}
+.cp-section.is-complete .cp-section-title{color:var(--good);}
+.cp-section.is-complete[data-just-done="1"] .cp-section-meta{
+  animation:cpPop var(--dur-4) var(--ease-spring);
+}
+@keyframes cpPop{0%{transform:scale(1);}45%{transform:scale(1.22);}100%{transform:scale(1);}}
+.cp-section-meta{display:inline-block;}
+
+/* --- Progress bar. Animates transform, never width, so the fill stays off
+       the layout path. course-progress.js builds the node once and then
+       mutates scaleX on it — a rebuilt node has no start value to move from
+       and could never animate at all. --------------------------------- */
+.progress-fill{inline-size:100%; transform:scaleX(0);
+  transition:transform var(--dur-5) var(--ease-out);}
+.progress-summary.is-complete .progress-summary-head{color:var(--good);}
+.progress-summary.is-complete .progress-fill{background:var(--good);}
+
+/* --- Precise star fill. A filled row clipped over an outline row, so 4.6
+       reads as 4.6 rather than being rounded up to five solid stars. ----- */
+.stars-track{position:relative; display:inline-block; white-space:nowrap; line-height:0;}
+.stars-base{display:inline-block; white-space:nowrap; line-height:0;}
+.stars-fill{
+  position:absolute; inset-block-start:0; inset-inline-start:0;
+  overflow:hidden; white-space:nowrap; line-height:0;
+}
+.stars-new{
+  font-size:var(--step--2); color:var(--text-3);
+  border:1px solid var(--line-strong); border-radius:var(--radius-pill);
+  padding:2px 10px;
+}
+
+/* --- An enrolled student should not be sold the course again (brief 2.7).
+       Lesson 1's video was appearing twice on one page: once in the sticky
+       hero preview at ~446px and once in the player pane. The hero copy was
+       the wider of the two, followed the student down the page, and clicking
+       it could not tick anything. -------------------------------------- */
+/* Class rather than :has(), same reasoning as .has-player above — a browser
+   without :has() must not silently keep showing the duplicate video.
+   js/course-progress.js toggles this alongside .is-enrolled on the card. */
+.course-hero-grid.is-enrolled-view{grid-template-columns:minmax(0,1fr);}
+.course-hero-grid.is-enrolled-view .course-preview{display:none;}
+.course-buy-card.is-enrolled ul,
+.course-buy-card.is-enrolled .pay-icons{display:none;}
+
+@media (prefers-reduced-motion: reduce){
+  .cp-nav-btn,.cp-lesson .cp-lesson-ic svg,.progress-fill{transition:none;}
+  .cp-section.is-complete[data-just-done="1"] .cp-section-meta{animation:none;}
+}
+
+@media (max-width:760px){
+  .cp-nav{grid-template-columns:1fr;}
+  .cp-nav-next{text-align:start;}
 }

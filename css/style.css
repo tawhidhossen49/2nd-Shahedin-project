@@ -2007,6 +2007,69 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 [data-qty-plus]:disabled,[data-qty-minus]:disabled{opacity:.45; cursor:not-allowed;}
 
 /* =========================================================================
+   18f. PORTFOLIO / CONTACT / DASHBOARD  (checkpoint 6)
+   ========================================================================= */
+
+/* --- THE THIRD PORTRAIT TREATMENT (brief 2.1) ---------------------------
+   portfolio.html carries .about-portrait AND .hero-portrait on the same
+   element as index.html does, so without a scope it would inherit the hero's
+   arc verbatim — the exact "one component used three times" the brief rules
+   out. Scoped to .kit-hero, the shape becomes a HARD-EDGED offset colour
+   field: no curve anywhere, pushed right and down so the figure breaks past
+   its top and left edges, and the figure is graded toward duotone rather than
+   the hero's warm full colour.
+
+     hero      filled arc,      warm full colour,  breaks the TOP edge
+     story     outlined ring,   cool flat grade,   breaks THREE sides
+     portfolio hard colour block, duotone grade,   breaks TOP + LEFT
+
+   Three shapes, three grades, three overlap logics. */
+.kit-hero .hero-portrait::before{
+  inset-block-end:6%; inset-inline-start:auto; inset-inline-end:-6%;
+  inline-size:76%; block-size:56%;
+  border-radius:0;                       /* hard edges — the third language */
+  border:0; box-shadow:none;
+  background:linear-gradient(168deg,var(--accent-fill),#5a0d1c);
+  opacity:.92;
+}
+.kit-hero .hero-portrait img{
+  filter:grayscale(.5) sepia(.16) saturate(1.3) contrast(1.12)
+         drop-shadow(0 22px 40px rgba(8,4,2,.62));
+}
+
+/* --- PORTFOLIO: de-card the stat / case / partner walls. Three equal card
+       rows stacked down a page is the anti-default list verbatim. --------- */
+.kit-stat-card,.case-card,.partner-card{
+  background:transparent; border:0; border-radius:0;
+  border-block-start:1px solid var(--line-strong);
+  padding-inline:0;
+}
+.kit-stat-card:hover,.case-card:hover,.partner-card:hover{
+  transform:none; background:var(--surface-1); border-color:var(--accent-ink);
+}
+/* the lead case study carries the section, the rest support it */
+.case-grid > :first-child{grid-column:1 / -1;}
+.case-grid > :first-child .case-result{font-size:clamp(2.2rem,4.6vw,3.4rem);}
+.case-grid > :first-child .case-brand{font-size:var(--step-2);}
+
+/* --- CONTACT: the form is the page. Give it a surface so it reads as the
+       primary object rather than floating text. ------------------------- */
+.contact-grid form,.contact-grid .form-card{
+  background:var(--surface-1); border:1px solid var(--line-strong);
+  border-radius:var(--radius-l); padding:clamp(20px,3vw,36px);
+  box-shadow:var(--shadow-2);
+}
+
+/* --- DASHBOARD: ruled rows over stacked boxes, matching the register
+       language used everywhere else. ------------------------------------ */
+.dash-main .card{
+  background:transparent; border:0; border-radius:0;
+  border-block-end:1px solid var(--line);
+}
+.dash-main .card:hover{transform:none; box-shadow:none; background:var(--surface-1);}
+.dash-side .side-link.active{box-shadow:inset 3px 0 0 var(--accent-fill);}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */

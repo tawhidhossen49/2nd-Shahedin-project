@@ -942,6 +942,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    reaches back LEFT underneath the copy column — that cross-column overlap is
    this section's grid-break (brief 2.2). The copy sits at z-index 2, the arc
    at 0, so nothing costs legibility. */
+/* Light Rays stage (js/light-rays.js).
+   The canvas injects itself as the hero's first child and sits at z-index 0,
+   underneath the portrait (1) and the copy (2). pointer-events:none so it
+   never intercepts a click on the CTAs behind it. The mask fades the bottom
+   quarter out so the beams dissolve into the band rather than ending on the
+   section edge — the same trick the portrait's base uses. */
+.hero > .light-rays{
+  position:absolute; inset:0; z-index:0;
+  inline-size:100%; block-size:100%;
+  pointer-events:none; display:block;
+  -webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);
+          mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);
+}
+
 /* No shape behind the figure, by request. The arc that used to sit here is
    gone entirely — first its red bloom, now the shape itself. The portrait
    stands on the page with nothing behind it but the band.

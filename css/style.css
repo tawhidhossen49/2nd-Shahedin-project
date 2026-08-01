@@ -1861,6 +1861,79 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18d. COURSE SURFACES  (checkpoint 4 — courses.html + course-detail.html)
+   -------------------------------------------------------------------------
+   Same argument as the homepage: the catalogue was one uniform 3-up card grid
+   and the detail page was a stack of bordered boxes. Both now use the ruled
+   register language, with depth carried by tinted shadow and two hairline
+   weights rather than by a border around every element (brief 2.5).
+   ========================================================================= */
+
+/* --- CATALOGUE: lead course runs full width as an editorial feature, the
+       rest stay 3-up. Breaks the uniform grid without touching markup. --- */
+[data-mount="course-grid"] > :first-child{
+  grid-column:1 / -1;
+  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  align-items:stretch; overflow:hidden;
+}
+[data-mount="course-grid"] > :first-child .thumb{
+  aspect-ratio:auto; block-size:100%; min-block-size:clamp(240px,26vw,340px);
+}
+[data-mount="course-grid"] > :first-child .card-body{
+  justify-content:center; padding:var(--space-8);
+}
+[data-mount="course-grid"] > :first-child .card-title{
+  font-size:var(--step-3); line-height:var(--lh-heading);
+}
+[data-mount="course-grid"] > :first-child .card-desc{
+  font-size:var(--step-0); max-inline-size:52ch;
+}
+
+/* --- ACCORDION: ruled rows, not stacked boxes. The open state is carried by
+       a warm surface lift plus an accent edge, not by a heavier border. --- */
+.accordion-item{
+  border-inline:0; border-block-start:0; border-radius:0;
+  background:transparent;
+  border-block-end:1px solid var(--line);
+}
+.accordion-item:first-child{border-block-start:1px solid var(--line-strong);}
+.accordion-item:hover{background:var(--surface-1);}
+.accordion-item.open{
+  background:var(--surface-1); border-color:var(--line);
+  box-shadow:inset 3px 0 0 var(--accent-fill);
+}
+.accordion-head{padding-inline:var(--space-5);}
+.lesson-row{padding-inline:var(--space-5);}
+
+/* --- BUY CARD: the one place on the page that should read as elevated.
+       Warm-tinted shadow + accent glow spill along the top edge. --- */
+.course-buy-card{
+  box-shadow:var(--shadow-3), 0 -1px 0 var(--line-accent);
+}
+.course-buy-card::after{
+  content:""; position:absolute; inset-inline:0; inset-block-start:0;
+  block-size:120px; pointer-events:none; z-index:0;
+  background:radial-gradient(70% 100% at 50% 0%, var(--accent-glow), transparent 72%);
+}
+.course-buy-card > *{position:relative; z-index:1;}
+.course-buy-card.is-enrolled{box-shadow:var(--shadow-3), 0 -1px 0 rgba(78,195,138,.4);}
+.course-buy-card.is-enrolled::after{
+  background:radial-gradient(70% 100% at 50% 0%, var(--good-dim), transparent 72%);
+}
+
+/* --- PREVIEW: the facade replaces .video-embed here, so it inherits the
+       same elevation the old embed had. --- */
+.course-preview .vfacade-stage{box-shadow:var(--shadow-3);}
+.course-preview .vfacade-iframe{box-shadow:var(--shadow-3);}
+
+/* --- MENTOR: de-boxed to a ruled block, consistent with the aside. --- */
+.mentor-card{
+  background:transparent; border-inline:0; border-radius:0;
+  border-block:1px solid var(--line);
+}
+.mentor-card:hover{background:var(--surface-1); border-color:var(--line-strong);}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2049,4 +2122,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
   /* about: rail bleed off, it has no room to breathe here */
   [data-section-key="about"] .timeline-h{margin-inline:0; padding-inline:0;}
+}
+
+/* --- 19c. RESPONSIVE for the course surfaces (section 18d) --------------- */
+@media (max-width:1080px){
+  /* the catalogue feature card stops being a 2-up composition */
+  [data-mount="course-grid"] > :first-child{grid-template-columns:minmax(0,1fr);}
+  [data-mount="course-grid"] > :first-child .thumb{min-block-size:0; aspect-ratio:16/9;}
+  [data-mount="course-grid"] > :first-child .card-body{padding:var(--space-6);}
+  [data-mount="course-grid"] > :first-child .card-title{font-size:var(--step-2);}
 }

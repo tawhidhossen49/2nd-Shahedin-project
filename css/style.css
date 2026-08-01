@@ -1801,7 +1801,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   transition:background var(--dur-3) var(--ease-out),
              transform var(--dur-3) var(--ease-out);
 }
-[data-section-key="growth"] .growth-item:first-child{border-inline-start:0;}
+[data-section-key="growth"] .growth-item:first-child{border-inline-start:0; padding-inline-start:0;}
 
 /* The accent rule that draws across the top of a cell on hover. This is the
    one overlap left in the section and it is a line, not a block, so it can
@@ -1819,24 +1819,30 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 [data-section-key="growth"] .growth-item:hover::after,
 [data-section-key="growth"] .growth-item:focus-within::after{transform:scaleX(1);}
 
-/* The numeral straddles the top rule, so the hairline appears to pass behind
-   it. Opaque type over a 1px line needs no background chip to do this, which
-   matters because the band carries a gradient the chip could not match. */
+/* The numeral sits BELOW the rule, in normal flow.
+   It used to be absolutely positioned and pulled up 52%, so the hairline ran
+   straight through the middle of the digit — which read as the number being
+   cut in half rather than as an overlap. Being absolute also meant its left
+   edge had to be re-stated at every breakpoint, and those overrides collided:
+   the two-column rule at 1080 out-specified the single-column rule at 760, so
+   alternate numerals kept a 20px indent and the column zigzagged.
+
+   In normal flow it clears the rule on its own and inherits the item's
+   padding, so it lines up with the text at every width with no per-breakpoint
+   rules at all. */
 [data-section-key="growth"] .growth-dot{
-  position:absolute; inset-block-start:0; inset-inline-start:var(--space-5);
-  inline-size:auto; block-size:auto;
+  position:static; inline-size:auto; block-size:auto;
   background:none; border:0; border-radius:0; display:block;
   font-family:var(--font-num); font-variant-numeric:tabular-nums;
-  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:.9;
+  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:1;
   letter-spacing:-.04em; color:var(--text-3);
-  transform:translateY(-52%);
+  margin:0 0 var(--space-4); transform:none;
   transition:color var(--dur-2) var(--ease-out),
              transform var(--dur-3) var(--ease-spring);
 }
-[data-section-key="growth"] .growth-item:first-child .growth-dot{inset-inline-start:0;}
 [data-section-key="growth"] .growth-item:hover .growth-dot,
 [data-section-key="growth"] .growth-item:focus-within .growth-dot{
-  color:var(--accent-ink); transform:translateY(-62%);
+  color:var(--accent-ink); transform:translateY(-3px);
 }
 /* .inview is added by motion.js on scroll; it must not fight the hover state */
 [data-section-key="growth"] .growth-item.inview .growth-dot{
@@ -2594,8 +2600,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   }
   [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0;}
   [data-section-key="growth"] .growth-item:nth-child(n+3){border-block-start:1px solid var(--line-strong);}
-  [data-section-key="growth"] .growth-item:nth-child(odd) .growth-dot{inset-inline-start:0;}
-  [data-section-key="growth"] .growth-item:nth-child(even) .growth-dot{inset-inline-start:var(--space-5);}
+  /* The numeral is in normal flow now, so it follows the cell's padding and
+     needs no inset of its own. Only the first cell of each row goes flush. */
+  [data-section-key="growth"] .growth-item:nth-child(odd){padding-inline-start:0;}
 
   /* courses: the register keeps its row shape but the media column narrows */
   [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,180px) minmax(0,1fr); gap:var(--space-6);}
@@ -2614,7 +2621,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
     border-block-start:1px solid var(--line-strong);
   }
   [data-section-key="growth"] .growth-item:first-child{border-block-start:0;}
-  [data-section-key="growth"] .growth-item .growth-dot{inset-inline-start:0;}
   [data-section-key="growth"] .growth-item:hover{transform:none;}   /* no lift in a stacked list */
   [data-section-key="growth"] .section-head h2{
     margin-inline-start:0; max-inline-size:none;

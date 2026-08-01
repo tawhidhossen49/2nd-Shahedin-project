@@ -947,11 +947,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   inset-block-end:0; inset-inline-start:-46%; inset-inline-end:-14%;
   block-size:37%;
   border-radius:50% 50% 0 0 / 100% 100% 0 0;
-  background:
-    radial-gradient(120% 150% at 50% 100%, rgba(193,18,47,.40), rgba(193,18,47,.06) 62%, transparent 78%),
-    linear-gradient(180deg,var(--surface-2),var(--surface-1));
-  border-block-start:1px solid var(--line-accent);
-  box-shadow:0 -28px 64px -22px var(--accent-glow);   /* accent glow spill */
+  /* The red bloom is gone by request. The shape stays, because the de-boxed
+     figure still needs something behind it to stand against, but it is now a
+     quiet neutral tonal rise with no accent radial, no accent hairline and no
+     accent glow spill. The only warmth left in this composition is the rim
+     light on the figure itself. */
+  background:linear-gradient(180deg,var(--surface-2),var(--surface-1));
+  border-block-start:1px solid var(--line);
 }
 .hero-portrait img{
   position:relative; z-index:1;
@@ -1665,6 +1667,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    Vertical rhythm alternates dense against airy: lg / compact / lg / lg /
    md / lg / md / sm.
    ========================================================================= */
+
+/* --- 1b. HERO STATS: hidden by request.
+       Hidden rather than deleted on purpose. All eight stats.* data-field
+       hooks stay on their elements, so the admin panel and the Supabase
+       home_content sync keep working and the trust bar below — which shares
+       the same stats.* section — is unaffected. Deleting the markup would
+       have dropped eight contract attributes to achieve the same visual
+       result. One line to bring them back. */
+.hero-stats{display:none;}
 
 /* --- 2. TRUST BAR: full-bleed. Was capped at --container, which made it read
        as one more centred band. Edge to edge is the break. ---------------- */

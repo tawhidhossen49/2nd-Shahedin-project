@@ -30,6 +30,19 @@
       if (!sectionData || sectionData[field] === undefined || sectionData[field] === "") return;
       const val = sectionData[field];
       if (el.tagName === "IMG") {
+        /* ART-DIRECTED SLOTS ARE NOT CMS-SWAPPABLE.
+           The three portraits (hero, story, portfolio) are de-boxed
+           free-standing cutouts: no card, no border, no frame. That only
+           works with a transparent PNG/WebP whose subject is already matted.
+           Pointing one of these at an ordinary rectangular photo puts a hard
+           grey box back on the page and undoes the whole composition, which
+           is exactly what a saved hero.image_url was doing.
+
+           So an <img data-art-locked> keeps its authored src. The data-field
+           attribute stays on the element and every other field still applies
+           normally — this only refuses the src swap. To change one of these
+           portraits, replace the file in assets/img/ with another cutout. */
+        if (el.hasAttribute("data-art-locked")) return;
         el.src = val;
       } else {
         el.textContent = val;

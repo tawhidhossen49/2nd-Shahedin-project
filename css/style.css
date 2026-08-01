@@ -517,12 +517,19 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   position:absolute; inset:0;
   background:linear-gradient(180deg,rgba(7,5,4,0) 35%,rgba(7,5,4,.62) 100%);
 }
+/* Card artwork tones — the fallback gradient a course or product shows when it
+   has no image of its own. The old set ran #2b5876 steel blue at tone-2 and
+   #5a2a6b purple at tone-4, which is exactly the purple/blue gradient the
+   taste bar bans, and on a warm-ink page they read as imported from another
+   site. All six are now warm: one crimson anchored on --accent-fill, then
+   rust, ochre, olive, clay and umber. Still six clearly distinct tones, but
+   they belong to this palette instead of fighting it. */
 .thumb-tone-1::before{background:linear-gradient(150deg,#3a0d17,#c1122f);}
-.thumb-tone-2::before{background:linear-gradient(150deg,#12202b,#2b5876);}
-.thumb-tone-3::before{background:linear-gradient(150deg,#241a08,#8a5a1f);}
-.thumb-tone-4::before{background:linear-gradient(150deg,#1b1420,#5a2a6b);}
-.thumb-tone-5::before{background:linear-gradient(150deg,#0e2418,#1f7a54);}
-.thumb-tone-6::before{background:linear-gradient(150deg,#241010,#7a1f1f);}
+.thumb-tone-2::before{background:linear-gradient(150deg,#2a1208,#9c4a1e);}
+.thumb-tone-3::before{background:linear-gradient(150deg,#2b2109,#a8802a);}
+.thumb-tone-4::before{background:linear-gradient(150deg,#1c2110,#5f7333);}
+.thumb-tone-5::before{background:linear-gradient(150deg,#2e1512,#8f3b2e);}
+.thumb-tone-6::before{background:linear-gradient(150deg,#241a14,#6b4b32);}
 /* Placeholder mark for cards with no artwork (B10: missing course image). */
 .thumb-icon{position:relative; z-index:1; margin:auto; opacity:.55; color:#fff;}
 .thumb-icon svg{inline-size:40px; block-size:40px;}
@@ -1629,6 +1636,137 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 @keyframes parallaxY{from{transform:translateY(3%);}to{transform:translateY(-3%);}}
 
 /* =========================================================================
+   18b. HOMEPAGE SECTION RHYTHM  (brief 2.2 — break the grid)
+   -------------------------------------------------------------------------
+   Every section used to be `.section-pad .container` wrapping an equal-column
+   card grid, so nothing was more important than anything else. This block
+   gives each of the eight sections a DIFFERENT layout shape, three container
+   breaks and two real overlaps, without touching one line of index.html —
+   every hook below is an existing class or an existing data-section-key, so
+   the JS contract is untouched.
+
+   Shape per section, in page order (no two neighbours share one):
+     1 hero               off-grid, arc overlapping the copy column   [break + overlap]
+     2 trust_bar          full-bleed ruled row                         [break]
+     3 about              editorial 2-col + bled horizontal rail       [break]
+     4 videos             asymmetric bento, 1 large + 2 stacked
+     5 featured_courses   ruled register rows
+     6 growth             oversized display + staggered indexed track  [break + overlap]
+     7 testimonials       scroll-snap rail
+     8 press              airy minimal columns
+
+   Vertical rhythm alternates dense against airy: lg / compact / lg / lg /
+   md / lg / md / sm.
+   ========================================================================= */
+
+/* --- 2. TRUST BAR: full-bleed. Was capped at --container, which made it read
+       as one more centred band. Edge to edge is the break. ---------------- */
+.trust-grid{max-width:none;}
+
+/* --- 3. ABOUT: the timeline rail bleeds past the text column ------------- */
+[data-section-key="about"]{overflow:hidden;}
+[data-section-key="about"] .timeline-h{
+  margin-inline:calc(var(--gutter) * -1);
+  padding-inline:var(--gutter);
+}
+
+/* --- 4. VIDEOS: asymmetric bento. One lead video at 1.6fr spanning both
+       rows, two supporting stacked beside it. js/youtube-videos.js renders
+       exactly MAX_VIDEOS = 3, so this resolves with no empty cells. ------- */
+#videos .grid-3{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);}
+#videos .grid-3 > :first-child{grid-row:span 2;}
+#videos .grid-3 > :first-child .thumb{aspect-ratio:4/3;}
+#videos .grid-3 > :first-child .card-title{font-size:var(--step-2); line-height:var(--lh-heading);}
+/* the loading note occupies the lead cell before the fetch resolves */
+#videos .grid-3 > [data-yt-loading]{grid-row:auto; align-self:center;}
+
+/* --- 5. FEATURED COURSES: ruled register rows, not a third card grid.
+       De-carded entirely — no border, no radius, no surface, no lift. The
+       hairline between rows is the only structure. ----------------------- */
+[data-section-key="featured_courses"]{padding-block:var(--section-md);}
+[data-section-key="featured_courses"] .grid-3{
+  grid-template-columns:minmax(0,1fr); gap:0;
+  border-block-start:1px solid var(--line-strong);
+}
+[data-section-key="featured_courses"] .card{
+  display:grid; grid-template-columns:minmax(0,240px) minmax(0,1fr);
+  gap:var(--space-7); align-items:center;
+  background:transparent; border:0; border-radius:0;
+  border-block-end:1px solid var(--line);
+  padding-block:var(--space-6); overflow:visible;
+}
+[data-section-key="featured_courses"] .card:hover{
+  transform:none; box-shadow:none; background:var(--surface-1);
+}
+[data-section-key="featured_courses"] .card::after{content:none;}
+[data-section-key="featured_courses"] .card .thumb{
+  aspect-ratio:16/10; border-radius:var(--radius-s); overflow:hidden;
+}
+[data-section-key="featured_courses"] .card-title{font-size:var(--step-2); line-height:var(--lh-heading);}
+[data-section-key="featured_courses"] .card-desc{max-inline-size:62ch;}
+
+/* --- 6. GROWTH: the page's ONE oversized display moment.
+       The h2 runs at roughly 2.7x the standard --step-3 section heading and
+       bleeds off the left edge of the band; the track then rides up over its
+       lower edge. overflow:hidden on the section keeps the bleed from
+       creating a horizontal scrollbar at any width. --------------------- */
+[data-section-key="growth"]{overflow:hidden;}
+[data-section-key="growth"] .section-head.center{text-align:start; margin-block-end:0;}
+[data-section-key="growth"] .section-head h2{
+  font-size:clamp(2.6rem,8.5vw,6.2rem); line-height:.94;
+  letter-spacing:-.045em; max-inline-size:none;
+  margin-inline-start:calc(-1 * clamp(8px,5vw,96px));
+  position:relative; z-index:0;
+}
+[data-section-key="growth"] .section-head .eyebrow{margin-block-end:var(--space-5);}
+
+/* staggered indexed track — replaces the 780px centred vertical list */
+[data-section-key="growth"] .growth-track{
+  max-width:none; margin-inline:0;
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
+  position:relative; z-index:1;
+  margin-block-start:clamp(-38px,-2.2vw,-12px);   /* the overlap */
+}
+[data-section-key="growth"] .growth-track::before{content:none;}   /* old rail */
+[data-section-key="growth"] .growth-item{
+  padding:var(--space-7) var(--space-5) 0 var(--space-5);
+  margin-block-end:0;
+  border-block-start:1px solid var(--line-strong);
+  border-inline-start:1px solid var(--line);
+}
+[data-section-key="growth"] .growth-item:first-child{border-inline-start:0; padding-inline-start:0;}
+/* alternate offset so the track is a stagger, not a flat row */
+[data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:var(--space-9);}
+[data-section-key="growth"] .growth-dot{
+  position:static; inline-size:auto; block-size:auto;
+  background:none; border:0; border-radius:0; display:block;
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:clamp(1.9rem,3.4vw,2.9rem); font-weight:700; line-height:.9;
+  letter-spacing:-.04em; color:var(--surface-4);
+  margin-block-end:var(--space-4); transform:none;
+}
+[data-section-key="growth"] .growth-item:first-child .growth-dot{color:var(--accent-fill);}
+[data-section-key="growth"] .growth-item.inview .growth-dot{
+  background:none; border-color:transparent; transform:none; color:var(--surface-4);
+}
+[data-section-key="growth"] .growth-item:first-child.inview .growth-dot{color:var(--accent-fill);}
+
+/* --- 7. TESTIMONIALS: scroll-snap rail, medium rhythm ------------------- */
+[data-section-key="testimonials"]{padding-block:var(--section-md);}
+
+/* --- 8. PRESS: airy minimal columns. De-carded — the boxed strip with its
+       1px grid gap read as one more container. Hairline tops only. ------ */
+.press-strip{
+  background:transparent; border:0; border-radius:0; gap:var(--space-8) var(--space-7);
+}
+.press-item{
+  background:transparent; padding:var(--space-5) 0 0;
+  border-block-start:1px solid var(--line-strong);
+}
+.press-item:hover{background:transparent;}
+.press-item .p-logo{font-size:var(--step-1); font-weight:600;}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -1770,4 +1908,51 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   body{background:#fff; color:#111;}
   .certificate,.certificate *{visibility:visible;}
   .certificate{position:fixed; inset:0; border:none; margin:0; background:#fff; color:#111;}
+}
+
+/* =========================================================================
+   19b. RESPONSIVE FOR THE HOMEPAGE RHYTHM  (section 18b)
+   -------------------------------------------------------------------------
+   Kept in one place at the end of the file rather than threaded through the
+   existing breakpoints, because the 18b selectors carry an id or a
+   data-attribute and would otherwise out-specify the generic .grid-3 rules
+   in section 19 regardless of source order. Every multi-column layout
+   introduced in 18b collapses explicitly here.
+   ========================================================================= */
+@media (max-width:1080px){
+  /* videos: bento releases to a single column, lead card keeps its weight */
+  #videos .grid-3{grid-template-columns:minmax(0,1fr);}
+  #videos .grid-3 > :first-child{grid-row:auto;}
+  #videos .grid-3 > :first-child .thumb{aspect-ratio:16/9;}
+
+  /* growth: five columns is too many below 1080 — go to two, drop the
+     stagger so alternating offsets don't leave a ragged bottom edge */
+  [data-section-key="growth"] .growth-track{grid-template-columns:repeat(2,minmax(0,1fr));}
+  [data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0; padding-inline-start:0;}
+  [data-section-key="growth"] .growth-track{margin-block-start:var(--space-6);}
+
+  /* courses: the register keeps its row shape but the media column narrows */
+  [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,180px) minmax(0,1fr); gap:var(--space-6);}
+}
+
+@media (max-width:760px){
+  /* trust bar returns to a contained width — full-bleed hairlines against a
+     narrow viewport read as a broken table, not as a break */
+  .trust-grid{max-width:var(--container);}
+
+  /* growth: single column, display type releases its left bleed */
+  [data-section-key="growth"] .growth-track{grid-template-columns:minmax(0,1fr); margin-block-start:var(--space-6);}
+  [data-section-key="growth"] .growth-item{border-inline-start:0; padding-inline:0; margin-block-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:0;}
+  [data-section-key="growth"] .section-head h2{
+    margin-inline-start:0; font-size:clamp(2.1rem,10vw,3.2rem); line-height:1.02;
+  }
+
+  /* courses: stack the register rows */
+  [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,1fr); gap:var(--space-4);}
+  [data-section-key="featured_courses"] .card .thumb{aspect-ratio:16/9;}
+
+  /* about: rail bleed off, it has no room to breathe here */
+  [data-section-key="about"] .timeline-h{margin-inline:0; padding-inline:0;}
 }

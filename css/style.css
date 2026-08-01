@@ -1934,6 +1934,79 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .mentor-card:hover{background:var(--surface-1); border-color:var(--line-strong);}
 
 /* =========================================================================
+   18e. STORE SURFACES  (checkpoint 5 — store, product-detail, checkout)
+   -------------------------------------------------------------------------
+   The catalogue used the same uniform 3-up wall as courses did, and the forms
+   shipped a hover and a focus ring but no error, success, disabled or busy
+   state — which brief 2.3 Tier 1 names as most of the "cheap" feeling.
+   ========================================================================= */
+
+/* --- STORE: staggered rhythm rather than a flat wall. Every fourth product
+       takes double width, so the grid reads as composed instead of tiled.
+       Distinct from the catalogue's single lead feature. ------------------ */
+[data-mount="product-grid"] > :nth-child(4n+1){grid-column:span 2;}
+[data-mount="product-grid"] > :nth-child(4n+1){
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch;
+}
+[data-mount="product-grid"] > :nth-child(4n+1) .thumb{
+  aspect-ratio:auto; block-size:100%; min-block-size:clamp(200px,20vw,280px);
+}
+[data-mount="product-grid"] > :nth-child(4n+1) .card-body{justify-content:center;}
+[data-mount="product-grid"] > :nth-child(4n+1) .card-title{font-size:var(--step-2);}
+
+/* --- PRODUCT DETAIL: the gallery is the one elevated surface --------- */
+.gallery-main{box-shadow:var(--shadow-3); border:1px solid var(--line-strong);}
+
+/* --- FORM STATES (2.3 Tier 1) — every interactive element gets the full
+       cycle, not just hover. These hang off native attributes and the
+       .is-error / .is-success hooks so no JS needs to learn a new name. -- */
+.field input:disabled,.field select:disabled,.field textarea:disabled{
+  background:var(--surface-1); color:var(--text-3);
+  border-color:var(--line); cursor:not-allowed; opacity:.7;
+}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"],.field.is-error input,.field.is-error textarea{
+  border-color:var(--accent-ink); background:var(--accent-dim);
+}
+.field input[aria-invalid="true"]:focus,.field.is-error input:focus{
+  outline:2px solid var(--accent-ink); outline-offset:2px;
+}
+.field.is-success input,.field.is-success textarea{
+  border-color:var(--good); background:var(--good-dim);
+}
+/* error text sits BELOW the input, helper text above it stays put */
+.field .field-error{
+  display:flex; align-items:flex-start; gap:6px;
+  font-size:var(--step--2); color:var(--accent-ink);
+  margin-block-start:var(--space-2);
+}
+.field .field-help{font-size:var(--step--2); color:var(--text-3); margin-block-start:var(--space-2);}
+
+/* Buttons: press, disabled and busy. Busy keys off aria-busy so any handler
+   can set it without inventing a class. */
+.btn:disabled,.btn[disabled],.btn[aria-disabled="true"]{
+  opacity:.5; cursor:not-allowed; pointer-events:none; box-shadow:none;
+}
+.btn[aria-busy="true"]{position:relative; color:transparent; pointer-events:none;}
+.btn[aria-busy="true"]::after{
+  content:""; position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  inline-size:16px; block-size:16px; margin:-8px 0 0 -8px;
+  border:2px solid currentColor; border-block-start-color:transparent;
+  border-radius:50%; color:var(--text-on-accent);
+  animation:btnSpin .7s linear infinite;
+}
+.btn-ghost[aria-busy="true"]::after{color:var(--text-1);}
+@keyframes btnSpin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion: reduce){
+  .btn[aria-busy="true"]::after{animation-duration:2s;}
+}
+
+/* Quantity steppers get the same press feedback as everything else. */
+[data-qty-plus],[data-qty-minus]{transition:background var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out);}
+[data-qty-plus]:active,[data-qty-minus]:active{transform:scale(.94);}
+[data-qty-plus]:disabled,[data-qty-minus]:disabled{opacity:.45; cursor:not-allowed;}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2131,4 +2204,16 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   [data-mount="course-grid"] > :first-child .thumb{min-block-size:0; aspect-ratio:16/9;}
   [data-mount="course-grid"] > :first-child .card-body{padding:var(--space-6);}
   [data-mount="course-grid"] > :first-child .card-title{font-size:var(--step-2);}
+}
+
+/* --- 19d. RESPONSIVE for the store surfaces (section 18e) ---------------- */
+@media (max-width:1080px){
+  /* .grid-3 drops to 2 columns here, so a span-2 product would fill the row
+     and lose the stagger. Release it. */
+  [data-mount="product-grid"] > :nth-child(4n+1){grid-column:auto;}
+}
+@media (max-width:760px){
+  [data-mount="product-grid"] > :nth-child(4n+1){grid-template-columns:minmax(0,1fr);}
+  [data-mount="product-grid"] > :nth-child(4n+1) .thumb{min-block-size:0; aspect-ratio:16/9;}
+  [data-mount="product-grid"] > :nth-child(4n+1) .card-title{font-size:var(--step-1);}
 }

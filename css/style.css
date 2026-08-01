@@ -2218,6 +2218,53 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18h. COURSE DETAIL POLISH
+   -------------------------------------------------------------------------
+   A free course was rendering the word "ফ্রি" at 2.4rem in --good green, so
+   the loudest thing on the page was the absence of a price. A price wants
+   that scale; a state does not. The free case is now a chip at reading size,
+   which also stops a Bangla word set in the Latin-first --font-mixed stack
+   from being the largest glyphs in the composition.
+   ========================================================================= */
+.course-buy-card .price-free{
+  font-size:var(--step-1); line-height:1.2;
+  padding:6px 16px; border-radius:var(--radius-pill);
+  background:var(--good-dim); border:1px solid rgba(78,195,138,.34);
+  color:var(--good);
+}
+.course-buy-card .buy-price-row{align-items:center; gap:var(--space-4);}
+.course-buy-card .buy-price-row .small-note{margin-block-start:0;}
+
+/* Meta row: the rating, student count and duration were running together as
+   one grey line. Hairline separators give them three distinct readings
+   without adding a middle dot to every gap. */
+.meta-row > span + span{
+  padding-inline-start:var(--space-6); position:relative;
+}
+.meta-row > span + span::before{
+  content:""; position:absolute; inset-inline-start:0; inset-block:20%;
+  inline-size:1px; background:var(--line-strong);
+}
+
+/* Thin courses. A course with no curriculum, no FAQ or no reviews yet used to
+   render a heading with a bare grey sentence under it, which reads as broken
+   rather than as pending. These get the designed empty-state treatment the
+   rest of the site uses. */
+#course-curriculum .small-note,
+[data-mount="course-faq"] .small-note,
+[data-mount="course-reviews"] .small-note{
+  display:block; padding:var(--space-8) var(--space-6);
+  border:1px dashed var(--line-strong); border-radius:var(--radius-m);
+  background:var(--surface-1); color:var(--text-2); text-align:center;
+}
+
+/* The preview column follows the buy decision on long curricula instead of
+   scrolling away at the top of the page. */
+@media (min-width:1081px){
+  .course-preview{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */

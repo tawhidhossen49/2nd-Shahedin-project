@@ -18,17 +18,20 @@
     return {
       id: row.slug,
       dbId: row.id,
-      title: row.title_en || row.title_bn,
+      // Bangla-first: the site is lang="bn", so the Bangla column leads and
+      // English is the fallback. This was the other way round, which is why an
+      // admin-created course showed its English title to every visitor.
+      title: row.title_bn || row.title_en,
       title_bn: row.title_bn,
       title_en: row.title_en,
       price: row.price_bdt,
       free: row.is_free,
-      duration: row.duration_en || row.duration_bn || "",
+      duration: row.duration_bn || row.duration_en || "",
       rating: Number(row.rating) || 4.8,
       students: row.students_count || 0,
       tone: row.tone || 1,
       category: row.category || "general",
-      desc: row.description_en || row.description_bn || "",
+      desc: row.description_bn || row.description_en || "",
       image: row.thumbnail_url || null,
       modules: Array.isArray(row.modules) ? row.modules.map(mapModule) : [],
       contentBlocks: Array.isArray(row.content_blocks) ? row.content_blocks : [],
@@ -51,7 +54,7 @@
     return {
       id: row.slug,
       dbId: row.id,
-      title: row.name_en || row.name_bn,
+      title: row.name_bn || row.name_en,
       title_bn: row.name_bn,
       title_en: row.name_en,
       type: row.type || "digital",
@@ -59,7 +62,7 @@
       oldPrice: row.old_price_bdt || undefined,
       tone: row.tone || 1,
       category: row.category || "notes",
-      desc: row.description_en || row.description_bn || "",
+      desc: row.description_bn || row.description_en || "",
       image: row.image_url || null,
       stock: row.stock,
     };

@@ -1728,45 +1728,97 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
        lower edge. overflow:hidden on the section keeps the bleed from
        creating a horizontal scrollbar at any width. --------------------- */
 [data-section-key="growth"]{overflow:hidden;}
+
+/* The headline is capped at 11ch so it stacks into a deliberate left-hand
+   block instead of running the full width and colliding with the track under
+   it. It still bleeds off the left edge — that part worked — but the vertical
+   collision did not: at full width the line count grew until "from Zero" was
+   sitting on top of the first numeral. */
 [data-section-key="growth"] .section-head.center{text-align:start; margin-block-end:0;}
 [data-section-key="growth"] .section-head h2{
-  font-size:clamp(2.6rem,8.5vw,6.2rem); line-height:.94;
-  letter-spacing:-.045em; max-inline-size:none;
-  margin-inline-start:calc(-1 * clamp(8px,5vw,96px));
+  font-size:clamp(2.4rem,6.6vw,5.2rem); line-height:.96;
+  letter-spacing:-.042em; max-inline-size:11ch;
+  margin-inline-start:calc(-1 * clamp(4px,3.4vw,64px));
   position:relative; z-index:0;
 }
 [data-section-key="growth"] .section-head .eyebrow{margin-block-end:var(--space-5);}
 
-/* staggered indexed track — replaces the 780px centred vertical list */
+/* Indexed track. The alternating vertical offset is gone: with a top hairline
+   on every cell it read as five misaligned boxes rather than as rhythm. The
+   rhythm now comes from the numerals straddling the rule and from the hover
+   response, both of which survive at any column count. */
 [data-section-key="growth"] .growth-track{
   max-width:none; margin-inline:0;
   display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
   position:relative; z-index:1;
-  margin-block-start:clamp(-38px,-2.2vw,-12px);   /* the overlap */
+  margin-block-start:clamp(40px,5vw,84px);   /* real clearance, no collision */
+  border-block-start:1px solid var(--line-strong);
 }
 [data-section-key="growth"] .growth-track::before{content:none;}   /* old rail */
 [data-section-key="growth"] .growth-item{
-  padding:var(--space-7) var(--space-5) 0 var(--space-5);
-  margin-block-end:0;
-  border-block-start:1px solid var(--line-strong);
+  position:relative; margin:0;
+  /* top padding leaves room for the numeral that hangs over the rule */
+  padding:calc(var(--space-9) + 6px) var(--space-5) var(--space-8);
   border-inline-start:1px solid var(--line);
+  transition:background var(--dur-3) var(--ease-out),
+             transform var(--dur-3) var(--ease-out);
 }
-[data-section-key="growth"] .growth-item:first-child{border-inline-start:0; padding-inline-start:0;}
-/* alternate offset so the track is a stagger, not a flat row */
-[data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:var(--space-9);}
+[data-section-key="growth"] .growth-item:first-child{border-inline-start:0;}
+
+/* The accent rule that draws across the top of a cell on hover. This is the
+   one overlap left in the section and it is a line, not a block, so it can
+   never collide with text. */
+[data-section-key="growth"] .growth-item::after{
+  content:""; position:absolute; inset-block-start:-1px; inset-inline-start:0;
+  inline-size:100%; block-size:2px; background:var(--accent-fill);
+  transform:scaleX(0); transform-origin:left;
+  transition:transform var(--dur-4) var(--ease-out);
+}
+[data-section-key="growth"] .growth-item:hover,
+[data-section-key="growth"] .growth-item:focus-within{
+  background:var(--surface-2); transform:translateY(-4px);
+}
+[data-section-key="growth"] .growth-item:hover::after,
+[data-section-key="growth"] .growth-item:focus-within::after{transform:scaleX(1);}
+
+/* The numeral straddles the top rule, so the hairline appears to pass behind
+   it. Opaque type over a 1px line needs no background chip to do this, which
+   matters because the band carries a gradient the chip could not match. */
 [data-section-key="growth"] .growth-dot{
-  position:static; inline-size:auto; block-size:auto;
+  position:absolute; inset-block-start:0; inset-inline-start:var(--space-5);
+  inline-size:auto; block-size:auto;
   background:none; border:0; border-radius:0; display:block;
   font-family:var(--font-num); font-variant-numeric:tabular-nums;
-  font-size:clamp(1.9rem,3.4vw,2.9rem); font-weight:700; line-height:.9;
+  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:.9;
   letter-spacing:-.04em; color:var(--text-3);
-  margin-block-end:var(--space-4); transform:none;
+  transform:translateY(-52%);
+  transition:color var(--dur-2) var(--ease-out),
+             transform var(--dur-3) var(--ease-spring);
 }
-[data-section-key="growth"] .growth-item:first-child .growth-dot{color:var(--accent-ink);}
+[data-section-key="growth"] .growth-item:first-child .growth-dot{inset-inline-start:0;}
+[data-section-key="growth"] .growth-item:hover .growth-dot,
+[data-section-key="growth"] .growth-item:focus-within .growth-dot{
+  color:var(--accent-ink); transform:translateY(-62%);
+}
+/* .inview is added by motion.js on scroll; it must not fight the hover state */
 [data-section-key="growth"] .growth-item.inview .growth-dot{
-  background:none; border-color:transparent; transform:none; color:var(--text-3);
+  background:none; border-color:transparent; color:var(--text-3);
 }
-[data-section-key="growth"] .growth-item:first-child.inview .growth-dot{color:var(--accent-ink);}
+[data-section-key="growth"] .growth-item.inview:hover .growth-dot{color:var(--accent-ink);}
+
+[data-section-key="growth"] .growth-item .g-mark{
+  color:var(--accent-ink); letter-spacing:var(--tracking-wide);
+}
+[data-section-key="growth"] .growth-item h3{
+  font-size:var(--step-1); line-height:var(--lh-heading); text-wrap:balance;
+}
+
+@media (prefers-reduced-motion: reduce){
+  [data-section-key="growth"] .growth-item,
+  [data-section-key="growth"] .growth-item::after,
+  [data-section-key="growth"] .growth-dot{transition:none;}
+  [data-section-key="growth"] .growth-item:hover{transform:none;}
+}
 
 /* --- 7. TESTIMONIALS: scroll-snap rail, medium rhythm ------------------- */
 [data-section-key="testimonials"]{padding-block:var(--section-md);}
@@ -2311,12 +2363,16 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   #videos .grid-3 > :first-child{grid-row:auto;}
   #videos .grid-3 > :first-child .thumb{aspect-ratio:16/9;}
 
-  /* growth: five columns is too many below 1080 — go to two, drop the
-     stagger so alternating offsets don't leave a ragged bottom edge */
-  [data-section-key="growth"] .growth-track{grid-template-columns:repeat(2,minmax(0,1fr));}
-  [data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:0;}
-  [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0; padding-inline-start:0;}
-  [data-section-key="growth"] .growth-track{margin-block-start:var(--space-6);}
+  /* growth: five columns is too many below 1080 — go to two. Each row needs
+     its own top rule, and the first cell of each row loses its left border. */
+  [data-section-key="growth"] .growth-track{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    margin-block-start:clamp(28px,4vw,52px);
+  }
+  [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(n+3){border-block-start:1px solid var(--line-strong);}
+  [data-section-key="growth"] .growth-item:nth-child(odd) .growth-dot{inset-inline-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(even) .growth-dot{inset-inline-start:var(--space-5);}
 
   /* courses: the register keeps its row shape but the media column narrows */
   [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,180px) minmax(0,1fr); gap:var(--space-6);}
@@ -2327,12 +2383,19 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
      narrow viewport read as a broken table, not as a break */
   .trust-grid{max-width:var(--container);}
 
-  /* growth: single column, display type releases its left bleed */
-  [data-section-key="growth"] .growth-track{grid-template-columns:minmax(0,1fr); margin-block-start:var(--space-6);}
-  [data-section-key="growth"] .growth-item{border-inline-start:0; padding-inline:0; margin-block-start:0;}
-  [data-section-key="growth"] .growth-item:nth-child(even){margin-block-start:0;}
+  /* growth: single column. Every cell gets its own top rule, the numerals all
+     align to the left edge, and the display type releases its left bleed. */
+  [data-section-key="growth"] .growth-track{grid-template-columns:minmax(0,1fr); margin-block-start:var(--space-8);}
+  [data-section-key="growth"] .growth-item{
+    border-inline-start:0; padding-inline:0;
+    border-block-start:1px solid var(--line-strong);
+  }
+  [data-section-key="growth"] .growth-item:first-child{border-block-start:0;}
+  [data-section-key="growth"] .growth-item .growth-dot{inset-inline-start:0;}
+  [data-section-key="growth"] .growth-item:hover{transform:none;}   /* no lift in a stacked list */
   [data-section-key="growth"] .section-head h2{
-    margin-inline-start:0; font-size:clamp(2.1rem,10vw,3.2rem); line-height:1.02;
+    margin-inline-start:0; max-inline-size:none;
+    font-size:clamp(2.1rem,10vw,3.2rem); line-height:1.02;
   }
 
   /* courses: stack the register rows */

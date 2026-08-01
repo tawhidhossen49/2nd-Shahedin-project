@@ -1749,14 +1749,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   background:none; border:0; border-radius:0; display:block;
   font-family:var(--font-num); font-variant-numeric:tabular-nums;
   font-size:clamp(1.9rem,3.4vw,2.9rem); font-weight:700; line-height:.9;
-  letter-spacing:-.04em; color:var(--surface-4);
+  letter-spacing:-.04em; color:var(--text-3);
   margin-block-end:var(--space-4); transform:none;
 }
-[data-section-key="growth"] .growth-item:first-child .growth-dot{color:var(--accent-fill);}
+[data-section-key="growth"] .growth-item:first-child .growth-dot{color:var(--accent-ink);}
 [data-section-key="growth"] .growth-item.inview .growth-dot{
-  background:none; border-color:transparent; transform:none; color:var(--surface-4);
+  background:none; border-color:transparent; transform:none; color:var(--text-3);
 }
-[data-section-key="growth"] .growth-item:first-child.inview .growth-dot{color:var(--accent-fill);}
+[data-section-key="growth"] .growth-item:first-child.inview .growth-dot{color:var(--accent-ink);}
 
 /* --- 7. TESTIMONIALS: scroll-snap rail, medium rhythm ------------------- */
 [data-section-key="testimonials"]{padding-block:var(--section-md);}
@@ -2350,4 +2350,84 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   [data-mount="product-grid"] > :nth-child(4n+1){grid-template-columns:minmax(0,1fr);}
   [data-mount="product-grid"] > :nth-child(4n+1) .thumb{min-block-size:0; aspect-ratio:16/9;}
   [data-mount="product-grid"] > :nth-child(4n+1) .card-title{font-size:var(--step-1);}
+}
+
+/* =========================================================================
+   20. CHECKPOINT 8 — RESPONSIVE + A11Y PASS
+   Verified against the six widths the brief names: 1440 / 1280 / 1080 / 760
+   / 480 / 380. Only the rules the redesign introduced are here; the original
+   section 19 breakpoints still handle everything that predates it.
+   ========================================================================= */
+
+@media (max-width:1080px){
+  /* The hero stacks to one column here. Copy stays FIRST on purpose: leading
+     with a 560px portrait would push the H1 and both CTAs below the fold,
+     which the hero rule forbids. The figure shrinks instead of leading. */
+  .hero-portrait{max-inline-size:min(420px,78vw);}
+  .hero-portrait::before{inset-inline-start:-14%; inset-inline-end:-14%;}
+}
+
+@media (max-width:760px){
+  .hero{padding-block:calc(var(--nav-h) + 32px) var(--space-9);}
+  .hero-portrait{max-inline-size:min(340px,72vw); margin-block-start:var(--space-7);}
+  /* the arc tucks in so it never reaches past the viewport on a phone */
+  .hero-portrait::before{inset-inline:-6%; block-size:34%;}
+  /* the story ring shrinks with its figure */
+  .about-portrait:not(.hero-portrait){max-inline-size:min(320px,74vw);}
+  .kit-hero .hero-portrait::before{inline-size:82%; inset-inline-end:-4%;}
+}
+
+@media (max-width:480px){
+  /* Bangla display type needs a floor: below this the matra and descenders
+     collide before the line ever gets short enough to matter. */
+  .hero-title{font-size:clamp(1.75rem,8.4vw,2.3rem);}
+  [data-section-key="growth"] .section-head h2{font-size:clamp(1.9rem,9vw,2.6rem);}
+  .hero-stats{grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-4);}
+  .vfacade-play{inline-size:50px; block-size:50px;}
+  .vfacade-play svg{inline-size:18px; block-size:18px;}
+}
+
+@media (max-width:380px){
+  .hero-portrait{max-inline-size:min(280px,80vw);}
+  .hero-stats{grid-template-columns:minmax(0,1fr);}
+  .trust-grid{grid-template-columns:minmax(0,1fr);}
+  [data-section-key="growth"] .section-head h2{font-size:1.75rem; letter-spacing:-.02em;}
+}
+
+/* -------------------------------------------------------------------------
+   A11Y
+   The global :focus-visible ring already exists; these are the elements the
+   redesign added or de-boxed, which lost their previous focus affordance
+   along with their border.
+   ------------------------------------------------------------------------- */
+.vfacade-btn:focus-visible,
+.accordion-head:focus-visible,
+.dash-side .side-link:focus-visible,
+[data-qty-plus]:focus-visible,[data-qty-minus]:focus-visible{
+  outline:2px solid var(--accent-ink); outline-offset:3px; border-radius:var(--radius-xs);
+}
+/* De-carded rows have no border left to thicken, so focus and hover are shown
+   with an inset accent edge — the same signal .accordion-item.open uses. */
+[data-section-key="featured_courses"] .card:focus-visible,
+.dash-main .card:focus-visible,
+.kit-stat-card:focus-visible,.case-card:focus-visible,.partner-card:focus-visible{
+  outline:none; box-shadow:inset 3px 0 0 var(--accent-fill); background:var(--surface-1);
+}
+/* The tilt in motion.js writes an inline transform; a keyboard user never
+   triggers pointermove, so focus needs its own lift. */
+.card:focus-visible{box-shadow:var(--shadow-3), 0 10px 30px -12px var(--accent-glow);}
+
+/* Touch targets. The de-boxed controls lost their padding along with their
+   box; this puts the 44px minimum back without re-introducing a border. */
+@media (pointer: coarse){
+  .accordion-head{min-block-size:48px;}
+  .tab-btn,.chip{min-block-size:44px;}
+  .dash-side .side-link{min-block-size:44px;}
+}
+
+/* prefers-reduced-transparency: the facade badge and the nav both lean on
+   backdrop-filter, which is exactly what this query exists to switch off. */
+@media (prefers-reduced-transparency: reduce){
+  .vfacade-dur{backdrop-filter:none; -webkit-backdrop-filter:none; background:rgb(8 4 2 / .92);}
+  .site-nav{backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-0);}
 }

@@ -1767,6 +1767,100 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .press-item .p-logo{font-size:var(--step-1); font-weight:600;}
 
 /* =========================================================================
+   18c. VIDEO FACADE  (brief 2.4)
+   -------------------------------------------------------------------------
+   The poster, play control and states for js/video-facade.js. Everything
+   here is ours: our radius, our hairline, our scrim, our accent, our type
+   for the duration badge. No YouTube chrome renders until the visitor
+   clicks, at which point .vfacade-stage is replaced by the iframe.
+   ========================================================================= */
+.vfacade{position:relative; display:block;}
+.vfacade-stage{
+  position:relative; display:block; inline-size:100%;
+  aspect-ratio:var(--vf-ratio,16/9);
+  overflow:hidden; border-radius:var(--radius-m);
+  border:1px solid var(--line); background:var(--surface-2);
+  padding:0; margin:0; cursor:pointer;
+  transition:border-color var(--dur-2) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out);
+}
+.vfacade-img{
+  position:absolute; inset:0; inline-size:100%; block-size:100%;
+  object-fit:cover;   /* crops hqdefault's 4:3 letterbox back to 16:9 */
+  transition:transform var(--dur-5) var(--ease-out);
+}
+.vfacade-scrim{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(7,5,4,.10), transparent 70%),
+    linear-gradient(180deg, rgba(7,5,4,0) 40%, rgba(7,5,4,.62) 100%);
+}
+.vfacade-play{
+  position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  transform:translate(-50%,-50%);
+  inline-size:62px; block-size:62px; border-radius:var(--radius-pill);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent-fill); color:var(--text-on-accent);
+  box-shadow:var(--shadow-accent);
+  transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);
+}
+.vfacade-play svg{inline-size:22px; block-size:22px; margin-inline-start:3px;}
+.vfacade-dur{
+  position:absolute; inset-block-start:var(--space-4); inset-inline-end:var(--space-4);
+  font-family:var(--font-mixed); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); font-weight:600; line-height:1;
+  padding:6px 10px; border-radius:var(--radius-pill);
+  background:rgba(8,4,2,.72); color:var(--text-1);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+/* hover / focus / press — brief 2.3 Tier 1 wants real states, not one hover */
+.vfacade-btn:hover .vfacade-play{transform:translate(-50%,-50%) scale(1.09); background:var(--accent-hover);}
+.vfacade-btn:hover .vfacade-img{transform:scale(1.035);}
+.vfacade-btn:hover{border-color:var(--line-strong); box-shadow:var(--shadow-3);}
+.vfacade-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:3px;}
+.vfacade-btn:active .vfacade-play{transform:translate(-50%,-50%) scale(.96);}
+
+/* locked + coming-soon: designed states, not a raw message */
+.vfacade-state{
+  position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  transform:translate(-50%,-50%);
+  inline-size:56px; block-size:56px; border-radius:var(--radius-pill);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--surface-3); border:1px solid var(--line-strong); color:var(--text-2);
+}
+.vfacade-state svg{inline-size:22px; block-size:22px;}
+.vfacade.is-locked .vfacade-state{background:var(--accent-dim); border-color:var(--line-accent); color:var(--accent-ink);}
+.vfacade.is-soon .vfacade-stage{
+  background:linear-gradient(158deg,var(--surface-3),var(--surface-0));
+  border-style:dashed;
+}
+.vfacade-cap{
+  display:flex; align-items:flex-start; gap:var(--space-3);
+  font-size:var(--step--2); color:var(--text-3); line-height:1.55;
+  margin-block-start:var(--space-3);
+}
+.vfacade-cap svg{inline-size:15px; block-size:15px; flex:0 0 auto; margin-block-start:2px;}
+
+/* Homepage video card: .thumb doubles as the facade stage, so the stage drops
+   its own frame — .card already supplies the border, radius and clipping, and
+   two nested frames read as a box inside a box. */
+.thumb.vfacade-stage{
+  display:block; inline-size:100%; padding:0;
+  border:0; border-radius:0; background:var(--surface-3);
+}
+.thumb.vfacade-stage:hover{box-shadow:none;}
+.vcard{cursor:default;}
+
+.vfacade-iframe{
+  inline-size:100%; aspect-ratio:var(--vf-ratio,16/9); display:block;
+  border:1px solid var(--line-strong); border-radius:var(--radius-m);
+  background:#000;
+}
+@media (prefers-reduced-motion: reduce){
+  .vfacade-img,.vfacade-play{transition:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */

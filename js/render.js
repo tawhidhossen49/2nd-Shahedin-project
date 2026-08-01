@@ -179,7 +179,7 @@
       return `<div class="content-block content-block-video" data-block-id="${escapeHtml(block.id)}" data-block-type="video">
         ${head(CB_ICON.video)}
         ${vid
-          ? `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+          ? videoFacade({ url: block.youtube_url, title: block.title || "" })
           : `<p class="small-note">ভিডিও লিংক এখনো দেওয়া হয়নি।</p>`}
         ${progressControl}
       </div>`;
@@ -266,23 +266,43 @@
     return `<p class="small-note">কারিকুলাম শীঘ্রই আসছে।</p>`;
   }
 
+  /* ---------- Video facade bridge (brief 2.4) ----------
+     js/video-facade.js owns the poster, the accent play button, the duration
+     badge and the locked / coming-soon states, and only creates the real
+     iframe on click. This wrapper keeps render.js working even if that file
+     fails to load: the fallback is the old inline embed rather than a hole
+     where the video should be. */
+  function videoFacade(opts) {
+    if (window.VideoFacade && typeof window.VideoFacade.html === "function") {
+      return window.VideoFacade.html(opts);
+    }
+    const vid = youtubeEmbedId(opts.url || opts.id);
+    if (!vid) return `<p class="small-note">ভিডিও শীঘ্রই যোগ করা হবে।</p>`;
+    return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${escapeHtml(opts.title || "")}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
+  }
+
   /* ---------- Course hero preview player ----------
-     Shows the first playable curriculum video in the course-detail hero's
-     right column. For a paid course the visitor isn't enrolled in, the
-     `courses_safe` view strips every video URL, so we fall back to the
-     course thumbnail with a locked-state note instead. */
+     Shows the first playable curriculum video as a facade. For a paid course
+     the visitor isn't enrolled in, the `courses_safe` view strips every video
+     URL, so we fall back to the locked state over the course artwork. */
   function coursePreviewHTML(c) {
     const blocks = Array.isArray(c.contentBlocks) ? c.contentBlocks : [];
     const first = blocks.find((b) => b.type === "video" && !b.locked && youtubeEmbedId(b.youtube_url));
     if (first) {
-      return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${youtubeEmbedId(first.youtube_url)}" title="${escapeHtml(first.title || c.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
-        <div class="course-preview-cap">${CB_ICON.video} <span>${escapeHtml(first.title || "কোর্স প্রিভিউ")}</span></div>`;
+      return videoFacade({
+        url: first.youtube_url,
+        title: first.title || c.title || "কোর্স প্রিভিউ",
+        image: c.image || "",
+      });
     }
-    const poster = c.image
-      ? ` class="course-preview-poster has-image" style="background-image:url('${escapeHtml(c.image)}');"`
-      : ` class="course-preview-poster"`;
-    return `<div${poster}><span class="lock-icon">${blocks.length ? ICON.lock : ICON.videoOff}</span></div>
-      <div class="course-preview-cap">${blocks.length ? ICON.lock : ICON.videoOff}<span>${blocks.length ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।" : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।"}</span></div>`;
+    return videoFacade({
+      state: blocks.length ? "locked" : "soon",
+      title: c.title || "",
+      image: c.image || "",
+      caption: blocks.length
+        ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।"
+        : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।",
+    });
   }
 
   const DEFAULT_MENTOR = {

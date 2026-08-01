@@ -4,14 +4,10 @@
 (function () {
   "use strict";
 
-  /* ---------- Nav scroll state ---------- */
-  const nav = document.querySelector(".site-nav");
-  function onScroll() {
-    if (!nav) return;
-    nav.classList.toggle("scrolled", window.scrollY > 20);
-  }
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
+  /* ---------- Nav scroll state ----------
+     The .scrolled toggle moved into js/motion.js's shared scroll task, so the
+     whole site runs on ONE passive scroll listener and one rAF loop
+     (brief 2.3). Nothing in this file listens to scroll any more. */
 
   /* ---------- Mobile menu ----------
      Keyboard-complete: the burger reports its state, Escape closes, focus
@@ -165,19 +161,19 @@
     const head = e.target.closest(".accordion-head");
     if (!head) return;
     const item = head.closest(".accordion-item");
-    const body = item.querySelector(".accordion-body");
     const isOpen = item.classList.contains("open");
     const parent = item.parentElement;
     parent.querySelectorAll(".accordion-item.open").forEach((openItem) => {
       if (openItem !== item) {
         openItem.classList.remove("open");
-        openItem.querySelector(".accordion-body").style.maxHeight = null;
         const otherHead = openItem.querySelector(".accordion-head");
         if (otherHead) otherHead.setAttribute("aria-expanded", "false");
       }
     });
+    /* Height is CSS-driven now (grid-template-rows 0fr -> 1fr), so there is no
+       scrollHeight read and no inline max-height to keep in sync. The .open
+       class is the single source of truth. */
     item.classList.toggle("open", !isOpen);
-    body.style.maxHeight = !isOpen ? body.scrollHeight + "px" : null;
     // The heads are <button aria-expanded> — keep the reported state honest.
     head.setAttribute("aria-expanded", String(!isOpen));
   });
@@ -187,8 +183,6 @@
       firstAcc.classList.add("open");
       const head = firstAcc.querySelector(".accordion-head");
       if (head) head.setAttribute("aria-expanded", "true");
-      const b = firstAcc.querySelector(".accordion-body");
-      if (b) requestAnimationFrame(() => (b.style.maxHeight = b.scrollHeight + "px"));
     }
   }
   openFirstAccordion();

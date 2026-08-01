@@ -59,7 +59,7 @@
                 <div class="row-title-cell">
                   <div class="row-thumb" style="${course.thumbnail_url ? `background-image:url('${course.thumbnail_url}')` : ""}"></div>
                   <div>
-                    <div class="row-title">${Admin.escapeHtml(course.title_en || course.title_bn)}</div>
+                    <div class="row-title">${Admin.escapeHtml(course.title_bn || course.title_en)}</div>
                     <div class="row-sub">${Admin.escapeHtml(course.category)} · /${Admin.escapeHtml(course.slug)}</div>
                   </div>
                 </div>
@@ -83,7 +83,7 @@
 
   async function deleteCourse(id) {
     const course = courses.find((x) => x.id === id);
-    if (!confirm(`Delete "${course.title_en || course.title_bn}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${course.title_bn || course.title_en}"? This can't be undone.`)) return;
     const { error } = await c.from("courses").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Course deleted.");
@@ -106,19 +106,23 @@
         <form id="courseForm">
           <div class="form-grid">
             <div class="form-field">
-              <label>Title (English)</label>
-              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}" required>
+              <label>Title (Bangla) <span class="hint">this is what visitors see</span></label>
+              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}" required>
             </div>
             <div class="form-field">
-              <label>Title (Bangla) <span class="hint">optional</span></label>
-              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
+              <label>Title (English) <span class="hint">used for the page link and this admin list</span></label>
+              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}" required>
             </div>
             <div class="form-field full">
               <label>Link on the site <span class="hint">auto-filled from the English title — only change this if you know what it does</span></label>
               <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}" required>
             </div>
             <div class="form-field full">
-              <label>Description (English)</label>
+              <label>Description (Bangla) <span class="hint">this is what visitors see</span></label>
+              <textarea id="f_desc_bn">${Admin.escapeHtml(course?.description_bn || "")}</textarea>
+            </div>
+            <div class="form-field full">
+              <label>Description (English) <span class="hint">optional fallback</span></label>
               <textarea id="f_desc_en">${Admin.escapeHtml(course?.description_en || "")}</textarea>
             </div>
             <div class="form-field">
@@ -127,8 +131,12 @@
               <datalist id="categoryList">${CATEGORY_SUGGESTIONS.map((x) => `<option value="${x}">`).join("")}</datalist>
             </div>
             <div class="form-field">
-              <label>Duration <span class="hint">shown as a badge, e.g. "3h 20m"</span></label>
+              <label>Duration <span class="hint">write it in English, e.g. "3h 20m" or "6 weeks" — the site converts it to Bangla automatically</span></label>
               <input type="text" id="f_duration" value="${Admin.escapeHtml(course?.duration_en || "")}">
+            </div>
+            <div class="form-field">
+              <label>Duration (Bangla) <span class="hint">optional — only fill this if you want to override the automatic conversion</span></label>
+              <input type="text" id="f_duration_bn" value="${Admin.escapeHtml(course?.duration_bn || "")}">
             </div>
             <div class="form-field">
               <label>Price (৳ BDT)</label>
@@ -465,11 +473,20 @@
 
       const payload = {
         title_en: document.getElementById("f_title_en").value.trim(),
-        title_bn: document.getElementById("f_title_bn").value.trim() || null,
+        /* courses.title_bn is NOT NULL in schema.sql. This used to send null
+           when the field was blank, which made the insert fail with a
+           constraint violation and no useful message in the UI. The field is
+           required in the form now, and the English title is the last-resort
+           fallback so a save can never be rejected for this reason again. */
+        title_bn:
+          document.getElementById("f_title_bn").value.trim() ||
+          document.getElementById("f_title_en").value.trim(),
         slug: Admin.slugify(document.getElementById("f_slug").value),
+        description_bn: document.getElementById("f_desc_bn").value.trim() || null,
         description_en: document.getElementById("f_desc_en").value.trim(),
         category: document.getElementById("f_category").value.trim() || "general",
         duration_en: document.getElementById("f_duration").value.trim(),
+        duration_bn: document.getElementById("f_duration_bn").value.trim() || null,
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
         is_free: document.getElementById("f_free").checked,
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),

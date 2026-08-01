@@ -33,26 +33,31 @@
   const esc = (s) =>
     String(s == null ? "" : s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
-  /* The play affordance is a <span>, not a <button>: the whole card is
-     already the link, so a nested button was an unreachable duplicate
-     control in the tab order. */
+  /* Click-to-load facade (brief 2.4). The card used to be an <a> straight out
+     to youtube.com, which sent every visitor off the site to watch. Now the
+     poster is a real <button> that swaps in the player in place, so the
+     thumbnail, play control and duration badge are all ours and no YouTube
+     script runs until someone actually asks for a video.
+
+     The card keeps .card / .thumb / .card-title so the homepage bento layout
+     in style.css section 18b still targets it. The outbound link survives as
+     a secondary text link in the meta row for anyone who wants the channel. */
   function videoCardHTML(v) {
     const title = esc(v.title);
+    const id = encodeURIComponent(v.id);
     return `
-    <a href="https://www.youtube.com/watch?v=${encodeURIComponent(v.id)}" target="_blank" rel="noopener" class="card">
-      <div class="thumb has-image">
-        <img src="${esc(v.thumbnail)}" alt="${title}" loading="lazy" decoding="async">
-        <div class="thumb-overlay"></div>
-        <span class="play-btn" aria-hidden="true">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </span>
-        <div class="thumb-badges"><span class="badge badge-dur">${bn(v.duration)}</span></div>
-      </div>
+    <div class="card vcard" data-vfacade data-video-id="${esc(v.id)}">
+      <button type="button" class="thumb has-image vfacade-btn vfacade-stage" aria-label="ভিডিও চালান: ${title}">
+        <img class="vfacade-img" src="${esc(v.thumbnail)}" alt="${title}" loading="lazy" decoding="async">
+        <span class="vfacade-scrim"></span>
+        <span class="vfacade-play"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span>
+        ${v.duration ? `<span class="vfacade-dur">${bn(v.duration)}</span>` : ""}
+      </button>
       <div class="card-body">
         <div class="card-title card-title-clamp">${title}</div>
-        <div class="card-meta">${bn(v.views)} ভিউ</div>
+        <div class="card-meta">${bn(v.views)} ভিউ · <a href="https://www.youtube.com/watch?v=${id}" target="_blank" rel="noopener" class="text-link">ইউটিউবে দেখুন</a></div>
       </div>
-    </a>`;
+    </div>`;
   }
 
   async function fetchLatestVideos() {

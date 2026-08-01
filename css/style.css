@@ -69,11 +69,21 @@ html.no-js .reveal{opacity:1 !important; transform:none !important;}
    something to catch, which is most of the difference between "dark theme"
    and "printed". Both are pointer-events:none and paint once.
    ========================================================================= */
+/* Grain. Previously opacity .32 with mix-blend-mode:overlay — and overlay
+   against surfaces this dark (#0b0908) returns almost nothing, so the tooth
+   was invisible at 100% zoom. Three changes, all in service of "printed"
+   rather than "dark theme":
+     · soft-light instead of overlay. Overlay pushes toward the backdrop's
+       own luminance, which on near-black is a no-op. soft-light lifts.
+     · baseFrequency 0.85 -> 0.58 and tile 140 -> 200px. The old noise was so
+       fine it fell below one device pixel on 2x displays and averaged out.
+     · opacity .32 -> .58, which is legible without becoming texture-as-effect.
+   Still fixed, still pointer-events:none, still paints once. */
 body::before{
   content:""; position:fixed; inset:0; z-index:var(--z-grain); pointer-events:none;
-  opacity:.32; mix-blend-mode:overlay;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
-  background-size:140px 140px;
+  opacity:.58; mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.58' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.62'/%3E%3C/svg%3E");
+  background-size:200px 200px;
 }
 body::after{
   content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
@@ -507,12 +517,19 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   position:absolute; inset:0;
   background:linear-gradient(180deg,rgba(7,5,4,0) 35%,rgba(7,5,4,.62) 100%);
 }
+/* Card artwork tones — the fallback gradient a course or product shows when it
+   has no image of its own. The old set ran #2b5876 steel blue at tone-2 and
+   #5a2a6b purple at tone-4, which is exactly the purple/blue gradient the
+   taste bar bans, and on a warm-ink page they read as imported from another
+   site. All six are now warm: one crimson anchored on --accent-fill, then
+   rust, ochre, olive, clay and umber. Still six clearly distinct tones, but
+   they belong to this palette instead of fighting it. */
 .thumb-tone-1::before{background:linear-gradient(150deg,#3a0d17,#c1122f);}
-.thumb-tone-2::before{background:linear-gradient(150deg,#12202b,#2b5876);}
-.thumb-tone-3::before{background:linear-gradient(150deg,#241a08,#8a5a1f);}
-.thumb-tone-4::before{background:linear-gradient(150deg,#1b1420,#5a2a6b);}
-.thumb-tone-5::before{background:linear-gradient(150deg,#0e2418,#1f7a54);}
-.thumb-tone-6::before{background:linear-gradient(150deg,#241010,#7a1f1f);}
+.thumb-tone-2::before{background:linear-gradient(150deg,#2a1208,#9c4a1e);}
+.thumb-tone-3::before{background:linear-gradient(150deg,#2b2109,#a8802a);}
+.thumb-tone-4::before{background:linear-gradient(150deg,#1c2110,#5f7333);}
+.thumb-tone-5::before{background:linear-gradient(150deg,#2e1512,#8f3b2e);}
+.thumb-tone-6::before{background:linear-gradient(150deg,#241a14,#6b4b32);}
 /* Placeholder mark for cards with no artwork (B10: missing course image). */
 .thumb-icon{position:relative; z-index:1; margin:auto; opacity:.55; color:#fff;}
 .thumb-icon svg{inline-size:40px; block-size:40px;}
@@ -682,7 +699,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .accordion-head:hover{color:var(--accent-ink);}
 .accordion-head svg{inline-size:17px; block-size:17px; color:var(--text-3); transition:transform var(--dur-3) var(--ease-out), color var(--dur-2);}
 .accordion-item.open .accordion-head svg{transform:rotate(180deg); color:var(--accent-ink);}
-.accordion-body{max-height:0; overflow:hidden; transition:max-height var(--dur-4) var(--ease-in-out);}
+/* Height is animated with grid-template-rows rather than max-height: no magic
+   number, no scrollHeight read from JS, and it degrades to an instant open on
+   engines without the interpolation. This is the ONE deliberate exception to
+   the transform/opacity-only rule — there is no transform-only way to animate
+   an auto height without distorting the content inside it. */
+.accordion-body{display:grid; grid-template-rows:0fr; overflow:hidden; transition:grid-template-rows var(--dur-4) var(--ease-in-out);}
+.accordion-body > *{min-block-size:0;}
+.accordion-item.open .accordion-body{grid-template-rows:1fr;}
 
 .lesson-row{
   display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-5);
@@ -829,20 +853,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* =========================================================================
    12. HERO (home)
    ========================================================================= */
+/* The hero's own radial wash is gone. Brief 2.1 asks for ONE shape behind the
+   figure, not a stack, and the site-wide ambient warm gradients already come
+   from body::after. The .hero-portrait::before arc is now the only shape.
+   overflow:hidden stays for exactly one reason: clipping the crown bleed. */
 .hero{
   position:relative; inline-size:100%; overflow:hidden;
   padding-block:clamp(120px,14vw,180px) clamp(56px,8vw,100px);
-}
-.hero::before{
-  content:""; position:absolute; inset-block-start:0; inset-inline-end:-10%;
-  inline-size:70%; block-size:120%; pointer-events:none;
-  background:radial-gradient(closest-side, rgba(193,18,47,.16), transparent 72%);
 }
 .hero-inner{
   position:relative; z-index:2; max-width:var(--container);
   margin-inline:auto; padding-inline:var(--gutter); inline-size:100%;
 }
-.hero-copy{position:relative;}
+/* Copy sits above the arc, which reaches back under this column. */
+.hero-copy{position:relative; z-index:2;}
 
 .hero-eyebrow{
   display:inline-flex; align-items:center; gap:var(--space-2);
@@ -883,31 +907,79 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   overflow-wrap:anywhere;
 }
 
-/* Hero portrait.
-   ASSET NOTE: shahedin-cutout.webp is a feathered footer cutout, so here it
-   is deliberately framed — arched card, warm gradient bed behind it and a
-   bottom fade that absorbs the feathered edge instead of fighting it.
-   A purpose-shot replacement would be: waist-up, shot against a plain
-   backdrop, eyes on the upper third, 4:5, >=1600px on the long edge. */
+/* =========================================================================
+   HERO PORTRAIT — de-boxed (brief 2.1)
+   -------------------------------------------------------------------------
+   Previously this was a bordered, rounded, gradient-filled card with
+   overflow:hidden, which put a transparent cutout back inside a frame and
+   read as a stock photo in a widget. Everything that made it a card is gone:
+   no border, no radius, no background, no box-shadow, no overflow:hidden.
+
+   ONE shape sits behind the figure — the ::before arc — and it is
+   deliberately too small to contain him. The geometry is derived from the
+   asset's actual alpha matte, measured rather than guessed:
+
+     subject matte ..... 33.6% transparent, 7.2% partial (hair edge)
+     shoulder line ..... source row 465 of 1024
+     crop .............. rows 0-800 via aspect-ratio 1/1 + object-position top
+                         -> shoulder lands at 465/800 = 58% of the element
+     arc top edge ...... 37% block-size from the bottom = 63% from the top
+
+   58% < 63%, so the head and BOTH shoulders clear the arc's top edge. That
+   overlap is what makes it read as art direction instead of a placed image.
+
+   Two asset constraints are worked around rather than hidden: the crown is
+   clipped at source row 0 (so the figure bleeds off the top of the band and
+   the cut lands on the nav hairline), and the arms touch both frame edges by
+   row 768 (so the crop stops at 800 and the base feathers out). One photo
+   with headroom above the crown and margin beside the arms removes both. */
 .hero-portrait{
-  position:relative; aspect-ratio:4/5; inline-size:100%; max-block-size:600px;
-  margin-inline:auto; border-radius:var(--radius-xl) var(--radius-xl) var(--radius-l) var(--radius-l);
-  overflow:hidden; border:1px solid var(--line-strong);
-  background:
-    radial-gradient(120% 90% at 50% 0%, rgba(193,18,47,.30), transparent 62%),
-    linear-gradient(170deg,var(--surface-3),var(--surface-0));
-  box-shadow:var(--shadow-4);
+  position:relative; z-index:1;
+  aspect-ratio:1/1; inline-size:100%; max-inline-size:560px;
+  margin-inline:auto;
 }
+/* THE ONE SHAPE. Bleeds past the right gutter for the off-grid pull, and
+   reaches back LEFT underneath the copy column — that cross-column overlap is
+   this section's grid-break (brief 2.2). The copy sits at z-index 2, the arc
+   at 0, so nothing costs legibility. */
+/* Light Rays stage (js/light-rays.js).
+   The canvas injects itself as the hero's first child and sits at z-index 0,
+   underneath the portrait (1) and the copy (2). pointer-events:none so it
+   never intercepts a click on the CTAs behind it. The mask fades the bottom
+   quarter out so the beams dissolve into the band rather than ending on the
+   section edge — the same trick the portrait's base uses. */
+.hero > .light-rays{
+  position:absolute; inset:0; z-index:0;
+  inline-size:100%; block-size:100%;
+  pointer-events:none; display:block;
+  -webkit-mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);
+          mask-image:linear-gradient(to bottom,#000 55%,transparent 100%);
+}
+
+/* No shape behind the figure, by request. The arc that used to sit here is
+   gone entirely — first its red bloom, now the shape itself. The portrait
+   stands on the page with nothing behind it but the band.
+
+   What holds the composition together without it:
+     · the drop-shadow pair on the img below, which follows the alpha matte
+       rather than a bounding box, so the figure reads as lit and grounded
+     · the bottom mask, which dissolves the base into the band instead of
+       ending on a cut line
+   This is a deliberate departure from brief 2.1's "one large shape behind
+   them" — the shape was removed on request, not overlooked. */
+.hero-portrait::before{content:none;}
 .hero-portrait img{
-  inline-size:100%; block-size:100%; object-fit:cover; object-position:50% 12%;
-  filter:saturate(.94) contrast(1.05);
-  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 11%,#000 100%);
-  mask-image:linear-gradient(to top,transparent 0%,#000 11%,#000 100%);
+  position:relative; z-index:1;
+  inline-size:100%; block-size:100%;
+  object-fit:cover; object-position:50% 0%;
+  /* drop-shadow() follows the alpha matte, so the warm rim light and the
+     grounding shadow both hug the silhouette instead of a bounding box. */
+  filter:saturate(.96) contrast(1.04)
+         drop-shadow(0 0 22px rgba(255,179,122,.22))
+         drop-shadow(0 26px 44px rgba(8,4,2,.60));
+  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
+          mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
   will-change:transform;
-}
-.hero-portrait::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg,transparent 55%,rgba(7,5,4,.55) 100%);
 }
 
 /* =========================================================================
@@ -951,19 +1023,39 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .about-grid-text-first{grid-template-columns:minmax(0,1.12fr) minmax(0,.88fr);}
 .about-grid > *,.product-grid > *,.course-hero-grid > *,.contact-grid > *,.footer-inner > *,.two-col > *{min-inline-size:0;}
 
-/* ASSET NOTE (story portrait): same cutout again. Framed in a soft-arch
-   card with a top-weighted crop so the feathered feet land outside the box.
-   Replacement: candid working shot, 4:5, warm key light. */
-.about-portrait{
-  aspect-ratio:4/5; border-radius:var(--radius-l); overflow:hidden; position:relative;
-  border:1px solid var(--line);
-  background:linear-gradient(165deg,var(--surface-3),var(--surface-0));
+/* STORY PORTRAIT — de-boxed, SECOND treatment (brief 2.1).
+   The card, border, radius, gradient bed and bottom scrim are all gone.
+   Where the hero uses a filled arc, this one uses an OUTLINED RING with no
+   fill, a tighter head-and-shoulders crop (source rows 0-560) and a cooler,
+   flatter grade — so the two portraits read as two photographs rather than
+   one component placed twice.
+
+   SPECIFICITY NOTE: the hero element in index.html carries BOTH
+   .about-portrait and .hero-portrait, and this block sits later in the file.
+   Every rule is therefore scoped :not(.hero-portrait), otherwise the ring
+   treatment would silently override the hero's arc. */
+.about-portrait:not(.hero-portrait){
+  position:relative; aspect-ratio:800/560;
+  inline-size:100%; max-inline-size:420px; margin-inline:auto;
 }
-.about-portrait::after{
-  content:""; position:absolute; inset:0; pointer-events:none;
-  background:linear-gradient(180deg,transparent 60%,rgba(7,5,4,.5) 100%);
+/* the ring: narrower than his shoulders and shorter than his head, so the
+   figure breaks past it on three sides */
+.about-portrait:not(.hero-portrait)::before{
+  content:""; position:absolute; z-index:0;
+  inset-block-end:2%; inset-inline-start:50%; transform:translateX(-50%);
+  block-size:88%; aspect-ratio:1/1; border-radius:50%;
+  border:1px solid var(--line-accent);
+  background:radial-gradient(62% 62% at 50% 62%, var(--accent-dim), transparent 72%);
 }
-.about-portrait img{inline-size:100%; block-size:100%; object-fit:cover; object-position:50% top;}
+.about-portrait:not(.hero-portrait) img{
+  position:relative; z-index:1;
+  inline-size:100%; block-size:100%;
+  object-fit:cover; object-position:50% 0%;
+  filter:saturate(.72) contrast(1.06) brightness(.98)
+         drop-shadow(0 18px 34px rgba(8,4,2,.55));
+  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
+          mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
+}
 .about-copy > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
 .about-copy > div > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
 .about-copy p:first-of-type{font-family:var(--font-display); font-size:var(--step-1); line-height:1.55; color:var(--text-1);}
@@ -1206,7 +1298,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-summary-head{display:flex; justify-content:space-between; gap:var(--space-3); font-size:var(--step--1); font-weight:600; margin-block-end:var(--space-3);}
 .progress-summary-head span:last-child{color:var(--accent-ink); font-family:var(--font-mixed);}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
-.progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
+.progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left;}
 
 .content-block-locked{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-3);
@@ -1534,16 +1626,24 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .reveal-stagger.inview > *:nth-child(6){transition-delay:calc(var(--stagger) * 5);}
 .reveal-stagger.inview > *:nth-child(n+7){transition-delay:calc(var(--stagger) * 6);}
 
-/* Homepage hero load choreography. Runs once, on load, without JS. */
+/* Homepage hero load choreography (brief 2.3, Tier 1).
+   Order is exactly as specified: eyebrow -> headline -> sub -> CTAs -> stats
+   -> portrait, 80ms apart. The portrait lands LAST, at 480ms, so the figure
+   arrives as the payoff rather than competing with the headline. Runs once on
+   load, no JS, and `backwards` holds the from-state so nothing flashes before
+   its turn. transform and opacity only. */
 .hero-seq > *{animation:heroIn var(--dur-5) var(--ease-out) backwards;}
-.hero-seq > *:nth-child(1){animation-delay:80ms;}
-.hero-seq > *:nth-child(2){animation-delay:180ms;}
-.hero-seq > *:nth-child(3){animation-delay:280ms;}
-.hero-seq > *:nth-child(4){animation-delay:380ms;}
-.hero-seq > *:nth-child(5){animation-delay:480ms;}
+.hero-seq > *:nth-child(1){animation-delay:80ms;}   /* eyebrow  */
+.hero-seq > *:nth-child(2){animation-delay:160ms;}  /* headline */
+.hero-seq > *:nth-child(3){animation-delay:240ms;}  /* sub      */
+.hero-seq > *:nth-child(4){animation-delay:320ms;}  /* CTAs     */
+.hero-seq > *:nth-child(5){animation-delay:400ms;}  /* stats    */
 @keyframes heroIn{from{opacity:0; transform:translateY(22px);}to{opacity:1; transform:none;}}
-.hero-portrait{animation:portraitIn var(--dur-5) var(--ease-out) 240ms backwards;}
+.hero-portrait{animation:portraitIn var(--dur-5) var(--ease-out) 480ms backwards;}
 @keyframes portraitIn{from{opacity:0; transform:translateY(30px) scale(.97);}to{opacity:1; transform:none;}}
+@media (prefers-reduced-motion: reduce){
+  .hero-seq > *,.hero-portrait{animation:none;}
+}
 
 /* Scroll-driven parallax where supported; js/motion.js covers the rest. */
 @supports (animation-timeline: view()){
@@ -1556,6 +1656,613 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   }
 }
 @keyframes parallaxY{from{transform:translateY(3%);}to{transform:translateY(-3%);}}
+
+/* =========================================================================
+   18b. HOMEPAGE SECTION RHYTHM  (brief 2.2 — break the grid)
+   -------------------------------------------------------------------------
+   Every section used to be `.section-pad .container` wrapping an equal-column
+   card grid, so nothing was more important than anything else. This block
+   gives each of the eight sections a DIFFERENT layout shape, three container
+   breaks and two real overlaps, without touching one line of index.html —
+   every hook below is an existing class or an existing data-section-key, so
+   the JS contract is untouched.
+
+   Shape per section, in page order (no two neighbours share one):
+     1 hero               off-grid, arc overlapping the copy column   [break + overlap]
+     2 trust_bar          full-bleed ruled row                         [break]
+     3 about              editorial 2-col + bled horizontal rail       [break]
+     4 videos             asymmetric bento, 1 large + 2 stacked
+     5 featured_courses   ruled register rows
+     6 growth             oversized display + staggered indexed track  [break + overlap]
+     7 testimonials       scroll-snap rail
+     8 press              airy minimal columns
+
+   Vertical rhythm alternates dense against airy: lg / compact / lg / lg /
+   md / lg / md / sm.
+   ========================================================================= */
+
+/* --- 1b. HERO STATS: hidden by request.
+       Hidden rather than deleted on purpose. All eight stats.* data-field
+       hooks stay on their elements, so the admin panel and the Supabase
+       home_content sync keep working and the trust bar below — which shares
+       the same stats.* section — is unaffected. Deleting the markup would
+       have dropped eight contract attributes to achieve the same visual
+       result. One line to bring them back. */
+.hero-stats{display:none;}
+
+/* --- 2. TRUST BAR: full-bleed. Was capped at --container, which made it read
+       as one more centred band. Edge to edge is the break. ---------------- */
+.trust-grid{max-width:none;}
+
+/* --- 3. ABOUT: the timeline rail bleeds past the text column ------------- */
+[data-section-key="about"]{overflow:hidden;}
+[data-section-key="about"] .timeline-h{
+  margin-inline:calc(var(--gutter) * -1);
+  padding-inline:var(--gutter);
+}
+
+/* --- 4. VIDEOS: asymmetric bento. One lead video at 1.6fr spanning both
+       rows, two supporting stacked beside it. js/youtube-videos.js renders
+       exactly MAX_VIDEOS = 3, so this resolves with no empty cells. ------- */
+#videos .grid-3{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);}
+#videos .grid-3 > :first-child{grid-row:span 2;}
+#videos .grid-3 > :first-child .thumb{aspect-ratio:4/3;}
+#videos .grid-3 > :first-child .card-title{font-size:var(--step-2); line-height:var(--lh-heading);}
+/* the loading note occupies the lead cell before the fetch resolves */
+#videos .grid-3 > [data-yt-loading]{grid-row:auto; align-self:center;}
+
+/* --- 5. FEATURED COURSES: ruled register rows, not a third card grid.
+       De-carded entirely — no border, no radius, no surface, no lift. The
+       hairline between rows is the only structure. ----------------------- */
+[data-section-key="featured_courses"]{padding-block:var(--section-md);}
+[data-section-key="featured_courses"] .grid-3{
+  grid-template-columns:minmax(0,1fr); gap:0;
+  border-block-start:1px solid var(--line-strong);
+}
+[data-section-key="featured_courses"] .card{
+  display:grid; grid-template-columns:minmax(0,240px) minmax(0,1fr);
+  gap:var(--space-7); align-items:center;
+  background:transparent; border:0; border-radius:0;
+  border-block-end:1px solid var(--line);
+  padding-block:var(--space-6); overflow:visible;
+}
+[data-section-key="featured_courses"] .card:hover{
+  transform:none; box-shadow:none; background:var(--surface-1);
+}
+[data-section-key="featured_courses"] .card::after{content:none;}
+[data-section-key="featured_courses"] .card .thumb{
+  aspect-ratio:16/10; border-radius:var(--radius-s); overflow:hidden;
+}
+[data-section-key="featured_courses"] .card-title{font-size:var(--step-2); line-height:var(--lh-heading);}
+[data-section-key="featured_courses"] .card-desc{max-inline-size:62ch;}
+
+/* --- 6. GROWTH: the page's ONE oversized display moment.
+       The h2 runs at roughly 2.7x the standard --step-3 section heading and
+       bleeds off the left edge of the band; the track then rides up over its
+       lower edge. overflow:hidden on the section keeps the bleed from
+       creating a horizontal scrollbar at any width. --------------------- */
+[data-section-key="growth"]{overflow:hidden;}
+
+/* The headline is capped at 11ch so it stacks into a deliberate left-hand
+   block instead of running the full width and colliding with the track under
+   it. It still bleeds off the left edge — that part worked — but the vertical
+   collision did not: at full width the line count grew until "from Zero" was
+   sitting on top of the first numeral. */
+[data-section-key="growth"] .section-head.center{text-align:start; margin-block-end:0;}
+[data-section-key="growth"] .section-head h2{
+  font-size:clamp(2.4rem,6.6vw,5.2rem); line-height:.96;
+  letter-spacing:-.042em; max-inline-size:11ch;
+  margin-inline-start:calc(-1 * clamp(4px,3.4vw,64px));
+  position:relative; z-index:0;
+}
+[data-section-key="growth"] .section-head .eyebrow{margin-block-end:var(--space-5);}
+
+/* Indexed track. The alternating vertical offset is gone: with a top hairline
+   on every cell it read as five misaligned boxes rather than as rhythm. The
+   rhythm now comes from the numerals straddling the rule and from the hover
+   response, both of which survive at any column count. */
+[data-section-key="growth"] .growth-track{
+  max-width:none; margin-inline:0;
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr));
+  position:relative; z-index:1;
+  margin-block-start:clamp(40px,5vw,84px);   /* real clearance, no collision */
+  border-block-start:1px solid var(--line-strong);
+}
+[data-section-key="growth"] .growth-track::before{content:none;}   /* old rail */
+[data-section-key="growth"] .growth-item{
+  position:relative; margin:0;
+  /* top padding leaves room for the numeral that hangs over the rule */
+  padding:calc(var(--space-9) + 6px) var(--space-5) var(--space-8);
+  border-inline-start:1px solid var(--line);
+  transition:background var(--dur-3) var(--ease-out),
+             transform var(--dur-3) var(--ease-out);
+}
+[data-section-key="growth"] .growth-item:first-child{border-inline-start:0;}
+
+/* The accent rule that draws across the top of a cell on hover. This is the
+   one overlap left in the section and it is a line, not a block, so it can
+   never collide with text. */
+[data-section-key="growth"] .growth-item::after{
+  content:""; position:absolute; inset-block-start:-1px; inset-inline-start:0;
+  inline-size:100%; block-size:2px; background:var(--accent-fill);
+  transform:scaleX(0); transform-origin:left;
+  transition:transform var(--dur-4) var(--ease-out);
+}
+[data-section-key="growth"] .growth-item:hover,
+[data-section-key="growth"] .growth-item:focus-within{
+  background:var(--surface-2); transform:translateY(-4px);
+}
+[data-section-key="growth"] .growth-item:hover::after,
+[data-section-key="growth"] .growth-item:focus-within::after{transform:scaleX(1);}
+
+/* The numeral straddles the top rule, so the hairline appears to pass behind
+   it. Opaque type over a 1px line needs no background chip to do this, which
+   matters because the band carries a gradient the chip could not match. */
+[data-section-key="growth"] .growth-dot{
+  position:absolute; inset-block-start:0; inset-inline-start:var(--space-5);
+  inline-size:auto; block-size:auto;
+  background:none; border:0; border-radius:0; display:block;
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:.9;
+  letter-spacing:-.04em; color:var(--text-3);
+  transform:translateY(-52%);
+  transition:color var(--dur-2) var(--ease-out),
+             transform var(--dur-3) var(--ease-spring);
+}
+[data-section-key="growth"] .growth-item:first-child .growth-dot{inset-inline-start:0;}
+[data-section-key="growth"] .growth-item:hover .growth-dot,
+[data-section-key="growth"] .growth-item:focus-within .growth-dot{
+  color:var(--accent-ink); transform:translateY(-62%);
+}
+/* .inview is added by motion.js on scroll; it must not fight the hover state */
+[data-section-key="growth"] .growth-item.inview .growth-dot{
+  background:none; border-color:transparent; color:var(--text-3);
+}
+[data-section-key="growth"] .growth-item.inview:hover .growth-dot{color:var(--accent-ink);}
+
+[data-section-key="growth"] .growth-item .g-mark{
+  color:var(--accent-ink); letter-spacing:var(--tracking-wide);
+}
+[data-section-key="growth"] .growth-item h3{
+  font-size:var(--step-1); line-height:var(--lh-heading); text-wrap:balance;
+}
+
+@media (prefers-reduced-motion: reduce){
+  [data-section-key="growth"] .growth-item,
+  [data-section-key="growth"] .growth-item::after,
+  [data-section-key="growth"] .growth-dot{transition:none;}
+  [data-section-key="growth"] .growth-item:hover{transform:none;}
+}
+
+/* --- 7. TESTIMONIALS: scroll-snap rail, medium rhythm ------------------- */
+[data-section-key="testimonials"]{padding-block:var(--section-md);}
+
+/* --- 8. PRESS: airy minimal columns. De-carded — the boxed strip with its
+       1px grid gap read as one more container. Hairline tops only. ------ */
+.press-strip{
+  background:transparent; border:0; border-radius:0; gap:var(--space-8) var(--space-7);
+}
+.press-item{
+  background:transparent; padding:var(--space-5) 0 0;
+  border-block-start:1px solid var(--line-strong);
+}
+.press-item:hover{background:transparent;}
+.press-item .p-logo{font-size:var(--step-1); font-weight:600;}
+
+/* =========================================================================
+   18c. VIDEO FACADE  (brief 2.4)
+   -------------------------------------------------------------------------
+   The poster, play control and states for js/video-facade.js. Everything
+   here is ours: our radius, our hairline, our scrim, our accent, our type
+   for the duration badge. No YouTube chrome renders until the visitor
+   clicks, at which point .vfacade-stage is replaced by the iframe.
+   ========================================================================= */
+.vfacade{position:relative; display:block;}
+.vfacade-stage{
+  position:relative; display:block; inline-size:100%;
+  aspect-ratio:var(--vf-ratio,16/9);
+  overflow:hidden; border-radius:var(--radius-m);
+  border:1px solid var(--line); background:var(--surface-2);
+  padding:0; margin:0; cursor:pointer;
+  transition:border-color var(--dur-2) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out);
+}
+.vfacade-img{
+  position:absolute; inset:0; inline-size:100%; block-size:100%;
+  object-fit:cover;   /* crops hqdefault's 4:3 letterbox back to 16:9 */
+  transition:transform var(--dur-5) var(--ease-out);
+}
+.vfacade-scrim{
+  position:absolute; inset:0; pointer-events:none;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(7,5,4,.10), transparent 70%),
+    linear-gradient(180deg, rgba(7,5,4,0) 40%, rgba(7,5,4,.62) 100%);
+}
+.vfacade-play{
+  position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  transform:translate(-50%,-50%);
+  inline-size:62px; block-size:62px; border-radius:var(--radius-pill);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--accent-fill); color:var(--text-on-accent);
+  box-shadow:var(--shadow-accent);
+  transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);
+}
+.vfacade-play svg{inline-size:22px; block-size:22px; margin-inline-start:3px;}
+.vfacade-dur{
+  position:absolute; inset-block-start:var(--space-4); inset-inline-end:var(--space-4);
+  font-family:var(--font-mixed); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); font-weight:600; line-height:1;
+  padding:6px 10px; border-radius:var(--radius-pill);
+  background:rgba(8,4,2,.72); color:var(--text-1);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+}
+/* hover / focus / press — brief 2.3 Tier 1 wants real states, not one hover */
+.vfacade-btn:hover .vfacade-play{transform:translate(-50%,-50%) scale(1.09); background:var(--accent-hover);}
+.vfacade-btn:hover .vfacade-img{transform:scale(1.035);}
+.vfacade-btn:hover{border-color:var(--line-strong); box-shadow:var(--shadow-3);}
+.vfacade-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:3px;}
+.vfacade-btn:active .vfacade-play{transform:translate(-50%,-50%) scale(.96);}
+
+/* locked + coming-soon: designed states, not a raw message */
+.vfacade-state{
+  position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  transform:translate(-50%,-50%);
+  inline-size:56px; block-size:56px; border-radius:var(--radius-pill);
+  display:flex; align-items:center; justify-content:center;
+  background:var(--surface-3); border:1px solid var(--line-strong); color:var(--text-2);
+}
+.vfacade-state svg{inline-size:22px; block-size:22px;}
+.vfacade.is-locked .vfacade-state{background:var(--accent-dim); border-color:var(--line-accent); color:var(--accent-ink);}
+.vfacade.is-soon .vfacade-stage{
+  background:linear-gradient(158deg,var(--surface-3),var(--surface-0));
+  border-style:dashed;
+}
+.vfacade-cap{
+  display:flex; align-items:flex-start; gap:var(--space-3);
+  font-size:var(--step--2); color:var(--text-3); line-height:1.55;
+  margin-block-start:var(--space-3);
+}
+.vfacade-cap svg{inline-size:15px; block-size:15px; flex:0 0 auto; margin-block-start:2px;}
+
+/* Homepage video card: .thumb doubles as the facade stage, so the stage drops
+   its own frame — .card already supplies the border, radius and clipping, and
+   two nested frames read as a box inside a box. */
+.thumb.vfacade-stage{
+  display:block; inline-size:100%; padding:0;
+  border:0; border-radius:0; background:var(--surface-3);
+}
+.thumb.vfacade-stage:hover{box-shadow:none;}
+.vcard{cursor:default;}
+
+.vfacade-iframe{
+  inline-size:100%; aspect-ratio:var(--vf-ratio,16/9); display:block;
+  border:1px solid var(--line-strong); border-radius:var(--radius-m);
+  background:#000;
+}
+@media (prefers-reduced-motion: reduce){
+  .vfacade-img,.vfacade-play{transition:none;}
+}
+
+/* =========================================================================
+   18d. COURSE SURFACES  (checkpoint 4 — courses.html + course-detail.html)
+   -------------------------------------------------------------------------
+   Same argument as the homepage: the catalogue was one uniform 3-up card grid
+   and the detail page was a stack of bordered boxes. Both now use the ruled
+   register language, with depth carried by tinted shadow and two hairline
+   weights rather than by a border around every element (brief 2.5).
+   ========================================================================= */
+
+/* --- CATALOGUE: lead course runs full width as an editorial feature, the
+       rest stay 3-up. Breaks the uniform grid without touching markup. --- */
+[data-mount="course-grid"] > :first-child{
+  grid-column:1 / -1;
+  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  align-items:stretch; overflow:hidden;
+}
+[data-mount="course-grid"] > :first-child .thumb{
+  aspect-ratio:auto; block-size:100%; min-block-size:clamp(240px,26vw,340px);
+}
+[data-mount="course-grid"] > :first-child .card-body{
+  justify-content:center; padding:var(--space-8);
+}
+[data-mount="course-grid"] > :first-child .card-title{
+  font-size:var(--step-3); line-height:var(--lh-heading);
+}
+[data-mount="course-grid"] > :first-child .card-desc{
+  font-size:var(--step-0); max-inline-size:52ch;
+}
+
+/* --- ACCORDION: ruled rows, not stacked boxes. The open state is carried by
+       a warm surface lift plus an accent edge, not by a heavier border. --- */
+.accordion-item{
+  border-inline:0; border-block-start:0; border-radius:0;
+  background:transparent;
+  border-block-end:1px solid var(--line);
+}
+.accordion-item:first-child{border-block-start:1px solid var(--line-strong);}
+.accordion-item:hover{background:var(--surface-1);}
+.accordion-item.open{
+  background:var(--surface-1); border-color:var(--line);
+  box-shadow:inset 3px 0 0 var(--accent-fill);
+}
+.accordion-head{padding-inline:var(--space-5);}
+.lesson-row{padding-inline:var(--space-5);}
+
+/* --- BUY CARD: the one place on the page that should read as elevated.
+       Warm-tinted shadow + accent glow spill along the top edge. --- */
+.course-buy-card{
+  box-shadow:var(--shadow-3), 0 -1px 0 var(--line-accent);
+}
+.course-buy-card::after{
+  content:""; position:absolute; inset-inline:0; inset-block-start:0;
+  block-size:120px; pointer-events:none; z-index:0;
+  background:radial-gradient(70% 100% at 50% 0%, var(--accent-glow), transparent 72%);
+}
+.course-buy-card > *{position:relative; z-index:1;}
+.course-buy-card.is-enrolled{box-shadow:var(--shadow-3), 0 -1px 0 rgba(78,195,138,.4);}
+.course-buy-card.is-enrolled::after{
+  background:radial-gradient(70% 100% at 50% 0%, var(--good-dim), transparent 72%);
+}
+
+/* --- PREVIEW: the facade replaces .video-embed here, so it inherits the
+       same elevation the old embed had. --- */
+.course-preview .vfacade-stage{box-shadow:var(--shadow-3);}
+.course-preview .vfacade-iframe{box-shadow:var(--shadow-3);}
+
+/* --- MENTOR: de-boxed to a ruled block, consistent with the aside. --- */
+.mentor-card{
+  background:transparent; border-inline:0; border-radius:0;
+  border-block:1px solid var(--line);
+}
+.mentor-card:hover{background:var(--surface-1); border-color:var(--line-strong);}
+
+/* =========================================================================
+   18e. STORE SURFACES  (checkpoint 5 — store, product-detail, checkout)
+   -------------------------------------------------------------------------
+   The catalogue used the same uniform 3-up wall as courses did, and the forms
+   shipped a hover and a focus ring but no error, success, disabled or busy
+   state — which brief 2.3 Tier 1 names as most of the "cheap" feeling.
+   ========================================================================= */
+
+/* --- STORE: staggered rhythm rather than a flat wall. Every fourth product
+       takes double width, so the grid reads as composed instead of tiled.
+       Distinct from the catalogue's single lead feature. ------------------ */
+[data-mount="product-grid"] > :nth-child(4n+1){grid-column:span 2;}
+[data-mount="product-grid"] > :nth-child(4n+1){
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:stretch;
+}
+[data-mount="product-grid"] > :nth-child(4n+1) .thumb{
+  aspect-ratio:auto; block-size:100%; min-block-size:clamp(200px,20vw,280px);
+}
+[data-mount="product-grid"] > :nth-child(4n+1) .card-body{justify-content:center;}
+[data-mount="product-grid"] > :nth-child(4n+1) .card-title{font-size:var(--step-2);}
+
+/* --- PRODUCT DETAIL: the gallery is the one elevated surface --------- */
+.gallery-main{box-shadow:var(--shadow-3); border:1px solid var(--line-strong);}
+
+/* --- FORM STATES (2.3 Tier 1) — every interactive element gets the full
+       cycle, not just hover. These hang off native attributes and the
+       .is-error / .is-success hooks so no JS needs to learn a new name. -- */
+.field input:disabled,.field select:disabled,.field textarea:disabled{
+  background:var(--surface-1); color:var(--text-3);
+  border-color:var(--line); cursor:not-allowed; opacity:.7;
+}
+.field input[aria-invalid="true"],.field select[aria-invalid="true"],
+.field textarea[aria-invalid="true"],.field.is-error input,.field.is-error textarea{
+  border-color:var(--accent-ink); background:var(--accent-dim);
+}
+.field input[aria-invalid="true"]:focus,.field.is-error input:focus{
+  outline:2px solid var(--accent-ink); outline-offset:2px;
+}
+.field.is-success input,.field.is-success textarea{
+  border-color:var(--good); background:var(--good-dim);
+}
+/* error text sits BELOW the input, helper text above it stays put */
+.field .field-error{
+  display:flex; align-items:flex-start; gap:6px;
+  font-size:var(--step--2); color:var(--accent-ink);
+  margin-block-start:var(--space-2);
+}
+.field .field-help{font-size:var(--step--2); color:var(--text-3); margin-block-start:var(--space-2);}
+
+/* Buttons: press, disabled and busy. Busy keys off aria-busy so any handler
+   can set it without inventing a class. */
+.btn:disabled,.btn[disabled],.btn[aria-disabled="true"]{
+  opacity:.5; cursor:not-allowed; pointer-events:none; box-shadow:none;
+}
+.btn[aria-busy="true"]{position:relative; color:transparent; pointer-events:none;}
+.btn[aria-busy="true"]::after{
+  content:""; position:absolute; inset-block-start:50%; inset-inline-start:50%;
+  inline-size:16px; block-size:16px; margin:-8px 0 0 -8px;
+  border:2px solid currentColor; border-block-start-color:transparent;
+  border-radius:50%; color:var(--text-on-accent);
+  animation:btnSpin .7s linear infinite;
+}
+.btn-ghost[aria-busy="true"]::after{color:var(--text-1);}
+@keyframes btnSpin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion: reduce){
+  .btn[aria-busy="true"]::after{animation-duration:2s;}
+}
+
+/* Quantity steppers get the same press feedback as everything else. */
+[data-qty-plus],[data-qty-minus]{transition:background var(--dur-2) var(--ease-out), transform var(--dur-1) var(--ease-out);}
+[data-qty-plus]:active,[data-qty-minus]:active{transform:scale(.94);}
+[data-qty-plus]:disabled,[data-qty-minus]:disabled{opacity:.45; cursor:not-allowed;}
+
+/* =========================================================================
+   18f. PORTFOLIO / CONTACT / DASHBOARD  (checkpoint 6)
+   ========================================================================= */
+
+/* --- THE THIRD PORTRAIT TREATMENT (brief 2.1) ---------------------------
+   portfolio.html carries .about-portrait AND .hero-portrait on the same
+   element as index.html does, so without a scope it would inherit the hero's
+   arc verbatim — the exact "one component used three times" the brief rules
+   out. Scoped to .kit-hero, the shape becomes a HARD-EDGED offset colour
+   field: no curve anywhere, pushed right and down so the figure breaks past
+   its top and left edges, and the figure is graded toward duotone rather than
+   the hero's warm full colour.
+
+     hero      filled arc,      warm full colour,  breaks the TOP edge
+     story     outlined ring,   cool flat grade,   breaks THREE sides
+     portfolio hard colour block, duotone grade,   breaks TOP + LEFT
+
+   Three shapes, three grades, three overlap logics. */
+.kit-hero .hero-portrait::before{
+  /* content is re-declared here on purpose: the homepage hero sets
+     .hero-portrait::before{content:none} to remove its shape, and without
+     this line that would cascade in and delete portfolio's colour block too. */
+  content:"";
+  inset-block-end:6%; inset-inline-start:auto; inset-inline-end:-6%;
+  inline-size:76%; block-size:56%;
+  border-radius:0;                       /* hard edges — the third language */
+  border:0; box-shadow:none;
+  background:linear-gradient(168deg,var(--accent-fill),#5a0d1c);
+  opacity:.92;
+}
+.kit-hero .hero-portrait img{
+  filter:grayscale(.5) sepia(.16) saturate(1.3) contrast(1.12)
+         drop-shadow(0 22px 40px rgba(8,4,2,.62));
+}
+
+/* --- PORTFOLIO: de-card the stat / case / partner walls. Three equal card
+       rows stacked down a page is the anti-default list verbatim. --------- */
+.kit-stat-card,.case-card,.partner-card{
+  background:transparent; border:0; border-radius:0;
+  border-block-start:1px solid var(--line-strong);
+  padding-inline:0;
+}
+.kit-stat-card:hover,.case-card:hover,.partner-card:hover{
+  transform:none; background:var(--surface-1); border-color:var(--accent-ink);
+}
+/* the lead case study carries the section, the rest support it */
+.case-grid > :first-child{grid-column:1 / -1;}
+.case-grid > :first-child .case-result{font-size:clamp(2.2rem,4.6vw,3.4rem);}
+.case-grid > :first-child .case-brand{font-size:var(--step-2);}
+
+/* --- CONTACT: the form is the page. Give it a surface so it reads as the
+       primary object rather than floating text. ------------------------- */
+.contact-grid form,.contact-grid .form-card{
+  background:var(--surface-1); border:1px solid var(--line-strong);
+  border-radius:var(--radius-l); padding:clamp(20px,3vw,36px);
+  box-shadow:var(--shadow-2);
+}
+
+/* --- DASHBOARD: ruled rows over stacked boxes, matching the register
+       language used everywhere else. ------------------------------------ */
+.dash-main .card{
+  background:transparent; border:0; border-radius:0;
+  border-block-end:1px solid var(--line);
+}
+.dash-main .card:hover{transform:none; box-shadow:none; background:var(--surface-1);}
+.dash-side .side-link.active{box-shadow:inset 3px 0 0 var(--accent-fill);}
+
+/* =========================================================================
+   18g. TIER 2 MOTION  (brief 2.3)
+   -------------------------------------------------------------------------
+   The CSS half of js/motion.js's Tier 2 set. Everything below is gated on
+   .js, so a no-JS visitor gets the final state rather than a hidden page, and
+   everything collapses under prefers-reduced-motion at the end of the block.
+   ========================================================================= */
+
+/* 1. The scrub-linked arc is gone with the shape it moved. The hero keeps its
+      scroll response through the figure's own [data-parallax], so the
+      portrait still tracks the scrollbar — there is just no second layer left
+      to diverge from it. Tier 2 is now four effects on the homepage, which is
+      under the cap of five. */
+
+/* 3. Clip-path wipe on section headings — a reveal that moves, not a fade.
+      Gated on .js so headings are never invisible without scripting. */
+.js .section-head h2,
+.js .section-title{
+  clip-path:inset(0 100% 0 0);
+  transition:clip-path var(--dur-5) var(--ease-out);
+}
+.js .section-head h2.inview,
+.js .section-title.inview{clip-path:inset(0 0 0 0);}
+
+/* 2. Word stagger on the one oversized display headline. It replaces the
+      wipe on that heading rather than stacking with it — higher specificity
+      switches the wipe off for this element only. */
+.js [data-section-key="growth"] .section-head h2{clip-path:none; transition:none;}
+.js [data-section-key="growth"] .section-head h2 .w{
+  display:inline-block; opacity:0; transform:translateY(.42em);
+  transition:opacity var(--dur-4) var(--ease-out),
+             transform var(--dur-4) var(--ease-out);
+  transition-delay:calc(var(--wi,0) * 48ms);
+}
+.js [data-section-key="growth"] .section-head h2.inview .w{opacity:1; transform:none;}
+
+/* 4. Magnetic CTA — motion.js writes the transform; this only supplies the
+      spring-back easing for when the pointer leaves. */
+.hero-ctas .btn-primary{transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);}
+
+/* 5. Card tilt. The lift is a tinted shadow in the accent hue, never neutral
+      black (brief 2.5). motion.js owns the rotation. */
+.card,.case-card,.partner-card,.kit-stat-card{
+  transition:transform var(--dur-3) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             background var(--dur-2) var(--ease-out);
+}
+.card:hover,.case-card:hover,.partner-card:hover,.kit-stat-card:hover{
+  box-shadow:var(--shadow-3), 0 10px 30px -12px var(--accent-glow);
+}
+
+/* Tier 2 off, everything at its final state. No exceptions. */
+@media (prefers-reduced-motion: reduce){
+  .js .section-head h2,.js .section-title{clip-path:none; transition:none;}
+  .js [data-section-key="growth"] .section-head h2 .w{opacity:1; transform:none; transition:none;}
+  .hero-portrait::before{transform:none;}
+  .hero-ctas .btn-primary{transition:none;}
+  .card,.case-card,.partner-card,.kit-stat-card{transition:none;}
+}
+
+/* =========================================================================
+   18h. COURSE DETAIL POLISH
+   -------------------------------------------------------------------------
+   A free course was rendering the word "ফ্রি" at 2.4rem in --good green, so
+   the loudest thing on the page was the absence of a price. A price wants
+   that scale; a state does not. The free case is now a chip at reading size,
+   which also stops a Bangla word set in the Latin-first --font-mixed stack
+   from being the largest glyphs in the composition.
+   ========================================================================= */
+.course-buy-card .price-free{
+  font-size:var(--step-1); line-height:1.2;
+  padding:6px 16px; border-radius:var(--radius-pill);
+  background:var(--good-dim); border:1px solid rgba(78,195,138,.34);
+  color:var(--good);
+}
+.course-buy-card .buy-price-row{align-items:center; gap:var(--space-4);}
+.course-buy-card .buy-price-row .small-note{margin-block-start:0;}
+
+/* Meta row: the rating, student count and duration were running together as
+   one grey line. Hairline separators give them three distinct readings
+   without adding a middle dot to every gap. */
+.meta-row > span + span{
+  padding-inline-start:var(--space-6); position:relative;
+}
+.meta-row > span + span::before{
+  content:""; position:absolute; inset-inline-start:0; inset-block:20%;
+  inline-size:1px; background:var(--line-strong);
+}
+
+/* Thin courses. A course with no curriculum, no FAQ or no reviews yet used to
+   render a heading with a bare grey sentence under it, which reads as broken
+   rather than as pending. These get the designed empty-state treatment the
+   rest of the site uses. */
+#course-curriculum .small-note,
+[data-mount="course-faq"] .small-note,
+[data-mount="course-reviews"] .small-note{
+  display:block; padding:var(--space-8) var(--space-6);
+  border:1px dashed var(--line-strong); border-radius:var(--radius-m);
+  background:var(--surface-1); color:var(--text-2); text-align:center;
+}
+
+/* The preview column follows the buy decision on long curricula instead of
+   scrolling away at the top of the page. */
+@media (min-width:1081px){
+  .course-preview{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
+}
 
 /* =========================================================================
    19. RESPONSIVE
@@ -1576,7 +2283,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-preview{position:static;}
   /* Media above copy on stacked course hero reads better than a wall of text. */
   .course-hero-grid > .course-preview{order:-1;}
-  .hero-portrait{max-block-size:440px;}
+  /* aspect-ratio drives height now, so cap the width instead of the height —
+     max-block-size against a 1/1 ratio would fight the crop geometry. */
+  .hero-portrait{max-inline-size:440px;}
   .footer-inner{grid-template-columns:minmax(0,1fr);}
   .footer-cutout-wrap{position:relative; inline-size:100%; block-size:260px; margin-block-start:var(--space-6); justify-content:flex-end; inset-inline-end:0;}
   .footer-cutout-wrap img{block-size:100%;}
@@ -1662,12 +2371,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .btn:focus-visible,.chip:focus-visible,.tab-btn:focus-visible,.nav-cta:focus-visible{outline-offset:3px;}
 .skip-link{
-  position:absolute; inset-block-start:-100px; inset-inline-start:var(--gutter); z-index:calc(var(--z-nav) + 5);
+  position:absolute; inset-inline-start:var(--gutter); z-index:calc(var(--z-nav) + 5);
   background:var(--text-1); color:var(--surface-0); padding:11px 20px;
   border-radius:0 0 var(--radius-s) var(--radius-s); font-weight:600; font-size:var(--step--1);
-  transition:top var(--dur-2) var(--ease-out);
+  inset-block-start:0; transform:translateY(-140%);
+  transition:transform var(--dur-2) var(--ease-out);
 }
-.skip-link:focus{inset-block-start:0;}
+.skip-link:focus{transform:translateY(0);}
 .visually-hidden{
   position:absolute !important; inline-size:1px; block-size:1px;
   padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
@@ -1697,4 +2407,163 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   body{background:#fff; color:#111;}
   .certificate,.certificate *{visibility:visible;}
   .certificate{position:fixed; inset:0; border:none; margin:0; background:#fff; color:#111;}
+}
+
+/* =========================================================================
+   19b. RESPONSIVE FOR THE HOMEPAGE RHYTHM  (section 18b)
+   -------------------------------------------------------------------------
+   Kept in one place at the end of the file rather than threaded through the
+   existing breakpoints, because the 18b selectors carry an id or a
+   data-attribute and would otherwise out-specify the generic .grid-3 rules
+   in section 19 regardless of source order. Every multi-column layout
+   introduced in 18b collapses explicitly here.
+   ========================================================================= */
+@media (max-width:1080px){
+  /* videos: bento releases to a single column, lead card keeps its weight */
+  #videos .grid-3{grid-template-columns:minmax(0,1fr);}
+  #videos .grid-3 > :first-child{grid-row:auto;}
+  #videos .grid-3 > :first-child .thumb{aspect-ratio:16/9;}
+
+  /* growth: five columns is too many below 1080 — go to two. Each row needs
+     its own top rule, and the first cell of each row loses its left border. */
+  [data-section-key="growth"] .growth-track{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    margin-block-start:clamp(28px,4vw,52px);
+  }
+  [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(n+3){border-block-start:1px solid var(--line-strong);}
+  [data-section-key="growth"] .growth-item:nth-child(odd) .growth-dot{inset-inline-start:0;}
+  [data-section-key="growth"] .growth-item:nth-child(even) .growth-dot{inset-inline-start:var(--space-5);}
+
+  /* courses: the register keeps its row shape but the media column narrows */
+  [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,180px) minmax(0,1fr); gap:var(--space-6);}
+}
+
+@media (max-width:760px){
+  /* trust bar returns to a contained width — full-bleed hairlines against a
+     narrow viewport read as a broken table, not as a break */
+  .trust-grid{max-width:var(--container);}
+
+  /* growth: single column. Every cell gets its own top rule, the numerals all
+     align to the left edge, and the display type releases its left bleed. */
+  [data-section-key="growth"] .growth-track{grid-template-columns:minmax(0,1fr); margin-block-start:var(--space-8);}
+  [data-section-key="growth"] .growth-item{
+    border-inline-start:0; padding-inline:0;
+    border-block-start:1px solid var(--line-strong);
+  }
+  [data-section-key="growth"] .growth-item:first-child{border-block-start:0;}
+  [data-section-key="growth"] .growth-item .growth-dot{inset-inline-start:0;}
+  [data-section-key="growth"] .growth-item:hover{transform:none;}   /* no lift in a stacked list */
+  [data-section-key="growth"] .section-head h2{
+    margin-inline-start:0; max-inline-size:none;
+    font-size:clamp(2.1rem,10vw,3.2rem); line-height:1.02;
+  }
+
+  /* courses: stack the register rows */
+  [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,1fr); gap:var(--space-4);}
+  [data-section-key="featured_courses"] .card .thumb{aspect-ratio:16/9;}
+
+  /* about: rail bleed off, it has no room to breathe here */
+  [data-section-key="about"] .timeline-h{margin-inline:0; padding-inline:0;}
+}
+
+/* --- 19c. RESPONSIVE for the course surfaces (section 18d) --------------- */
+@media (max-width:1080px){
+  /* the catalogue feature card stops being a 2-up composition */
+  [data-mount="course-grid"] > :first-child{grid-template-columns:minmax(0,1fr);}
+  [data-mount="course-grid"] > :first-child .thumb{min-block-size:0; aspect-ratio:16/9;}
+  [data-mount="course-grid"] > :first-child .card-body{padding:var(--space-6);}
+  [data-mount="course-grid"] > :first-child .card-title{font-size:var(--step-2);}
+}
+
+/* --- 19d. RESPONSIVE for the store surfaces (section 18e) ---------------- */
+@media (max-width:1080px){
+  /* .grid-3 drops to 2 columns here, so a span-2 product would fill the row
+     and lose the stagger. Release it. */
+  [data-mount="product-grid"] > :nth-child(4n+1){grid-column:auto;}
+}
+@media (max-width:760px){
+  [data-mount="product-grid"] > :nth-child(4n+1){grid-template-columns:minmax(0,1fr);}
+  [data-mount="product-grid"] > :nth-child(4n+1) .thumb{min-block-size:0; aspect-ratio:16/9;}
+  [data-mount="product-grid"] > :nth-child(4n+1) .card-title{font-size:var(--step-1);}
+}
+
+/* =========================================================================
+   20. CHECKPOINT 8 — RESPONSIVE + A11Y PASS
+   Verified against the six widths the brief names: 1440 / 1280 / 1080 / 760
+   / 480 / 380. Only the rules the redesign introduced are here; the original
+   section 19 breakpoints still handle everything that predates it.
+   ========================================================================= */
+
+@media (max-width:1080px){
+  /* The hero stacks to one column here. Copy stays FIRST on purpose: leading
+     with a 560px portrait would push the H1 and both CTAs below the fold,
+     which the hero rule forbids. The figure shrinks instead of leading. */
+  .hero-portrait{max-inline-size:min(420px,78vw);}
+  .hero-portrait::before{inset-inline-start:-14%; inset-inline-end:-14%;}
+}
+
+@media (max-width:760px){
+  .hero{padding-block:calc(var(--nav-h) + 32px) var(--space-9);}
+  .hero-portrait{max-inline-size:min(340px,72vw); margin-block-start:var(--space-7);}
+  /* the arc tucks in so it never reaches past the viewport on a phone */
+  .hero-portrait::before{inset-inline:-6%; block-size:34%;}
+  /* the story ring shrinks with its figure */
+  .about-portrait:not(.hero-portrait){max-inline-size:min(320px,74vw);}
+  .kit-hero .hero-portrait::before{inline-size:82%; inset-inline-end:-4%;}
+}
+
+@media (max-width:480px){
+  /* Bangla display type needs a floor: below this the matra and descenders
+     collide before the line ever gets short enough to matter. */
+  .hero-title{font-size:clamp(1.75rem,8.4vw,2.3rem);}
+  [data-section-key="growth"] .section-head h2{font-size:clamp(1.9rem,9vw,2.6rem);}
+  .hero-stats{grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-4);}
+  .vfacade-play{inline-size:50px; block-size:50px;}
+  .vfacade-play svg{inline-size:18px; block-size:18px;}
+}
+
+@media (max-width:380px){
+  .hero-portrait{max-inline-size:min(280px,80vw);}
+  .hero-stats{grid-template-columns:minmax(0,1fr);}
+  .trust-grid{grid-template-columns:minmax(0,1fr);}
+  [data-section-key="growth"] .section-head h2{font-size:1.75rem; letter-spacing:-.02em;}
+}
+
+/* -------------------------------------------------------------------------
+   A11Y
+   The global :focus-visible ring already exists; these are the elements the
+   redesign added or de-boxed, which lost their previous focus affordance
+   along with their border.
+   ------------------------------------------------------------------------- */
+.vfacade-btn:focus-visible,
+.accordion-head:focus-visible,
+.dash-side .side-link:focus-visible,
+[data-qty-plus]:focus-visible,[data-qty-minus]:focus-visible{
+  outline:2px solid var(--accent-ink); outline-offset:3px; border-radius:var(--radius-xs);
+}
+/* De-carded rows have no border left to thicken, so focus and hover are shown
+   with an inset accent edge — the same signal .accordion-item.open uses. */
+[data-section-key="featured_courses"] .card:focus-visible,
+.dash-main .card:focus-visible,
+.kit-stat-card:focus-visible,.case-card:focus-visible,.partner-card:focus-visible{
+  outline:none; box-shadow:inset 3px 0 0 var(--accent-fill); background:var(--surface-1);
+}
+/* The tilt in motion.js writes an inline transform; a keyboard user never
+   triggers pointermove, so focus needs its own lift. */
+.card:focus-visible{box-shadow:var(--shadow-3), 0 10px 30px -12px var(--accent-glow);}
+
+/* Touch targets. The de-boxed controls lost their padding along with their
+   box; this puts the 44px minimum back without re-introducing a border. */
+@media (pointer: coarse){
+  .accordion-head{min-block-size:48px;}
+  .tab-btn,.chip{min-block-size:44px;}
+  .dash-side .side-link{min-block-size:44px;}
+}
+
+/* prefers-reduced-transparency: the facade badge and the nav both lean on
+   backdrop-filter, which is exactly what this query exists to switch off. */
+@media (prefers-reduced-transparency: reduce){
+  .vfacade-dur{backdrop-filter:none; -webkit-backdrop-filter:none; background:rgb(8 4 2 / .92);}
+  .site-nav{backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-0);}
 }

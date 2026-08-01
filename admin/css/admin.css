@@ -138,12 +138,18 @@ img{max-width:100%; display:block;}
 .badge-draft{ background:var(--warn-dim); color:var(--warn); }
 .badge-free{ background:var(--accent-dim); color:var(--accent-ink); }
 .tone-swatch{ width:16px; height:16px; border-radius:50%; display:inline-block; border:1px solid var(--line-strong); }
-.tone-1{ background:linear-gradient(135deg,#c31432,#e2274d); }
-.tone-2{ background:linear-gradient(135deg,#2b5876,#4e4376); }
-.tone-3{ background:linear-gradient(135deg,#134e5e,#71b280); }
-.tone-4{ background:linear-gradient(135deg,#8e2de2,#4a00e0); }
-.tone-5{ background:linear-gradient(135deg,#ff8008,#ffc837); }
-.tone-6{ background:linear-gradient(135deg,#0f2027,#2c5364); }
+/* These swatches are the PREVIEW for the public site's .thumb-tone-* card
+   artwork, so the two lists have to stay identical or the admin picker lies
+   about what will render. Kept in lockstep with css/style.css section 06.
+   (The old set ran steel blue, teal, electric purple and a sunrise orange —
+   none of which existed on the public side any more once the card tones were
+   pulled into the warm-ink family.) */
+.tone-1{ background:linear-gradient(150deg,#3a0d17,#c1122f); }
+.tone-2{ background:linear-gradient(150deg,#2a1208,#9c4a1e); }
+.tone-3{ background:linear-gradient(150deg,#2b2109,#a8802a); }
+.tone-4{ background:linear-gradient(150deg,#1c2110,#5f7333); }
+.tone-5{ background:linear-gradient(150deg,#2e1512,#8f3b2e); }
+.tone-6{ background:linear-gradient(150deg,#241a14,#6b4b32); }
 
 /* ---------- Forms ---------- */
 .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }

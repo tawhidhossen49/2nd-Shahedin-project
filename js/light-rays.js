@@ -86,6 +86,7 @@
     "uniform float mouseInfluence;",
     "uniform float noiseAmount;",
     "uniform float distortion;",
+    "uniform float gain;",
 
     "float noise(vec2 st){",
     "  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);",
@@ -99,9 +100,10 @@
     "  float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;",
     "  float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));",
     "  float dist = length(sourceToCoord);",
-    "  float maxDistance = iResolution.x * rayLength;",
+    "  float ref = max(iResolution.x, iResolution.y);",
+    "  float maxDistance = ref * rayLength;",
     "  float lengthFalloff = clamp((maxDistance - dist) / maxDistance, 0.0, 1.0);",
-    "  float fadeFalloff = clamp((iResolution.x * fadeDistance - dist) / (iResolution.x * fadeDistance), 0.5, 1.0);",
+    "  float fadeFalloff = clamp((ref * fadeDistance - dist) / (ref * fadeDistance), 0.5, 1.0);",
     "  float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;",
     "  float baseStrength = clamp(",
     "    (0.45 + 0.15 * sin(distortedAngle * seedA + iTime * speed)) +",
@@ -137,6 +139,11 @@
     "    fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation);",
     "  }",
     "  fragColor.rgb *= raysColor;",
+    /* rgb only. Scaling the whole vec4 would hit alpha as well, and since the
+       next line premultiplies by .a the gain would land twice — and a raised
+       alpha also occludes more of the backdrop, which is not what a light
+       should do. */
+    "  fragColor.rgb *= gain;",
     "  gl_FragColor = vec4(fragColor.rgb, 1.0) * fragColor.a;",
     "}",
   ].join("\n");
@@ -169,15 +176,23 @@
        and the speed slower. */
     this.cfg = {
       raysSpeed: 0.7,
-      lightSpread: 0.72,
-      rayLength: 1.5,
+      /* Wider cone on a phone. The beam is cast from above the top edge, so on
+         a tall narrow viewport a tight cone lands almost entirely outside the
+         visible column and reads as no light at all. */
+      lightSpread: this.lite ? 1.15 : 0.72,
+      /* Longer reach too — a phone hero is much taller than it is wide. */
+      rayLength: this.lite ? 2.2 : 1.5,
       pulsating: 0,
-      fadeDistance: 1.1,
+      fadeDistance: this.lite ? 1.6 : 1.1,
       saturation: 1.0,
+      // no cursor to follow on a touchscreen
       mouseInfluence: this.lite ? 0.0 : 0.06,
       noiseAmount: 0.06,
       distortion: 0.02,
     };
+    /* Phone screens are dimmer and often viewed in daylight, so the same alpha
+       that reads indoors on a monitor disappears outdoors. */
+    this.gain = this.lite ? 1.45 : 1.0;
 
     var canvas = document.createElement("canvas");
     canvas.className = "light-rays";
@@ -251,17 +266,33 @@
     var u = {};
     ["iTime","iResolution","rayPos","rayDir","raysColor","raysSpeed","lightSpread",
      "rayLength","pulsating","fadeDistance","saturation","mousePos","mouseInfluence",
-     "noiseAmount","distortion"].forEach(function (n) { u[n] = gl.getUniformLocation(prog, n); });
+     "noiseAmount","distortion","gain"].forEach(function (n) { u[n] = gl.getUniformLocation(prog, n); });
 
     this.gl = gl; this.prog = prog; this.u = u; this.buf = buf;
     return true;
   };
 
   /* 2D fallback: soft beam sprites, blurred once at init. Not as smooth as the
-     shader, but it means a blocklisted GPU gets light rather than a blank band. */
+     shader, but it means a blocklisted GPU gets light rather than a blank band.
+
+     The canvas is REPLACED rather than reused. A canvas that has already been
+     handed a webgl context can never return a 2d one — getContext("2d") on it
+     returns null — so reusing it meant that any failure after the context was
+     created (a shader that would not compile, a link error) produced no light
+     at all instead of falling back. */
   Rays.prototype.initFallback = function () {
-    this.ctx = this.canvas.getContext("2d");
+    var fresh = document.createElement("canvas");
+    fresh.className = "light-rays";
+    fresh.setAttribute("aria-hidden", "true");
+    if (this.canvas && this.canvas.parentNode) {
+      this.canvas.parentNode.replaceChild(fresh, this.canvas);
+    } else {
+      this.host.insertBefore(fresh, this.host.firstChild);
+    }
+    this.canvas = fresh;
+    this.ctx = fresh.getContext("2d");
     this.fallback = true;
+    return !!this.ctx;
   };
 
   Rays.prototype.buildSprite = function (len, wide, blur) {
@@ -343,6 +374,7 @@
     gl.uniform1f(u.mouseInfluence, this.cfg.mouseInfluence);
     gl.uniform1f(u.noiseAmount, this.cfg.noiseAmount);
     gl.uniform1f(u.distortion, this.cfg.distortion);
+    gl.uniform1f(u.gain, this.gain);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   };
 

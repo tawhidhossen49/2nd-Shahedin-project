@@ -20,7 +20,7 @@
   }
 
   function starsDisplay(rating) {
-    const full = Math.round(rating);
+    const full = Math.max(0, Math.min(5, Math.round(Number(rating) || 0)));
     return "★".repeat(full) + "☆".repeat(5 - full);
   }
 
@@ -37,27 +37,47 @@
 
     const c = window.ShahedinAuth.client();
 
-    // Approved reviews — visible to everyone.
-    const { data: approved } = await c
-      .from("course_reviews")
-      .select("*")
-      .eq("course_id", course.dbId)
-      .eq("is_approved", true)
-      .order("created_at", { ascending: false });
-    renderApprovedReviews(reviewsMount, approved || []);
+    // Something to look at during the round trip, instead of an empty column.
+    reviewsMount.innerHTML = `<p class="small-note" aria-live="polite">রিভিউ লোড হচ্ছে…</p>`;
 
-    // The signed-in student's own eligibility + existing review, if any.
-    const user = await window.ShahedinAuth.getUser();
-    if (user && formMount) {
-      const [{ data: enrollment }, { data: ownReview }] = await Promise.all([
-        c.from("enrollments").select("completed").eq("user_id", user.id).eq("course_id", course.dbId).maybeSingle(),
-        c.from("course_reviews").select("*").eq("user_id", user.id).eq("course_id", course.dbId).maybeSingle(),
-      ]);
-      isCompleted = !!(enrollment && enrollment.completed);
-      myReview = ownReview || null;
-      renderFormArea(formMount, course, user);
-    } else if (formMount) {
-      formMount.innerHTML = "";
+    /* The whole thing is wrapped now. init() was async with no try/catch, so
+       if the client threw (offline, supabase-js missing) it became an
+       unhandled rejection and an eligible student's review form silently
+       never appeared. */
+    try {
+      // Approved reviews — visible to everyone.
+      const { data: approved, error: approvedErr } = await c
+        .from("course_reviews")
+        .select("*")
+        .eq("course_id", course.dbId)
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false });
+
+      /* The error used to be destructured away, so a dropped connection or an
+         RLS denial produced `null || []` and rendered "এখনো কোনো রিভিউ নেই।" —
+         a failure reported as a fact about the course. */
+      if (approvedErr) {
+        reviewsMount.innerHTML = `<p class="small-note state-error">রিভিউ লোড করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।</p>`;
+      } else {
+        renderApprovedReviews(reviewsMount, approved || []);
+      }
+
+      // The signed-in student's own eligibility + existing review, if any.
+      const user = await window.ShahedinAuth.getUser();
+      if (user && formMount) {
+        const [{ data: enrollment }, { data: ownReview }] = await Promise.all([
+          c.from("enrollments").select("completed").eq("user_id", user.id).eq("course_id", course.dbId).maybeSingle(),
+          c.from("course_reviews").select("*").eq("user_id", user.id).eq("course_id", course.dbId).maybeSingle(),
+        ]);
+        isCompleted = !!(enrollment && enrollment.completed);
+        myReview = ownReview || null;
+        renderFormArea(formMount, course, user);
+      } else if (formMount) {
+        formMount.innerHTML = "";
+      }
+    } catch (err) {
+      reviewsMount.innerHTML = `<p class="small-note state-error">রিভিউ লোড করা যায়নি। পেজটি রিফ্রেশ করে আবার চেষ্টা করুন।</p>`;
+      if (formMount) formMount.innerHTML = "";
     }
 
     document.addEventListener("course-completion-changed", async (e) => {
@@ -118,7 +138,7 @@
         </div>
         <textarea id="reviewTextInput" placeholder="কোর্সটি নিয়ে আপনার অভিজ্ঞতা লিখুন…">${myReview ? escapeHtml(myReview.review_text) : ""}</textarea>
         <button type="button" class="btn btn-primary btn-sm" id="submitReviewBtn">${myReview ? "রিভিউ আপডেট করুন" : "রিভিউ জমা দিন"}</button>
-        <div class="small-note" id="reviewFormStatus" style="margin-top:8px; display:none;"></div>
+        <div class="small-note review-form-status" id="reviewFormStatus" role="status" aria-live="polite" hidden></div>
       </div>`;
 
     let selectedRating = initialRating;

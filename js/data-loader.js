@@ -27,7 +27,10 @@
       price: row.price_bdt,
       free: row.is_free,
       duration: row.duration_bn || row.duration_en || "",
-      rating: Number(row.rating) || 4.8,
+      /* Pass a missing rating through as null. It used to default to 4.8,
+         so a brand-new course with no reviews displayed a fabricated ৪.৮
+         and five stars. render.js shows "নতুন" for null instead. */
+      rating: row.rating === null || row.rating === undefined || row.rating === "" ? null : Number(row.rating),
       students: row.students_count || 0,
       tone: row.tone || 1,
       category: row.category || "general",
@@ -99,6 +102,11 @@
       return false;
     }
   }
+
+  /* Exposed so js/render.js can re-pull courses_safe after a student enrols.
+     Until enrolment, that view returns every block as {id,type,title,locked},
+     so without a re-fetch the player stays padlocked until a manual reload. */
+  window.ShahedinData = { reload: tryLoadFromSupabase };
 
   function ready(fn) {
     if (document.readyState !== "loading") fn();

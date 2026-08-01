@@ -2276,6 +2276,35 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    data-block-id, .cb-title and the [data-cb-progress] checkbox — so nothing
    here invents a second progress mechanism.
    ========================================================================= */
+/* LAYOUT NOTE — why .has-player exists.
+   .course-player is a two-column grid that mounts inside the LEFT column of
+   .course-body-grid, which is itself a 1.35fr / 1fr split. Its CSS was first
+   written as if it owned the container, so at 1440px the video pane resolved
+   to ~230px while the instructor bio next to it got ~446px:
+
+     container inner  1240 - 128 gutter        = 1112
+     body-grid left   (1112 - 64) * 1.35/2.35  =  602
+     pane             602 - 32 gap - 340 side  =  230   <- the video
+
+   js/render.js adds .has-player to the enclosing .course-body-grid when a
+   player mounts. A class rather than :has() so the fix is deterministic on
+   every engine, including the ones that would silently keep the broken
+   layout. The player then spans the container and the mentor/reviews rail
+   drops below it. */
+.course-body-grid.has-player{grid-template-columns:minmax(0,1fr);}
+.course-body-grid.has-player .course-aside{
+  position:static;                       /* no longer a rail, so not sticky */
+  display:grid; grid-template-columns:minmax(0,320px) minmax(0,1fr);
+  column-gap:var(--space-10); row-gap:0;
+  align-items:start; margin-block-start:var(--space-10);
+  padding-block-start:var(--space-8); border-block-start:1px solid var(--line-strong);
+}
+/* The aside's markup is flat — h2, mentor mount, h2, form mount, list mount —
+   so the two columns are placed by position rather than by wrapper divs. */
+.course-body-grid.has-player .course-aside > :nth-child(-n+2){grid-column:1;}
+.course-body-grid.has-player .course-aside > :nth-child(n+3){grid-column:2;}
+.course-body-grid.has-player .course-aside > :nth-child(3){margin-block-start:0;}
+
 .course-player{
   display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px);
   gap:var(--space-7); align-items:start;
@@ -2691,4 +2720,95 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .cp-section-head{min-block-size:48px;}
   .cp-lesson-btn{min-block-size:44px;}
   .cp-lesson .cb-complete-check{inline-size:20px; block-size:20px;}
+}
+
+/* =========================================================================
+   18j. COURSE PLAYER — navigation, completion, ratings
+   ========================================================================= */
+
+/* --- Prev / next, so advancing never requires going back to the sidebar --- */
+.cp-nav{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4);
+  margin-block-start:var(--space-7);
+  padding-block-start:var(--space-6); border-block-start:1px solid var(--line);
+}
+.cp-nav-btn{
+  display:flex; flex-direction:column; gap:4px; min-inline-size:0;
+  padding:var(--space-4) var(--space-5); cursor:pointer;
+  background:var(--surface-1); border:1px solid var(--line);
+  border-radius:var(--radius-m); color:var(--text-1); text-align:start;
+  font-family:var(--font-body);
+  transition:background var(--dur-2) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             transform var(--dur-1) var(--ease-out);
+}
+.cp-nav-btn.is-empty{background:none; border-color:transparent; cursor:default;}
+.cp-nav-next{text-align:end;}
+.cp-nav-btn:hover:not(.is-empty){background:var(--surface-2); border-color:var(--line-strong);}
+.cp-nav-btn:active:not(.is-empty){transform:translateY(1px);}
+.cp-nav-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:3px;}
+.cp-nav-dir{
+  font-size:var(--step--2); color:var(--accent-ink); font-weight:600;
+  letter-spacing:var(--tracking-wide);
+}
+.cp-nav-title{
+  font-size:var(--step--1); color:var(--text-2); line-height:var(--lh-tight);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* --- Lesson / section / course completion (brief 2.6) ------------------- */
+.cp-lesson.is-done .cp-lesson-ic{color:var(--good);}
+.cp-lesson.is-done .cp-lesson-ic svg{transform:scale(1.06);}
+.cp-lesson .cp-lesson-ic svg{transition:transform var(--dur-3) var(--ease-spring);}
+.cp-section.is-complete .cp-section-title{color:var(--good);}
+.cp-section.is-complete[data-just-done="1"] .cp-section-meta{
+  animation:cpPop var(--dur-4) var(--ease-spring);
+}
+@keyframes cpPop{0%{transform:scale(1);}45%{transform:scale(1.22);}100%{transform:scale(1);}}
+.cp-section-meta{display:inline-block;}
+
+/* --- Progress bar. Animates transform, never width, so the fill stays off
+       the layout path. course-progress.js builds the node once and then
+       mutates scaleX on it — a rebuilt node has no start value to move from
+       and could never animate at all. --------------------------------- */
+.progress-fill{inline-size:100%; transform:scaleX(0);
+  transition:transform var(--dur-5) var(--ease-out);}
+.progress-summary.is-complete .progress-summary-head{color:var(--good);}
+.progress-summary.is-complete .progress-fill{background:var(--good);}
+
+/* --- Precise star fill. A filled row clipped over an outline row, so 4.6
+       reads as 4.6 rather than being rounded up to five solid stars. ----- */
+.stars-track{position:relative; display:inline-block; white-space:nowrap; line-height:0;}
+.stars-base{display:inline-block; white-space:nowrap; line-height:0;}
+.stars-fill{
+  position:absolute; inset-block-start:0; inset-inline-start:0;
+  overflow:hidden; white-space:nowrap; line-height:0;
+}
+.stars-new{
+  font-size:var(--step--2); color:var(--text-3);
+  border:1px solid var(--line-strong); border-radius:var(--radius-pill);
+  padding:2px 10px;
+}
+
+/* --- An enrolled student should not be sold the course again (brief 2.7).
+       Lesson 1's video was appearing twice on one page: once in the sticky
+       hero preview at ~446px and once in the player pane. The hero copy was
+       the wider of the two, followed the student down the page, and clicking
+       it could not tick anything. -------------------------------------- */
+/* Class rather than :has(), same reasoning as .has-player above — a browser
+   without :has() must not silently keep showing the duplicate video.
+   js/course-progress.js toggles this alongside .is-enrolled on the card. */
+.course-hero-grid.is-enrolled-view{grid-template-columns:minmax(0,1fr);}
+.course-hero-grid.is-enrolled-view .course-preview{display:none;}
+.course-buy-card.is-enrolled ul,
+.course-buy-card.is-enrolled .pay-icons{display:none;}
+
+@media (prefers-reduced-motion: reduce){
+  .cp-nav-btn,.cp-lesson .cp-lesson-ic svg,.progress-fill{transition:none;}
+  .cp-section.is-complete[data-just-done="1"] .cp-section-meta{animation:none;}
+}
+
+@media (max-width:760px){
+  .cp-nav{grid-template-columns:1fr;}
+  .cp-nav-next{text-align:start;}
 }

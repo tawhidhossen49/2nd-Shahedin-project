@@ -190,6 +190,22 @@
   }
 
   /* ---------------------------------------------------------
+     3b. Nav scrolled state
+     Moved here from js/main.js, which used to register a second
+     scroll listener of its own. Everything scroll-driven now
+     shares the one passive listener and the one rAF above.
+     Runs regardless of prefers-reduced-motion: it is a state
+     change, not an animation.
+     --------------------------------------------------------- */
+  function initNavState() {
+    const nav = document.querySelector(".site-nav");
+    if (!nav) return;
+    addScrollTask((y) => {
+      nav.classList.toggle("scrolled", y > 20);
+    });
+  }
+
+  /* ---------------------------------------------------------
      4. Scroll progress rail  (.read-progress > span)
      --------------------------------------------------------- */
   function initReadProgress() {
@@ -228,13 +244,156 @@
     );
   }
 
+  /* ---------------------------------------------------------
+     TIER 2  (brief 2.3) — response, not arrival.
+     Five on the homepage, two on every other page. All of it is
+     transform/opacity only, all of it rides the shared scroll
+     loop above, and all of it is skipped outright under
+     prefers-reduced-motion.
+
+       1 scrub-linked hero portrait + its background shape   home only
+       2 word stagger on the oversized display headline      home only
+       3 clip-path wipe on section headings                  sitewide
+       4 magnetic primary CTA                                home only
+       5 card lift + tilt toward the cursor                  sitewide
+
+     Nothing here runs on an idle timer and nothing loops.
+     --------------------------------------------------------- */
+  const isHome = !!document.querySelector("[data-section-key='hero']");
+
+  /* 1. Scrub-linked hero shape.
+     The arc is .hero-portrait::before, a pseudo-element JS cannot touch, so
+     the scroll position is published as a custom property and the CSS applies
+     it. The figure already moves via [data-parallax]; the arc moves at a
+     different rate, and that divergence is what reads as depth. Counts as one
+     effect with the portrait, and keeps the page inside the two-parallax-per-
+     viewport cap because the arc is a property write, not a third layer. */
+  function initHeroScrub() {
+    if (!isHome || reduceMotion.matches) return;
+    const portrait = document.querySelector(".hero-portrait");
+    if (!portrait) return;
+    addScrollTask((y, vh) => {
+      const rect = portrait.getBoundingClientRect();
+      if (rect.bottom < -200 || rect.top > vh + 200) return;
+      const progress = (vh - rect.top) / (vh + rect.height) - 0.5;
+      const shift = Math.max(-34, Math.min(34, progress * 74));
+      portrait.style.setProperty("--arc-shift", shift.toFixed(2) + "px");
+    });
+  }
+
+  /* 2. Word-level stagger on the ONE oversized display headline.
+     Split once, animate once. Guarded so re-running init (contentready)
+     cannot split an already-split heading into letters. */
+  function initDisplayWords() {
+    if (!isHome || reduceMotion.matches) return;
+    const h = document.querySelector("[data-section-key='growth'] .section-head h2");
+    if (!h || h.dataset.split) return;
+    h.dataset.split = "1";
+    const words = (h.textContent || "").trim().split(/\s+/);
+    h.textContent = "";
+    words.forEach((w, i) => {
+      const span = document.createElement("span");
+      span.className = "w";
+      span.textContent = w;
+      span.style.setProperty("--wi", i);
+      h.appendChild(span);
+      if (i < words.length - 1) h.appendChild(document.createTextNode(" "));
+    });
+    if (!supportsIO) { h.classList.add("inview"); return; }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("inview");
+        io.unobserve(e.target);      // once, never on every scroll pass
+      });
+    }, { threshold: 0.35 });
+    io.observe(h);
+  }
+
+  /* 3. Clip-path wipe on section headings — sitewide, CSS-driven.
+     JS only decides when, via the same observer pattern, and only once. */
+  function initHeadingWipe() {
+    const heads = document.querySelectorAll(".section-head h2, .section-title");
+    if (!heads.length) return;
+    if (!supportsIO || reduceMotion.matches) {
+      heads.forEach((el) => el.classList.add("inview"));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add("inview");
+        io.unobserve(e.target);
+      });
+    }, { threshold: 0.25, rootMargin: "0px 0px -40px 0px" });
+    heads.forEach((el) => { if (!el.dataset.wipe) { el.dataset.wipe = "1"; io.observe(el); } });
+  }
+
+  /* 4. Magnetic primary CTA — homepage hero only, small radius.
+     Listener is on the button, not the document, so it costs nothing when the
+     pointer is elsewhere. Coarse pointers are excluded: there is no hover on
+     a touchscreen and the transform would just fight the tap. */
+  function initMagneticCTA() {
+    if (!isHome || reduceMotion.matches) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const btn = document.querySelector(".hero-ctas .btn-primary");
+    if (!btn) return;
+    const R = 22;
+    let raf = 0, tx = 0, ty = 0;
+    function apply() { raf = 0; btn.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0)`; }
+    btn.addEventListener("pointermove", (e) => {
+      const r = btn.getBoundingClientRect();
+      tx = Math.max(-R, Math.min(R, (e.clientX - (r.left + r.width / 2)) * 0.34));
+      ty = Math.max(-R, Math.min(R, (e.clientY - (r.top + r.height / 2)) * 0.34));
+      if (!raf) raf = requestAnimationFrame(apply);
+    }, { passive: true });
+    const reset = () => { tx = 0; ty = 0; if (!raf) raf = requestAnimationFrame(apply); };
+    btn.addEventListener("pointerleave", reset, { passive: true });
+    btn.addEventListener("blur", reset);
+  }
+
+  /* 5. Card tilt toward the cursor — sitewide, 1.6deg maximum.
+     One delegated pointermove on the grid containers rather than a listener
+     per card, and the write is batched into a rAF. */
+  function initCardTilt() {
+    if (reduceMotion.matches) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    const MAX = 1.6;
+    let raf = 0, pending = null;
+    function apply() {
+      raf = 0;
+      if (!pending) return;
+      const { el, rx, ry } = pending;
+      el.style.transform = `perspective(900px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) translateY(-4px)`;
+    }
+    document.addEventListener("pointermove", (e) => {
+      const card = e.target.closest ? e.target.closest(".card, .case-card, .partner-card, .kit-stat-card") : null;
+      if (!card) return;
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5;
+      const py = (e.clientY - r.top) / r.height - 0.5;
+      pending = { el: card, rx: -py * MAX * 2, ry: px * MAX * 2 };
+      if (!raf) raf = requestAnimationFrame(apply);
+    }, { passive: true });
+    document.addEventListener("pointerout", (e) => {
+      const card = e.target.closest ? e.target.closest(".card, .case-card, .partner-card, .kit-stat-card") : null;
+      if (card && !card.contains(e.relatedTarget)) card.style.transform = "";
+    }, { passive: true });
+  }
+
   /* --------------------------------------------------------- */
   function init() {
     initStagger();
     initCounters();
     initParallax();
+    initNavState();
     initReadProgress();
     initPressFeedback();
+    initHeroScrub();
+    initDisplayWords();
+    initHeadingWipe();
+    initMagneticCTA();
+    initCardTilt();
   }
 
   function ready(fn) {
@@ -248,5 +407,6 @@
   document.addEventListener("contentready", () => {
     initStagger();
     initCounters();
+    initHeadingWipe();   // headings mounted by render.js still get their wipe
   });
 })();

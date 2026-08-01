@@ -699,7 +699,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .accordion-head:hover{color:var(--accent-ink);}
 .accordion-head svg{inline-size:17px; block-size:17px; color:var(--text-3); transition:transform var(--dur-3) var(--ease-out), color var(--dur-2);}
 .accordion-item.open .accordion-head svg{transform:rotate(180deg); color:var(--accent-ink);}
-.accordion-body{max-height:0; overflow:hidden; transition:max-height var(--dur-4) var(--ease-in-out);}
+/* Height is animated with grid-template-rows rather than max-height: no magic
+   number, no scrollHeight read from JS, and it degrades to an instant open on
+   engines without the interpolation. This is the ONE deliberate exception to
+   the transform/opacity-only rule — there is no transform-only way to animate
+   an auto height without distorting the content inside it. */
+.accordion-body{display:grid; grid-template-rows:0fr; overflow:hidden; transition:grid-template-rows var(--dur-4) var(--ease-in-out);}
+.accordion-body > *{min-block-size:0;}
+.accordion-item.open .accordion-body{grid-template-rows:1fr;}
 
 .lesson-row{
   display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-5);
@@ -1276,7 +1283,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-summary-head{display:flex; justify-content:space-between; gap:var(--space-3); font-size:var(--step--1); font-weight:600; margin-block-end:var(--space-3);}
 .progress-summary-head span:last-child{color:var(--accent-ink); font-family:var(--font-mixed);}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
-.progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
+.progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left;}
 
 .content-block-locked{
   display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-3);
@@ -2070,6 +2077,69 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .dash-side .side-link.active{box-shadow:inset 3px 0 0 var(--accent-fill);}
 
 /* =========================================================================
+   18g. TIER 2 MOTION  (brief 2.3)
+   -------------------------------------------------------------------------
+   The CSS half of js/motion.js's Tier 2 set. Everything below is gated on
+   .js, so a no-JS visitor gets the final state rather than a hidden page, and
+   everything collapses under prefers-reduced-motion at the end of the block.
+   ========================================================================= */
+
+/* 1. Scrub-linked arc. motion.js publishes --arc-shift on .hero-portrait;
+      the pseudo-element consumes it. The figure moves at its own parallax
+      rate, the arc at another, and the divergence is what reads as depth. */
+.hero-portrait::before{
+  transform:translate3d(0,var(--arc-shift,0px),0);
+  will-change:transform;
+}
+
+/* 3. Clip-path wipe on section headings — a reveal that moves, not a fade.
+      Gated on .js so headings are never invisible without scripting. */
+.js .section-head h2,
+.js .section-title{
+  clip-path:inset(0 100% 0 0);
+  transition:clip-path var(--dur-5) var(--ease-out);
+}
+.js .section-head h2.inview,
+.js .section-title.inview{clip-path:inset(0 0 0 0);}
+
+/* 2. Word stagger on the one oversized display headline. It replaces the
+      wipe on that heading rather than stacking with it — higher specificity
+      switches the wipe off for this element only. */
+.js [data-section-key="growth"] .section-head h2{clip-path:none; transition:none;}
+.js [data-section-key="growth"] .section-head h2 .w{
+  display:inline-block; opacity:0; transform:translateY(.42em);
+  transition:opacity var(--dur-4) var(--ease-out),
+             transform var(--dur-4) var(--ease-out);
+  transition-delay:calc(var(--wi,0) * 48ms);
+}
+.js [data-section-key="growth"] .section-head h2.inview .w{opacity:1; transform:none;}
+
+/* 4. Magnetic CTA — motion.js writes the transform; this only supplies the
+      spring-back easing for when the pointer leaves. */
+.hero-ctas .btn-primary{transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);}
+
+/* 5. Card tilt. The lift is a tinted shadow in the accent hue, never neutral
+      black (brief 2.5). motion.js owns the rotation. */
+.card,.case-card,.partner-card,.kit-stat-card{
+  transition:transform var(--dur-3) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             background var(--dur-2) var(--ease-out);
+}
+.card:hover,.case-card:hover,.partner-card:hover,.kit-stat-card:hover{
+  box-shadow:var(--shadow-3), 0 10px 30px -12px var(--accent-glow);
+}
+
+/* Tier 2 off, everything at its final state. No exceptions. */
+@media (prefers-reduced-motion: reduce){
+  .js .section-head h2,.js .section-title{clip-path:none; transition:none;}
+  .js [data-section-key="growth"] .section-head h2 .w{opacity:1; transform:none; transition:none;}
+  .hero-portrait::before{transform:none;}
+  .hero-ctas .btn-primary{transition:none;}
+  .card,.case-card,.partner-card,.kit-stat-card{transition:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2176,12 +2246,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .btn:focus-visible,.chip:focus-visible,.tab-btn:focus-visible,.nav-cta:focus-visible{outline-offset:3px;}
 .skip-link{
-  position:absolute; inset-block-start:-100px; inset-inline-start:var(--gutter); z-index:calc(var(--z-nav) + 5);
+  position:absolute; inset-inline-start:var(--gutter); z-index:calc(var(--z-nav) + 5);
   background:var(--text-1); color:var(--surface-0); padding:11px 20px;
   border-radius:0 0 var(--radius-s) var(--radius-s); font-weight:600; font-size:var(--step--1);
-  transition:top var(--dur-2) var(--ease-out);
+  inset-block-start:0; transform:translateY(-140%);
+  transition:transform var(--dur-2) var(--ease-out);
 }
-.skip-link:focus{inset-block-start:0;}
+.skip-link:focus{transform:translateY(0);}
 .visually-hidden{
   position:absolute !important; inline-size:1px; block-size:1px;
   padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;

@@ -79,9 +79,21 @@ html.no-js .reveal{opacity:1 !important; transform:none !important;}
        fine it fell below one device pixel on 2x displays and averaged out.
      · opacity .32 -> .58, which is legible without becoming texture-as-effect.
    Still fixed, still pointer-events:none, still paints once. */
+/* NO mix-blend-mode. It used to be soft-light at .58, which looked right over
+   ordinary content but broke over any element the browser promotes to its own
+   compositing layer. The hero and story portraits are promoted — they carry
+   filter, mask-image, will-change and a parallax transform — and Chromium
+   drops the blend over a promoted layer and paints the grain normally instead.
+   Grey noise at .58 opacity, composited normally over #0b0908, is a great deal
+   lighter than the soft-light result around it, which is why the cutouts
+   looked like they were sitting in a lighter box: the box was the grain
+   failing to blend, exactly at the promoted layer's bounds.
+
+   Plain compositing at a much lower opacity gives the same tooth and cannot
+   produce that seam anywhere on the site. */
 body::before{
   content:""; position:fixed; inset:0; z-index:var(--z-grain); pointer-events:none;
-  opacity:.58; mix-blend-mode:soft-light;
+  opacity:.10;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.58' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.62'/%3E%3C/svg%3E");
   background-size:200px 200px;
 }
@@ -974,10 +986,12 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   position:relative; z-index:1;
   inline-size:100%; block-size:100%;
   object-fit:cover; object-position:50% 0%;
-  /* drop-shadow() follows the alpha matte, so the warm rim light and the
-     grounding shadow both hug the silhouette instead of a bounding box. */
-  filter:saturate(.96) contrast(1.04)
-         drop-shadow(0 0 22px rgba(255,179,122,.22))
+  /* drop-shadow ONLY, no colour grade. drop-shadow follows the alpha matte so
+     the warm rim light and the grounding shadow hug the silhouette and can
+     never draw an edge of their own. The grade is gone for the same reason it
+     went from the story portrait: a graded layer reads differently from the
+     page behind it, and any seam at the element's bounds becomes visible. */
+  filter:drop-shadow(0 0 22px rgba(255,179,122,.22))
          drop-shadow(0 26px 44px rgba(8,4,2,.60));
   -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
           mask-image:linear-gradient(to top,transparent 0%,#000 17%,#000 100%);
@@ -1036,27 +1050,35 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    .about-portrait and .hero-portrait, and this block sits later in the file.
    Every rule is therefore scoped :not(.hero-portrait), otherwise the ring
    treatment would silently override the hero's arc. */
+/* No crop at all. The container matches the asset's own 800x1024, so the
+   whole photograph shows — head, shoulders and crossed arms. Earlier passes
+   cropped to row 560 (which sliced through his arms) and then to row 470,
+   which combined with the fade left little more than a floating head. */
 .about-portrait:not(.hero-portrait){
-  position:relative; aspect-ratio:800/560;
-  inline-size:100%; max-inline-size:420px; margin-inline:auto;
+  position:relative; aspect-ratio:800/1024;
+  inline-size:100%; max-inline-size:400px; margin-inline:auto;
 }
-/* the ring: narrower than his shoulders and shorter than his head, so the
-   figure breaks past it on three sides */
-.about-portrait:not(.hero-portrait)::before{
-  content:""; position:absolute; z-index:0;
-  inset-block-end:2%; inset-inline-start:50%; transform:translateX(-50%);
-  block-size:88%; aspect-ratio:1/1; border-radius:50%;
-  border:1px solid var(--line-accent);
-  background:radial-gradient(62% 62% at 50% 62%, var(--accent-dim), transparent 72%);
-}
+/* Nothing behind the figure. Every version of a shape here has read as an
+   artifact rather than art direction — first an arched card, then a ring
+   whose stroke crossed his hair, then a bloom. The cutout stands on the page
+   like a sticker, exactly as the hero does. */
+.about-portrait:not(.hero-portrait)::before{content:none;}
+
 .about-portrait:not(.hero-portrait) img{
   position:relative; z-index:1;
   inline-size:100%; block-size:100%;
-  object-fit:cover; object-position:50% 0%;
-  filter:saturate(.72) contrast(1.06) brightness(.98)
-         drop-shadow(0 18px 34px rgba(8,4,2,.55));
-  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
-          mask-image:linear-gradient(to top,transparent 0%,#000 14%,#000 100%);
+  object-fit:contain; object-position:50% 100%;
+  /* ONLY drop-shadow. The visible rectangle came from the colour grade:
+     saturate(.72) contrast(1.06) brightness(.98) forced the image onto its
+     own filtered compositing layer graded differently from the page behind
+     it, and the seam at the element's bounds was that difference showing.
+     The hero carries drop-shadows with no box precisely because it barely
+     grades. drop-shadow follows the alpha matte, so it hugs the silhouette
+     and can never draw an edge of its own. */
+  filter:drop-shadow(0 18px 34px rgba(8,4,2,.55));
+  /* No mask either — the asset's own bottom edge is now at the very bottom of
+     the section's own spacing, and a mask is one more reason for the browser
+     to rasterise a box the exact size of this element. */
 }
 .about-copy > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
 .about-copy > div > p{margin-block-end:var(--space-4); font-size:var(--step-0);}
@@ -1779,7 +1801,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   transition:background var(--dur-3) var(--ease-out),
              transform var(--dur-3) var(--ease-out);
 }
-[data-section-key="growth"] .growth-item:first-child{border-inline-start:0;}
+[data-section-key="growth"] .growth-item:first-child{border-inline-start:0; padding-inline-start:0;}
 
 /* The accent rule that draws across the top of a cell on hover. This is the
    one overlap left in the section and it is a line, not a block, so it can
@@ -1797,24 +1819,30 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 [data-section-key="growth"] .growth-item:hover::after,
 [data-section-key="growth"] .growth-item:focus-within::after{transform:scaleX(1);}
 
-/* The numeral straddles the top rule, so the hairline appears to pass behind
-   it. Opaque type over a 1px line needs no background chip to do this, which
-   matters because the band carries a gradient the chip could not match. */
+/* The numeral sits BELOW the rule, in normal flow.
+   It used to be absolutely positioned and pulled up 52%, so the hairline ran
+   straight through the middle of the digit — which read as the number being
+   cut in half rather than as an overlap. Being absolute also meant its left
+   edge had to be re-stated at every breakpoint, and those overrides collided:
+   the two-column rule at 1080 out-specified the single-column rule at 760, so
+   alternate numerals kept a 20px indent and the column zigzagged.
+
+   In normal flow it clears the rule on its own and inherits the item's
+   padding, so it lines up with the text at every width with no per-breakpoint
+   rules at all. */
 [data-section-key="growth"] .growth-dot{
-  position:absolute; inset-block-start:0; inset-inline-start:var(--space-5);
-  inline-size:auto; block-size:auto;
+  position:static; inline-size:auto; block-size:auto;
   background:none; border:0; border-radius:0; display:block;
   font-family:var(--font-num); font-variant-numeric:tabular-nums;
-  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:.9;
+  font-size:clamp(2.1rem,3.6vw,3.1rem); font-weight:700; line-height:1;
   letter-spacing:-.04em; color:var(--text-3);
-  transform:translateY(-52%);
+  margin:0 0 var(--space-4); transform:none;
   transition:color var(--dur-2) var(--ease-out),
              transform var(--dur-3) var(--ease-spring);
 }
-[data-section-key="growth"] .growth-item:first-child .growth-dot{inset-inline-start:0;}
 [data-section-key="growth"] .growth-item:hover .growth-dot,
 [data-section-key="growth"] .growth-item:focus-within .growth-dot{
-  color:var(--accent-ink); transform:translateY(-62%);
+  color:var(--accent-ink); transform:translateY(-3px);
 }
 /* .inview is added by motion.js on scroll; it must not fight the hover state */
 [data-section-key="growth"] .growth-item.inview .growth-dot{
@@ -2405,6 +2433,85 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18k. FOOTER SOCIAL — 3D tilt on hover
+   -------------------------------------------------------------------------
+   Adapted from the Uiverse component by Lokesh1379. Three things had to
+   change rather than be copied:
+
+   1. SCOPE. The original ships a bare `button { border:none; background:
+      transparent; font-size:20px }`. .icon-btn is used in the nav and the
+      mobile menu on all nine pages, and an unscoped button rule would have
+      restyled every button on the site. Everything here is scoped to
+      .footer-social, and it drives the existing anchors — no markup change,
+      so the real links, their hrefs and their Bangla aria-labels all stay.
+
+   2. COLOUR. The original hard-codes #1e90ff, #ff00ff and #4267B2 per icon
+      with a rgb(1,49,182) blue shadow. Four different brand hues would break
+      the one-accent lock the palette runs on, and blue in particular is on
+      the anti-default list. All four share the site accent instead, and the
+      lift-off shadow is --accent-glow rather than blue.
+
+   3. THE PLATE LIES DOWN, it does not lean. rotateX(70deg) leaves the disc
+      about 34% of its height — a horizontal ellipse resting on the ground,
+      which is the point. A middling angle like 38deg is the bad case: it
+      reads as the plate having fallen over rather than as a plate at all.
+      The glyph then rises off it on Z and counter-rotates the full 70deg so
+      it stands upright and square to the viewer.
+
+   The sequence — YouTube, Facebook, Instagram, LinkedIn — already matches in
+   the markup, so no icons needed swapping.
+   ========================================================================= */
+.footer-social{perspective:600px;}
+.footer-social .icon-btn{
+  transform-style:preserve-3d;
+  transition:transform var(--dur-3) var(--ease-out),
+             background var(--dur-2) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             color var(--dur-2) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out);
+}
+.footer-social .icon-btn svg{
+  transition:transform var(--dur-3) var(--ease-out);
+}
+/* Focus gets the identical treatment, so a keyboard user sees the same
+   affordance a mouse user does rather than just an outline. */
+/* The plate lays down flat on the ground. */
+.footer-social .icon-btn:hover,
+.footer-social .icon-btn:focus-visible{
+  background:var(--surface-3);
+  border-color:var(--line-accent);
+  color:var(--accent-ink);
+  transform:perspective(180px) rotateX(70deg) translateY(3px);
+  box-shadow:0 12px 20px -8px var(--accent-glow);
+}
+/* The glyph stands above it: translateZ lifts it off the plate, and because
+   the plate is lying down that Z axis now points up the screen. The -70deg
+   counter-rotation cancels the plate's tilt exactly, so the icon itself is
+   never seen at an angle. */
+.footer-social .icon-btn:hover svg,
+.footer-social .icon-btn:focus-visible svg{
+  transform:translate3d(0,0,16px) perspective(180px) rotateX(-70deg);
+}
+/* Pressing pushes the glyph back down toward its plate. */
+.footer-social .icon-btn:active{
+  transform:perspective(180px) rotateX(70deg) translateY(6px);
+  box-shadow:0 6px 12px -8px var(--accent-glow);
+}
+.footer-social .icon-btn:active svg{
+  transform:translate3d(0,0,9px) perspective(180px) rotateX(-70deg);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .footer-social .icon-btn,
+  .footer-social .icon-btn svg{transition:none;}
+  .footer-social .icon-btn:hover,
+  .footer-social .icon-btn:focus-visible,
+  .footer-social .icon-btn:active{transform:none;}
+  .footer-social .icon-btn:hover svg,
+  .footer-social .icon-btn:focus-visible svg{transform:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2572,8 +2679,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   }
   [data-section-key="growth"] .growth-item:nth-child(odd){border-inline-start:0;}
   [data-section-key="growth"] .growth-item:nth-child(n+3){border-block-start:1px solid var(--line-strong);}
-  [data-section-key="growth"] .growth-item:nth-child(odd) .growth-dot{inset-inline-start:0;}
-  [data-section-key="growth"] .growth-item:nth-child(even) .growth-dot{inset-inline-start:var(--space-5);}
+  /* The numeral is in normal flow now, so it follows the cell's padding and
+     needs no inset of its own. Only the first cell of each row goes flush. */
+  [data-section-key="growth"] .growth-item:nth-child(odd){padding-inline-start:0;}
 
   /* courses: the register keeps its row shape but the media column narrows */
   [data-section-key="featured_courses"] .card{grid-template-columns:minmax(0,180px) minmax(0,1fr); gap:var(--space-6);}
@@ -2592,7 +2700,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
     border-block-start:1px solid var(--line-strong);
   }
   [data-section-key="growth"] .growth-item:first-child{border-block-start:0;}
-  [data-section-key="growth"] .growth-item .growth-dot{inset-inline-start:0;}
   [data-section-key="growth"] .growth-item:hover{transform:none;}   /* no lift in a stacked list */
   [data-section-key="growth"] .section-head h2{
     margin-inline-start:0; max-inline-size:none;

@@ -2265,6 +2265,110 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18i. COURSE PLAYER
+   -------------------------------------------------------------------------
+   Two columns: the selected block's content on the left, a grouped checklist
+   of every block on the right. The interaction pattern is the familiar one;
+   the surfaces, hairlines, radii, type and accent are all ours, so it reads
+   as part of this site rather than as a transplant.
+
+   The sidebar rows are what js/course-progress.js finds — they carry
+   data-block-id, .cb-title and the [data-cb-progress] checkbox — so nothing
+   here invents a second progress mechanism.
+   ========================================================================= */
+.course-player{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,340px);
+  gap:var(--space-7); align-items:start;
+}
+.cp-main{min-inline-size:0;}
+.cp-pane{min-inline-size:0;}
+.cp-pane:focus{outline:none;}
+.cp-pane:focus-visible{outline:2px solid var(--accent-ink); outline-offset:6px;}
+.cp-pane .content-block{border:0; padding:0; background:transparent;}
+
+.cp-side{
+  min-inline-size:0; border:1px solid var(--line-strong);
+  border-radius:var(--radius-m); background:var(--surface-1); overflow:hidden;
+}
+.cp-side-head{
+  padding:var(--space-5) var(--space-5) var(--space-4);
+  border-block-end:1px solid var(--line-strong); background:var(--surface-2);
+}
+.cp-side-title{
+  display:block; font-family:var(--font-display); font-weight:600;
+  font-size:var(--step-0); color:var(--text-1);
+}
+.cp-side-head .progress-summary{margin-block-start:var(--space-4);}
+
+.cp-sections{max-block-size:min(70vh,720px); overflow-y:auto; overscroll-behavior:contain;}
+.cp-sections::-webkit-scrollbar{inline-size:8px;}
+.cp-sections::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:99px;}
+
+.cp-section{border-block-end:1px solid var(--line);}
+.cp-section:last-child{border-block-end:0;}
+.cp-section-h{margin:0; font-family:var(--font-body); font-size:inherit; font-weight:inherit;}
+.cp-section-head{
+  inline-size:100%; display:flex; align-items:center; gap:var(--space-3);
+  background:none; border:0; cursor:pointer; text-align:start;
+  padding:var(--space-5); color:var(--text-1);
+  font-family:var(--font-body); font-size:var(--step--1); font-weight:600;
+  transition:background var(--dur-2) var(--ease-out);
+}
+.cp-section-head:hover{background:var(--surface-2);}
+.cp-section-head:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px;}
+.cp-section-title{flex:1; min-inline-size:0; line-height:var(--lh-tight);}
+.cp-section-meta{
+  font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); color:var(--text-3); flex:0 0 auto;
+}
+.cp-section.is-complete .cp-section-meta{color:var(--good);}
+.cp-chev{display:flex; color:var(--text-3); transition:transform var(--dur-3) var(--ease-out);}
+.cp-section.is-open .cp-chev{transform:rotate(180deg);}
+
+/* Same grid-template-rows technique the site accordion uses, so an open
+   section animates without a scrollHeight read or a magic max-height. */
+.cp-section-body{display:grid; grid-template-rows:0fr; overflow:hidden;
+  transition:grid-template-rows var(--dur-3) var(--ease-in-out);}
+.cp-section-body > *{min-block-size:0;}
+.cp-section.is-open .cp-section-body{grid-template-rows:1fr;}
+
+.cp-lesson{
+  display:flex; align-items:flex-start; gap:var(--space-2);
+  padding-inline:var(--space-4) var(--space-3);
+  border-block-start:1px solid var(--line);
+  transition:background var(--dur-2) var(--ease-out);
+}
+.cp-lesson:hover{background:var(--surface-2);}
+.cp-lesson.is-current{background:var(--surface-3); box-shadow:inset 3px 0 0 var(--accent-fill);}
+.cp-lesson .cb-progress{margin:0; padding-block-start:14px; flex:0 0 auto;}
+.cp-lesson .cb-complete-check{inline-size:16px; block-size:16px;}
+.cp-lesson-btn{
+  flex:1; min-inline-size:0; display:flex; align-items:flex-start; gap:var(--space-3);
+  background:none; border:0; cursor:pointer; text-align:start;
+  padding:var(--space-4) 0; color:var(--text-2);
+  font-family:var(--font-body); font-size:var(--step--1); line-height:var(--lh-tight);
+}
+.cp-lesson-btn:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px;}
+.cp-lesson-ic{display:flex; flex:0 0 auto; color:var(--text-3); margin-block-start:1px;}
+.cp-lesson-ic svg{inline-size:15px; block-size:15px;}
+.cp-lesson.is-current .cp-lesson-btn{color:var(--text-1); font-weight:600;}
+.cp-lesson.is-current .cp-lesson-ic{color:var(--accent-ink);}
+.cp-lesson .cb-title{flex:1; min-inline-size:0; overflow-wrap:anywhere;}
+.cp-lesson.is-done .cb-title{color:var(--text-3);}
+.cp-lesson-len{
+  flex:0 0 auto; font-family:var(--font-num); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); color:var(--text-3);
+}
+/* Locked blocks keep today's treatment — no checkbox, a lock glyph, and the
+   pane shows the same "enrol to unlock" notice it always has. */
+.cp-lesson.is-locked .cp-lesson-btn{color:var(--text-3); cursor:pointer;}
+.cp-lesson.is-locked .cp-lesson-ic{color:var(--text-3);}
+
+@media (prefers-reduced-motion: reduce){
+  .cp-section-body,.cp-chev,.cp-lesson,.cp-section-head{transition:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */
@@ -2566,4 +2670,25 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 @media (prefers-reduced-transparency: reduce){
   .vfacade-dur{backdrop-filter:none; -webkit-backdrop-filter:none; background:rgb(8 4 2 / .92);}
   .site-nav{backdrop-filter:none; -webkit-backdrop-filter:none; background:var(--surface-0);}
+}
+
+/* --- 19e. RESPONSIVE for the course player (section 18i) ----------------- */
+@media (max-width:1080px){
+  /* Video on top, checklist below — the stacking order the brief asks for.
+     The sidebar keeps its own scroll so a 60-lesson course doesn't push the
+     rest of the page into the distance. */
+  .course-player{grid-template-columns:minmax(0,1fr); gap:var(--space-6);}
+  .cp-side{order:2;}
+  .cp-main{order:1;}
+  .cp-sections{max-block-size:min(56vh,520px);}
+}
+@media (max-width:760px){
+  .cp-sections{max-block-size:none;}   /* let the page scroll instead */
+  .cp-section-head{padding:var(--space-4);}
+  .cp-lesson-btn{padding-block:var(--space-3);}
+}
+@media (pointer: coarse){
+  .cp-section-head{min-block-size:48px;}
+  .cp-lesson-btn{min-block-size:44px;}
+  .cp-lesson .cb-complete-check{inline-size:20px; block-size:20px;}
 }

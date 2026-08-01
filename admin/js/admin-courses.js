@@ -178,6 +178,7 @@
 
           <div class="form-field full">
             <label>Course content <span class="hint">what students see on the course page, in this order — add, edit, reorder, or remove anytime</span></label>
+            <datalist id="sectionList"></datalist>
             <div id="contentBlockList"></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
               <button type="button" class="btn btn-ghost btn-sm" data-add-block="video">+ Video</button>
@@ -351,6 +352,14 @@
         <button type="button" class="icon-btn move-down" title="Move down">↓</button>
         <button type="button" class="icon-btn remove-block" title="Remove">✕</button>
       </div>
+      <div class="module-head" style="margin-top:8px;">
+        <input type="text" placeholder="Section, e.g. Section 7: Milestone Project" class="cb-section" list="sectionList"
+               value="${Admin.escapeHtml(existing?.section || "")}"
+               style="flex:2; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
+        <input type="text" placeholder="Length, e.g. 13min" class="cb-duration"
+               value="${Admin.escapeHtml(existing?.duration || "")}"
+               style="flex:1; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
+      </div>
       <div class="cb-body">${blockFieldsHTML(type, existing)}</div>`;
     document.getElementById("contentBlockList").appendChild(el);
 
@@ -424,10 +433,35 @@
     row.querySelector(".remove-option").addEventListener("click", () => row.remove());
   }
 
+  /* Keeps the Section datalist in step with whatever section names this
+     course already uses, so admins pick an existing group instead of
+     retyping it slightly differently and splitting the section in two. */
+  function refreshSectionList() {
+    const list = document.getElementById("sectionList");
+    if (!list) return;
+    const seen = [];
+    document.querySelectorAll("#contentBlockList .cb-section").forEach((i) => {
+      const v = i.value.trim();
+      if (v && seen.indexOf(v) === -1) seen.push(v);
+    });
+    list.innerHTML = seen.map((v) => `<option value="${Admin.escapeHtml(v)}">`).join("");
+  }
+
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains("cb-section")) refreshSectionList();
+  });
+
   function collectContentBlocks() {
     return Array.from(document.querySelectorAll("#contentBlockList > .module-block")).map((el) => {
       const type = el.dataset.type;
       const base = { id: el.dataset.blockId, type, title: el.querySelector(".cb-title").value.trim() || (BLOCK_TYPES[type] || "Untitled") };
+      /* Optional grouping + length. Both are omitted entirely when blank so an
+         untouched course keeps exactly the jsonb shape it had before, and the
+         player falls back to one untitled group with no duration shown. */
+      const sectionName = (el.querySelector(".cb-section")?.value || "").trim();
+      if (sectionName) base.section = sectionName;
+      const blockLen = (el.querySelector(".cb-duration")?.value || "").trim();
+      if (blockLen) base.duration = blockLen;
 
       if (type === "quiz") {
         base.questions = Array.from(el.querySelectorAll(".quiz-editor-list > div")).map((qRow) => {

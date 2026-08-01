@@ -2433,6 +2433,85 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   18k. FOOTER SOCIAL — 3D tilt on hover
+   -------------------------------------------------------------------------
+   Adapted from the Uiverse component by Lokesh1379. Three things had to
+   change rather than be copied:
+
+   1. SCOPE. The original ships a bare `button { border:none; background:
+      transparent; font-size:20px }`. .icon-btn is used in the nav and the
+      mobile menu on all nine pages, and an unscoped button rule would have
+      restyled every button on the site. Everything here is scoped to
+      .footer-social, and it drives the existing anchors — no markup change,
+      so the real links, their hrefs and their Bangla aria-labels all stay.
+
+   2. COLOUR. The original hard-codes #1e90ff, #ff00ff and #4267B2 per icon
+      with a rgb(1,49,182) blue shadow. Four different brand hues would break
+      the one-accent lock the palette runs on, and blue in particular is on
+      the anti-default list. All four share the site accent instead, and the
+      lift-off shadow is --accent-glow rather than blue.
+
+   3. THE PLATE LIES DOWN, it does not lean. rotateX(70deg) leaves the disc
+      about 34% of its height — a horizontal ellipse resting on the ground,
+      which is the point. A middling angle like 38deg is the bad case: it
+      reads as the plate having fallen over rather than as a plate at all.
+      The glyph then rises off it on Z and counter-rotates the full 70deg so
+      it stands upright and square to the viewer.
+
+   The sequence — YouTube, Facebook, Instagram, LinkedIn — already matches in
+   the markup, so no icons needed swapping.
+   ========================================================================= */
+.footer-social{perspective:600px;}
+.footer-social .icon-btn{
+  transform-style:preserve-3d;
+  transition:transform var(--dur-3) var(--ease-out),
+             background var(--dur-2) var(--ease-out),
+             border-color var(--dur-2) var(--ease-out),
+             color var(--dur-2) var(--ease-out),
+             box-shadow var(--dur-3) var(--ease-out);
+}
+.footer-social .icon-btn svg{
+  transition:transform var(--dur-3) var(--ease-out);
+}
+/* Focus gets the identical treatment, so a keyboard user sees the same
+   affordance a mouse user does rather than just an outline. */
+/* The plate lays down flat on the ground. */
+.footer-social .icon-btn:hover,
+.footer-social .icon-btn:focus-visible{
+  background:var(--surface-3);
+  border-color:var(--line-accent);
+  color:var(--accent-ink);
+  transform:perspective(180px) rotateX(70deg) translateY(3px);
+  box-shadow:0 12px 20px -8px var(--accent-glow);
+}
+/* The glyph stands above it: translateZ lifts it off the plate, and because
+   the plate is lying down that Z axis now points up the screen. The -70deg
+   counter-rotation cancels the plate's tilt exactly, so the icon itself is
+   never seen at an angle. */
+.footer-social .icon-btn:hover svg,
+.footer-social .icon-btn:focus-visible svg{
+  transform:translate3d(0,0,16px) perspective(180px) rotateX(-70deg);
+}
+/* Pressing pushes the glyph back down toward its plate. */
+.footer-social .icon-btn:active{
+  transform:perspective(180px) rotateX(70deg) translateY(6px);
+  box-shadow:0 6px 12px -8px var(--accent-glow);
+}
+.footer-social .icon-btn:active svg{
+  transform:translate3d(0,0,9px) perspective(180px) rotateX(-70deg);
+}
+
+@media (prefers-reduced-motion: reduce){
+  .footer-social .icon-btn,
+  .footer-social .icon-btn svg{transition:none;}
+  .footer-social .icon-btn:hover,
+  .footer-social .icon-btn:focus-visible,
+  .footer-social .icon-btn:active{transform:none;}
+  .footer-social .icon-btn:hover svg,
+  .footer-social .icon-btn:focus-visible svg{transform:none;}
+}
+
+/* =========================================================================
    19. RESPONSIVE
    Verified at 1440 / 1280 / 1080 / 760 / 480 / 380.
    ========================================================================= */

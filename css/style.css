@@ -942,19 +942,18 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    reaches back LEFT underneath the copy column — that cross-column overlap is
    this section's grid-break (brief 2.2). The copy sits at z-index 2, the arc
    at 0, so nothing costs legibility. */
-.hero-portrait::before{
-  content:""; position:absolute; z-index:0;
-  inset-block-end:0; inset-inline-start:-46%; inset-inline-end:-14%;
-  block-size:37%;
-  border-radius:50% 50% 0 0 / 100% 100% 0 0;
-  /* The red bloom is gone by request. The shape stays, because the de-boxed
-     figure still needs something behind it to stand against, but it is now a
-     quiet neutral tonal rise with no accent radial, no accent hairline and no
-     accent glow spill. The only warmth left in this composition is the rim
-     light on the figure itself. */
-  background:linear-gradient(180deg,var(--surface-2),var(--surface-1));
-  border-block-start:1px solid var(--line);
-}
+/* No shape behind the figure, by request. The arc that used to sit here is
+   gone entirely — first its red bloom, now the shape itself. The portrait
+   stands on the page with nothing behind it but the band.
+
+   What holds the composition together without it:
+     · the drop-shadow pair on the img below, which follows the alpha matte
+       rather than a bounding box, so the figure reads as lit and grounded
+     · the bottom mask, which dissolves the base into the band instead of
+       ending on a cut line
+   This is a deliberate departure from brief 2.1's "one large shape behind
+   them" — the shape was removed on request, not overlooked. */
+.hero-portrait::before{content:none;}
 .hero-portrait img{
   position:relative; z-index:1;
   inline-size:100%; block-size:100%;
@@ -2043,6 +2042,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
    Three shapes, three grades, three overlap logics. */
 .kit-hero .hero-portrait::before{
+  /* content is re-declared here on purpose: the homepage hero sets
+     .hero-portrait::before{content:none} to remove its shape, and without
+     this line that would cascade in and delete portfolio's colour block too. */
+  content:"";
   inset-block-end:6%; inset-inline-start:auto; inset-inline-end:-6%;
   inline-size:76%; block-size:56%;
   border-radius:0;                       /* hard edges — the third language */
@@ -2095,13 +2098,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    everything collapses under prefers-reduced-motion at the end of the block.
    ========================================================================= */
 
-/* 1. Scrub-linked arc. motion.js publishes --arc-shift on .hero-portrait;
-      the pseudo-element consumes it. The figure moves at its own parallax
-      rate, the arc at another, and the divergence is what reads as depth. */
-.hero-portrait::before{
-  transform:translate3d(0,var(--arc-shift,0px),0);
-  will-change:transform;
-}
+/* 1. The scrub-linked arc is gone with the shape it moved. The hero keeps its
+      scroll response through the figure's own [data-parallax], so the
+      portrait still tracks the scrollbar — there is just no second layer left
+      to diverge from it. Tier 2 is now four effects on the homepage, which is
+      under the cap of five. */
 
 /* 3. Clip-path wipe on section headings — a reveal that moves, not a fade.
       Gated on .js so headings are never invisible without scripting. */

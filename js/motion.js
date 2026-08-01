@@ -268,18 +268,10 @@
      different rate, and that divergence is what reads as depth. Counts as one
      effect with the portrait, and keeps the page inside the two-parallax-per-
      viewport cap because the arc is a property write, not a third layer. */
-  function initHeroScrub() {
-    if (!isHome || reduceMotion.matches) return;
-    const portrait = document.querySelector(".hero-portrait");
-    if (!portrait) return;
-    addScrollTask((y, vh) => {
-      const rect = portrait.getBoundingClientRect();
-      if (rect.bottom < -200 || rect.top > vh + 200) return;
-      const progress = (vh - rect.top) / (vh + rect.height) - 0.5;
-      const shift = Math.max(-34, Math.min(34, progress * 74));
-      portrait.style.setProperty("--arc-shift", shift.toFixed(2) + "px");
-    });
-  }
+  /* REMOVED. The shape behind the portrait was taken out of the design, so
+     publishing --arc-shift meant running a scroll task every frame to move
+     something that no longer exists. The figure keeps its own scroll response
+     through [data-parallax] in initParallax above. */
 
   /* 2. Word-level stagger on the ONE oversized display headline.
      Split once, animate once. Guarded so re-running init (contentready)
@@ -389,7 +381,6 @@
     initNavState();
     initReadProgress();
     initPressFeedback();
-    initHeroScrub();
     initDisplayWords();
     initHeadingWipe();
     initMagneticCTA();

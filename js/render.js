@@ -760,13 +760,25 @@
     const duration = durationBn(c.duration);
     const type = c.courseType || "course";
     const typeLabel = COURSE_TYPE_BN[type] || "";
-    const lessons = Array.isArray(c.contentBlocks) ? c.contentBlocks.length : 0;
+    /* content_blocks is the current curriculum shape, but plenty of courses
+       still carry the legacy modules/lessons list — including every one in
+       js/data.js. Counting only content_blocks meant the lesson figure was 0
+       for all of them and the chip silently disappeared, so fall back to
+       summing the modules the same way courseCurriculumHTML does. */
+    const lessons = Array.isArray(c.contentBlocks) && c.contentBlocks.length
+      ? c.contentBlocks.length
+      : Array.isArray(c.modules)
+        ? c.modules.reduce((sum, m) => sum + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0)
+        : 0;
     const students = Number(c.students) || 0;
     /* Same strikethrough markup productCard already uses, so a discounted
        course and a discounted product read identically across the site. */
     const price = c.free
       ? `<span class="price price-free">ফ্রি</span>`
-      : `<span class="price">${c.oldPrice ? `<span class="old">৳${bnNum(Number(c.oldPrice))}</span>` : ""}৳${bnNum(Number(c.price))}</span>`;
+      /* Reference order: current price first, THEN the struck-through original
+         after it. productCard puts the old price first — the catalogue card
+         follows the layout being matched here rather than that precedent. */
+      : `<span class="price">৳${bnNum(Number(c.price))}${c.oldPrice ? ` <span class="old">৳${bnNum(Number(c.oldPrice))}</span>` : ""}</span>`;
     return `
     <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-course-type="${escapeHtml(type)}" data-title="${title}">
       <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
@@ -782,14 +794,14 @@
         <div class="card-meta">${stars(c.rating)}<span>${escapeHtml(categoryLabel(c.category))}</span></div>
         <div class="card-title card-title-clamp">${title}</div>
         <p class="card-desc">${escapeHtml(c.desc)}</p>
-        ${lessons || students ? `<div class="card-stats">
-          ${lessons ? `<span>${ICON.book}${bnNum(lessons)} লেসন</span>` : ``}
-          ${students ? `<span>${ICON.users}${bnNum(students)} শিক্ষার্থী</span>` : ``}
-        </div>` : ``}
         <div class="card-foot">
           ${price}
           <span class="text-link">কোর্স দেখুন ${ICON.arrow}</span>
         </div>
+        ${lessons || students ? `<div class="card-stats">
+          ${lessons ? `<span><span class="ic">${ICON.play}</span>${bnNum(lessons)} লেসন</span>` : ``}
+          ${students ? `<span><span class="ic">${ICON.users}</span>${bnNum(students)} শিক্ষার্থী</span>` : ``}
+        </div>` : ``}
       </div>
     </a>`;
   }

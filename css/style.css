@@ -1041,25 +1041,52 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
 /* =========================================================================
    15. COURSE DETAIL
-   B2: the hero is a two-column composition that must survive a one-word
-   title AND a 3-line one. Both columns stretch to a shared min-height, the
-   buy card is pushed to the bottom of the copy column with margin-block-
-   start:auto, and the media column owns a fixed aspect ratio — so short
-   content can no longer leave a dead gap.
+   B2: the hero is a cinematic band. The course thumbnail runs full bleed
+   behind it, the copy sits left and the price card right, and the grid is
+   vertically centred — so a one-word title and a three-line one both look
+   composed rather than leaving a dead gap. The media layer is absolutely
+   positioned, so it contributes no height and a course with no thumbnail
+   simply falls back to the gradient below without the layout moving.
    ========================================================================= */
 .course-hero{
-  position:relative; overflow:hidden;
+  position:relative; overflow:hidden; isolation:isolate;
   background:
     radial-gradient(46rem 30rem at 88% 0%, rgba(193,18,47,.15), transparent 66%),
     linear-gradient(180deg,var(--surface-1),var(--surface-0));
   border-block-end:1px solid var(--line);
-  padding-block:calc(var(--nav-h) + clamp(48px,7vw,84px)) clamp(48px,7vw,84px);
+  padding-block:calc(var(--nav-h) + clamp(52px,7.5vw,96px)) clamp(52px,7.5vw,96px);
 }
+
+/* Full-bleed course thumbnail.
+   The veil is deliberately TWO crossed gradients rather than one flat scrim.
+   A single uniform tint either leaves the copy fighting a busy photograph or
+   kills the image entirely; this keeps the picture readable on the right,
+   where nothing but the card sits, while laying real ink under the title on
+   the left. The vertical pass does the other two jobs: it darkens the strip
+   the transparent nav floats over, and it lands on --surface-0 at the bottom
+   so the band dissolves into the page instead of ending on a hard seam. */
+.course-hero-media{position:absolute; inset:0; z-index:-2; overflow:hidden;}
+.course-hero-media img{
+  inline-size:100%; block-size:100%;
+  object-fit:cover; object-position:50% 40%;
+  transform:scale(1.04); filter:saturate(.92);
+}
+.course-hero-media::after{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(90deg, rgba(11,9,8,.95) 0%, rgba(11,9,8,.90) 34%, rgba(11,9,8,.74) 52%, rgba(11,9,8,.44) 72%, rgba(11,9,8,.34) 100%),
+    linear-gradient(180deg, rgba(11,9,8,.80) 0%, rgba(11,9,8,.42) 30%, rgba(11,9,8,.58) 74%, var(--surface-0) 100%);
+}
+/* Only swap the gradient out once an image is actually mounted, so a course
+   with no thumbnail keeps the designed fallback. */
+.course-hero.has-media{background:var(--surface-0);}
+.course-hero.has-media .course-hero-main{text-shadow:0 1px 20px rgba(7,5,4,.6);}
+
 .course-hero-grid{
-  display:grid; grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);
-  gap:clamp(28px,4vw,56px); align-items:stretch;
+  display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+  gap:clamp(28px,4.5vw,64px); align-items:center;
 }
-.course-hero-main{display:flex; flex-direction:column; min-block-size:clamp(320px,32vw,420px);}
+.course-hero-main{display:flex; flex-direction:column;}
 /* Course titles run long and are often bilingual — this is deliberately
    smaller than the site-wide h1 and scoped to this page only. */
 .course-hero h1{font-size:var(--step-3); line-height:1.22; margin-block:var(--space-3) 0; text-wrap:balance;}
@@ -1076,13 +1103,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .meta-row svg{inline-size:16px; block-size:16px; color:var(--text-3);}
 .meta-row .stars{font-size:var(--step--1);}
 
-/* Price + enrol card. Grouped with the title and description in the left
-   column (it used to be split out into a separate sticky panel). */
+/* Price + enrol card — the hero's right column.
+   It now sits ON the photograph, so the fill is translucent + blurred rather
+   than opaque: the artwork stays legible through it and the card reads as
+   glass laid over the image instead of a rectangle punched out of it. The
+   background stays dark enough on its own that the price and the checklist
+   keep their contrast even over a bright thumbnail, and the blur is purely
+   decorative — nothing breaks where backdrop-filter isn't supported. */
 .course-buy-card{
-  margin-block-start:auto; padding:var(--space-6);
+  padding:var(--space-6);
   border:1px solid var(--line-strong); border-radius:var(--radius-l);
-  background:linear-gradient(165deg,var(--surface-3),var(--surface-2));
-  box-shadow:var(--shadow-3);
+  background:linear-gradient(165deg, rgba(34,29,25,.90), rgba(15,12,11,.94));
+  backdrop-filter:blur(20px) saturate(130%);
+  -webkit-backdrop-filter:blur(20px) saturate(130%);
+  box-shadow:var(--shadow-3), 0 24px 60px rgba(7,5,4,.45);
   position:relative; overflow:hidden;
 }
 .course-buy-card::before{
@@ -1116,35 +1150,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .enrolled-banner b{display:block; font-size:var(--step-0); color:var(--text-1);}
 .enrolled-banner span{display:block; font-size:var(--step--2); color:var(--text-3);}
 
-/* Curriculum / preview player — the hero's right column. */
-.course-preview{
-  display:flex; flex-direction:column; gap:var(--space-3);
-  position:sticky; inset-block-start:calc(var(--nav-h) + 24px);
-}
-.course-preview .video-embed{border-radius:var(--radius-m); border:1px solid var(--line-strong); box-shadow:var(--shadow-3);}
-.course-preview-cap{
-  display:flex; align-items:center; gap:var(--space-2);
-  font-size:var(--step--2); color:var(--text-3); line-height:1.4;
-}
-.course-preview-cap svg{inline-size:15px; block-size:15px; color:var(--accent-ink);}
-.course-preview-poster{
-  position:relative; aspect-ratio:16/9; border-radius:var(--radius-m); overflow:hidden;
-  border:1px solid var(--line-strong); box-shadow:var(--shadow-3);
-  background-size:cover; background-position:center;
-  background-color:var(--surface-3);
-  background-image:linear-gradient(150deg,var(--surface-3),var(--surface-0));
-  display:flex; align-items:center; justify-content:center;
-}
-.course-preview-poster.has-image{background-image:none;}
-.course-preview-poster::after{content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(7,5,4,.45),rgba(7,5,4,.72));}
-.course-preview-poster .lock-icon{
-  position:relative; z-index:1;
-  inline-size:54px; block-size:54px; border-radius:50%;
-  background:rgba(246,242,236,.12); border:1px solid rgba(246,242,236,.3);
-  display:flex; align-items:center; justify-content:center; color:#fff;
-}
-.course-preview-poster .lock-icon svg{inline-size:21px; block-size:21px;}
-
 /* Scroll progress rail, course + long pages. */
 .read-progress{
   position:fixed; inset-block-start:0; inset-inline:0; block-size:2px; z-index:calc(var(--z-nav) + 1);
@@ -1160,15 +1165,64 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .course-body-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:clamp(32px,4.5vw,64px); align-items:start;}
 .course-aside{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
 
-/* Course content blocks */
-.content-blocks{display:flex; flex-direction:column; gap:var(--space-4);}
-.content-block{
-  border:1px solid var(--line); border-radius:var(--radius-m);
-  background:var(--surface-1); padding:var(--space-5);
-  transition:border-color var(--dur-2) var(--ease-out);
+/* Course content blocks.
+   Each block is a dropdown built on the shared .accordion-item mechanism, so
+   the curriculum and the FAQ below it open and close identically. The rules
+   here only dress the head — the toggle itself lives in section 10. */
+.content-blocks{display:flex; flex-direction:column; gap:var(--space-3);}
+.curriculum-accordion .accordion-item{margin-block-end:0;}
+.cb-head-main{display:flex; align-items:center; gap:var(--space-4); min-inline-size:0;}
+.cb-head-text{display:flex; flex-direction:column; gap:1px; min-inline-size:0;}
+.cb-acc .cb-title{line-height:1.35;}
+.cb-kind{font-family:var(--font-body); font-size:var(--step--2); font-weight:500; color:var(--text-3); letter-spacing:.01em;}
+.cb-acc .accordion-head{align-items:center; padding-block:var(--space-4);}
+/* Section 10 rotates every svg inside an open head — that rule is meant for
+   the chevron alone, so the type icon and the padlock opt back out here. */
+.accordion-head .cb-icon svg,
+.accordion-head .cb-lock svg{color:inherit;}
+.accordion-item.open .accordion-head .cb-icon svg{transform:none;}
+.cb-body{
+  padding:var(--space-5); border-block-start:1px solid var(--line);
 }
-.content-block:hover{border-color:var(--line-strong);}
-.cb-head{display:flex; align-items:center; gap:var(--space-3); margin-block-end:var(--space-4);}
+.cb-body > *:first-child{margin-block-start:0;}
+
+/* Locked row: head only, padlock instead of a chevron. There is no
+   .accordion-body to reveal — the block's URLs were stripped server-side
+   before it reached the page (courses_safe in schema.sql), so this is a
+   label for a real restriction rather than a cover over hidden content. */
+.cb-acc.is-locked{background:transparent;}
+.cb-acc.is-locked:hover{border-color:var(--line-strong); background:var(--surface-1);}
+.cb-acc.is-locked .accordion-head{cursor:pointer; color:var(--text-2);}
+.cb-acc.is-locked .accordion-head:hover{color:var(--text-1);}
+.cb-acc.is-locked .cb-icon{background:var(--surface-3); color:var(--text-3);}
+.cb-acc.is-locked .cb-title{color:var(--text-2);}
+.cb-lock{
+  inline-size:32px; block-size:32px; flex:0 0 auto; border-radius:50%;
+  background:var(--surface-3); border:1px solid var(--line); color:var(--text-3);
+  display:flex; align-items:center; justify-content:center;
+  transition:background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+}
+.accordion-head .cb-lock svg{inline-size:15px; block-size:15px;}
+.cb-acc.is-locked .accordion-head:hover .cb-lock{background:var(--accent-dim); color:var(--accent-ink);}
+
+/* One enrol prompt under the list, not one inside every locked row. */
+.curriculum-locked-note{
+  display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap;
+  margin-block-start:var(--space-5); padding:var(--space-5);
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1);
+}
+.curriculum-locked-note .lock-icon{
+  inline-size:42px; block-size:42px; flex:0 0 auto; border-radius:50%;
+  background:var(--accent-dim); color:var(--accent-ink);
+  display:flex; align-items:center; justify-content:center;
+}
+.curriculum-locked-note .lock-icon svg{inline-size:18px; block-size:18px;}
+.curriculum-locked-note .cln-copy{min-inline-size:0; flex:1 1 220px;}
+.curriculum-locked-note b{display:block; font-size:var(--step-0); color:var(--text-1);}
+.curriculum-locked-note p{font-size:var(--step--1); color:var(--text-3); margin-block-start:3px;}
+.curriculum-locked-note .btn{flex:0 0 auto;}
+
 .cb-icon{
   inline-size:36px; block-size:36px; flex:0 0 auto; border-radius:50%;
   background:var(--accent-dim); color:var(--accent-ink);
@@ -1176,7 +1230,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .cb-icon svg{inline-size:17px; block-size:17px;}
 .cb-title{font-family:var(--font-body); font-size:var(--step-0); font-weight:600; color:var(--text-1);}
-.cb-done-badge{margin-inline-start:auto;}
+/* course-progress.js appends this into .cb-title, which is now a span inside
+   the dropdown head rather than its own flex row — so it trails the title
+   inline instead of being pushed to the far edge. */
+.cb-done-badge{margin-inline-start:8px; vertical-align:middle;}
 .cb-progress{display:flex; align-items:center; gap:var(--space-2); font-size:var(--step--1); color:var(--text-2); margin-block-start:var(--space-4); cursor:pointer;}
 .cb-progress input{inline-size:17px; block-size:17px; accent-color:var(--accent-fill);}
 
@@ -1207,19 +1264,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-summary-head span:last-child{color:var(--accent-ink); font-family:var(--font-mixed);}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
 .progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
-
-.content-block-locked{
-  display:flex; flex-direction:column; align-items:center; text-align:center; gap:var(--space-3);
-  padding:var(--space-8) var(--space-5); border:1px dashed var(--line-strong);
-  border-radius:var(--radius-s); background:var(--surface-2);
-}
-.content-block-locked .lock-icon{
-  inline-size:40px; block-size:40px; border-radius:50%;
-  background:var(--surface-4); color:var(--text-3);
-  display:flex; align-items:center; justify-content:center;
-}
-.content-block-locked .lock-icon svg{inline-size:18px; block-size:18px;}
-.content-block-locked p{font-size:var(--step--1); max-inline-size:38ch;}
 
 /* Mentor card.
    ASSET NOTE: the default avatar is the full-body footer cutout, which in a
@@ -1571,11 +1615,18 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .product-grid,.contact-grid,.course-hero-grid,.two-col,.course-body-grid{grid-template-columns:minmax(0,1fr);}
   .course-aside{position:static;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
-  .course-hero-main{min-block-size:0;}
   .course-buy-card{margin-block-start:var(--space-7);}
-  .course-preview{position:static;}
-  /* Media above copy on stacked course hero reads better than a wall of text. */
-  .course-hero-grid > .course-preview{order:-1;}
+  /* Stacked, the copy no longer has a column of its own — it runs the full
+     width, straight over the busiest part of the picture — so the horizontal
+     pass is dropped and the vertical one has to carry the whole band on its
+     own. Measured, not eyeballed: the smallest text here is the breadcrumb at
+     --text-3, which needs the plate under it below ~rgb(40,40,40) to clear
+     4.5:1, and a bright thumbnail only gets there around 0.9 alpha. That
+     flattens the image more than the desktop veil does; legibility wins. */
+  .course-hero-media::after{
+    background:linear-gradient(180deg, rgba(11,9,8,.86) 0%, rgba(11,9,8,.92) 22%, rgba(11,9,8,.93) 72%, var(--surface-0) 100%);
+  }
+  .course-hero-media img{object-position:50% 34%;}
   .hero-portrait{max-block-size:440px;}
   .footer-inner{grid-template-columns:minmax(0,1fr);}
   .footer-cutout-wrap{position:relative; inline-size:100%; block-size:260px; margin-block-start:var(--space-6); justify-content:flex-end; inset-inline-end:0;}
@@ -1637,6 +1688,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .footer-bottom{flex-direction:column; text-align:center;}
   .card-body{padding:var(--space-4) var(--space-4) var(--space-5);}
   .course-buy-card{padding:var(--space-5);}
+  .cb-acc .accordion-head{padding-inline:var(--space-4);}
+  .cb-head-main{gap:var(--space-3);}
+  .cb-body{padding:var(--space-4);}
+  .curriculum-locked-note{padding:var(--space-4);}
+  .curriculum-locked-note .btn{inline-size:100%;}
   .modal{padding:var(--space-6);}
   .gallery-thumbs .g-thumb{inline-size:60px;}
   .qty-stepper button{inline-size:36px; block-size:36px;}

@@ -159,36 +159,108 @@
     });
   });
 
-  /* ---------- Accordion (course curriculum) — event delegation so it
-     still works on content injected later by render.js ---------- */
+  /* ---------- Accordion (course curriculum + FAQ) — event delegation so it
+     still works on content injected later by render.js ----------
+
+     Two things this has to get right beyond the basic toggle:
+
+     1. LOCKED ROWS. The curriculum renders every block as a dropdown, but a
+        block the visitor hasn't paid for arrives from Supabase with its URLs
+        already stripped (see the courses_safe view in schema.sql), so there
+        is nothing behind it to show. Those heads carry aria-disabled and are
+        refused here rather than opening onto an empty panel — clicking one
+        sends the visitor to the buy card, which is what they actually want.
+
+     2. CONTENT THAT GROWS AFTER OPENING. max-height has to be a real pixel
+        value to animate, but a curriculum panel changes height after the
+        fact — a quiz reveals its score, course-progress.js un-hides the
+        "mark as complete" checkbox. A frozen scrollHeight would clip both.
+        So once the open transition finishes we drop max-height to `none`,
+        and put the measured height back for one frame when closing so the
+        collapse still animates. */
+  function accordionBody(item) {
+    return item ? item.querySelector(".accordion-body") : null;
+  }
+
+  function openAccordion(item, animate) {
+    const body = accordionBody(item);
+    const head = item.querySelector(".accordion-head");
+    item.classList.add("open");
+    if (head) head.setAttribute("aria-expanded", "true");
+    if (!body) return;
+    body.style.maxHeight = body.scrollHeight + "px";
+    const settle = () => {
+      if (item.classList.contains("open")) body.style.maxHeight = "none";
+    };
+    if (animate === false) {
+      settle();
+      return;
+    }
+    const onEnd = (ev) => {
+      if (ev.target !== body || ev.propertyName !== "max-height") return;
+      body.removeEventListener("transitionend", onEnd);
+      settle();
+    };
+    body.addEventListener("transitionend", onEnd);
+    // Fallback in case the transition never fires (reduced motion, hidden tab).
+    setTimeout(settle, 600);
+  }
+
+  function closeAccordion(item) {
+    const body = accordionBody(item);
+    const head = item.querySelector(".accordion-head");
+    if (head) head.setAttribute("aria-expanded", "false");
+    if (!body) {
+      item.classList.remove("open");
+      return;
+    }
+    if (body.style.maxHeight === "none") {
+      body.style.maxHeight = body.scrollHeight + "px";
+      void body.offsetHeight; // flush the layout so the next value animates
+    }
+    item.classList.remove("open");
+    requestAnimationFrame(() => {
+      if (!item.classList.contains("open")) body.style.maxHeight = null;
+    });
+  }
+
   document.addEventListener("click", (e) => {
     const head = e.target.closest(".accordion-head");
     if (!head) return;
     const item = head.closest(".accordion-item");
-    const body = item.querySelector(".accordion-body");
+    if (!item) return;
+
+    // Locked curriculum row: never opens. Say why, then take them to the
+    // price card rather than leaving the click with no visible result.
+    if (head.hasAttribute("data-locked-block")) {
+      e.preventDefault();
+      if (window.showToast) window.showToast("এই অংশটি দেখতে হলে এই কোর্সে ভর্তি হতে হবে।");
+      const buy = document.getElementById("course-buy");
+      if (buy) buy.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     const isOpen = item.classList.contains("open");
     const parent = item.parentElement;
-    parent.querySelectorAll(".accordion-item.open").forEach((openItem) => {
-      if (openItem !== item) {
-        openItem.classList.remove("open");
-        openItem.querySelector(".accordion-body").style.maxHeight = null;
-        const otherHead = openItem.querySelector(".accordion-head");
-        if (otherHead) otherHead.setAttribute("aria-expanded", "false");
-      }
-    });
-    item.classList.toggle("open", !isOpen);
-    body.style.maxHeight = !isOpen ? body.scrollHeight + "px" : null;
-    // The heads are <button aria-expanded> — keep the reported state honest.
-    head.setAttribute("aria-expanded", String(!isOpen));
+    if (parent) {
+      parent.querySelectorAll(".accordion-item.open").forEach((openItem) => {
+        if (openItem !== item) closeAccordion(openItem);
+      });
+    }
+    if (isOpen) closeAccordion(item);
+    else openAccordion(item, true);
   });
+
+  /* The curriculum rows opt out with data-no-autoopen — a course page should
+     open with the whole syllabus visible as a list, not with lesson one
+     already unrolled (and, on a video block, an iframe already fetched).
+     The FAQ keeps its first-answer-open behaviour. */
   function openFirstAccordion() {
-    const firstAcc = document.querySelector(".accordion-item");
+    const firstAcc = document.querySelector(
+      '.accordion-item:not([data-no-autoopen]):not(.is-locked)'
+    );
     if (firstAcc && !document.querySelector(".accordion-item.open")) {
-      firstAcc.classList.add("open");
-      const head = firstAcc.querySelector(".accordion-head");
-      if (head) head.setAttribute("aria-expanded", "true");
-      const b = firstAcc.querySelector(".accordion-body");
-      if (b) requestAnimationFrame(() => (b.style.maxHeight = b.scrollHeight + "px"));
+      requestAnimationFrame(() => openAccordion(firstAcc, true));
     }
   }
   openFirstAccordion();

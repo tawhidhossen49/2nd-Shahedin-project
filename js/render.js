@@ -155,41 +155,33 @@
     pdf: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
   };
 
-  function contentBlockHTML(block, index) {
-    const title = escapeHtml(block.title || "");
-    const head = (icon) => `<div class="cb-head"><span class="cb-icon">${icon}</span><h3 class="cb-title">${index + 1}. ${title}</h3></div>`;
-    const progressControl = `<label class="cb-progress form-check" data-cb-progress hidden><input type="checkbox" class="cb-complete-check"> সম্পন্ন হিসেবে চিহ্নিত করুন</label>`;
-    const lockedNotice = () => `
-      <div class="content-block-locked">
-        <span class="lock-icon">${ICON.lock}</span>
-        <p>এই অংশটি দেখতে হলে এই কোর্সে ভর্তি হতে হবে।</p>
-        <a href="#course-buy" class="btn btn-primary btn-sm">কোর্সে ভর্তি হোন</a>
-      </div>`;
+  const CB_TYPE_LABEL = {
+    video: "ভিডিও",
+    quiz: "কুইজ",
+    live_class: "লাইভ ক্লাস",
+    resource: "রিসোর্স",
+    pdf: "পিডিএফ",
+  };
 
-    if (block.locked) {
-      const icon = { video: CB_ICON.video, quiz: CB_ICON.quiz, live_class: CB_ICON.live_class, resource: CB_ICON.resource, pdf: CB_ICON.pdf }[block.type] || CB_ICON.video;
-      return `<div class="content-block content-block-locked-wrap" data-block-id="${escapeHtml(block.id)}" data-block-type="${escapeHtml(block.type)}">
-        ${head(icon)}
-        ${lockedNotice()}
-      </div>`;
-    }
+  /* ---------- Curriculum block BODY ----------
+     Just the inner content. The dropdown shell around it is built by
+     contentBlockHTML() below, so a block's markup no longer has to repeat
+     its own header. */
+  function contentBlockBodyHTML(block, index) {
+    const title = escapeHtml(block.title || "");
+    const progressControl = `<label class="cb-progress form-check" data-cb-progress hidden><input type="checkbox" class="cb-complete-check"> সম্পন্ন হিসেবে চিহ্নিত করুন</label>`;
 
     if (block.type === "video") {
       const vid = youtubeEmbedId(block.youtube_url);
-      return `<div class="content-block content-block-video" data-block-id="${escapeHtml(block.id)}" data-block-type="video">
-        ${head(CB_ICON.video)}
-        ${vid
+      return `${vid
           ? `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
           : `<p class="small-note">ভিডিও লিংক এখনো দেওয়া হয়নি।</p>`}
-        ${progressControl}
-      </div>`;
+        ${progressControl}`;
     }
 
     if (block.type === "quiz") {
       const questions = Array.isArray(block.questions) ? block.questions : [];
-      return `<div class="content-block content-block-quiz" data-quiz data-block-id="${escapeHtml(block.id)}" data-block-type="quiz">
-        ${head(CB_ICON.quiz)}
-        <div class="quiz-questions">
+      return `<div class="quiz-questions">
           ${questions
             .map(
               (q, qi) => `
@@ -206,43 +198,103 @@
             )
             .join("")}
         </div>
-        ${questions.length ? `<button type="button" class="btn btn-primary btn-sm" data-check-quiz>উত্তর যাচাই করুন</button><div class="quiz-score" hidden></div>` : `<p class="small-note">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</p>`}
-      </div>`;
+        ${questions.length ? `<button type="button" class="btn btn-primary btn-sm" data-check-quiz>উত্তর যাচাই করুন</button><div class="quiz-score" hidden></div>` : `<p class="small-note">এখনো কোনো প্রশ্ন যোগ করা হয়নি।</p>`}`;
     }
 
     if (block.type === "live_class") {
-      return `<div class="content-block content-block-live" data-block-id="${escapeHtml(block.id)}" data-block-type="live_class">
-        ${head(CB_ICON.live_class)}
-        <p class="live-datetime">${escapeHtml(formatLiveDateTime(block.date, block.time))}</p>
+      return `<p class="live-datetime">${escapeHtml(formatLiveDateTime(block.date, block.time))}</p>
         ${block.meeting_link ? `<a href="${escapeHtml(block.meeting_link)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">লাইভ ক্লাসে যোগ দিন</a>` : `<p class="small-note">মিটিং লিংক এখনো দেওয়া হয়নি।</p>`}
-        ${progressControl}
-      </div>`;
+        ${progressControl}`;
     }
 
     if (block.type === "resource") {
-      return `<div class="content-block content-block-resource" data-block-id="${escapeHtml(block.id)}" data-block-type="resource">
-        ${head(CB_ICON.resource)}
-        ${block.url ? `<a href="${escapeHtml(block.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">রিসোর্স দেখুন ${ICON.arrow}</a>` : `<p class="small-note">লিংক এখনো দেওয়া হয়নি।</p>`}
-        ${progressControl}
-      </div>`;
+      return `${block.url ? `<a href="${escapeHtml(block.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">রিসোর্স দেখুন ${ICON.arrow}</a>` : `<p class="small-note">লিংক এখনো দেওয়া হয়নি।</p>`}
+        ${progressControl}`;
     }
 
     if (block.type === "pdf") {
-      return `<div class="content-block content-block-pdf" data-block-id="${escapeHtml(block.id)}" data-block-type="pdf">
-        ${head(CB_ICON.pdf)}
-        ${block.pdf_url
+      return `${block.pdf_url
           ? `<div class="pdf-embed"><iframe src="${escapeHtml(block.pdf_url)}" title="${title}" loading="lazy"></iframe></div><a href="${escapeHtml(block.pdf_url)}" target="_blank" rel="noopener" class="text-link" style="margin-top:10px;">নতুন ট্যাবে খুলুন ${ICON.arrow}</a>`
           : `<p class="small-note">PDF এখনো দেওয়া হয়নি।</p>`}
-        ${progressControl}
+        ${progressControl}`;
+    }
+
+    return `<p class="small-note">এই অংশের কনটেন্ট এখনো যোগ করা হয়নি।</p>`;
+  }
+
+  /* ---------- Curriculum block SHELL ----------
+     Every block is a dropdown driven by the same .accordion-item / .open
+     mechanism as the FAQ (main.js owns the toggle), so the two lists on the
+     page behave identically.
+
+     Locked blocks are the important case. On a paid course the visitor has
+     not enrolled in, the `courses_safe` view in schema.sql has ALREADY
+     stripped the youtube_url / pdf_url / meeting_link / quiz answers before
+     they ever reach the browser — the block arrives as
+     {id, type, title, locked:true} and there is nothing to reveal. So a
+     locked row renders as a head only, with a padlock where the chevron
+     would be and aria-disabled set; main.js refuses to open it and points
+     the visitor at the buy card instead. The lock is honest UI over a real
+     server-side restriction, not a CSS curtain over content that shipped. */
+  function contentBlockHTML(block, index) {
+    const title = escapeHtml(block.title || "");
+    const type = escapeHtml(block.type || "");
+    const icon = CB_ICON[block.type] || CB_ICON.video;
+    const kind = CB_TYPE_LABEL[block.type] || "";
+    const head = `<span class="cb-head-main">
+        <span class="cb-icon">${icon}</span>
+        <span class="cb-head-text">
+          <span class="cb-title">${bnNum(index + 1, { group: false })}. ${title}</span>
+          ${kind ? `<span class="cb-kind">${kind}</span>` : ""}
+        </span>
+      </span>`;
+
+    if (block.locked) {
+      // Deliberately NOT aria-disabled: the button does have an action, it
+      // just isn't "expand". It explains the lock and moves the visitor to
+      // the price card, so marking it disabled would misdescribe it to
+      // assistive tech and drop it out of the tab order for no reason.
+      // aria-expanded is omitted for the same reason — there is no panel.
+      return `<div class="accordion-item cb-acc is-locked" data-no-autoopen data-block-id="${escapeHtml(block.id)}" data-block-type="${type}">
+        <button type="button" class="accordion-head cb-acc-head" data-locked-block>
+          <span class="visually-hidden">লক করা — </span>
+          ${head}
+          <span class="cb-lock" aria-hidden="true">${ICON.lock}</span>
+        </button>
       </div>`;
     }
 
-    return "";
+    // data-quiz goes on the ROOT, not the panel: wireQuizzes() reads
+    // quizEl.dataset.blockId off the same element when it fires
+    // "quiz-checked", and only the root carries the block id.
+    return `<div class="accordion-item cb-acc" data-no-autoopen${block.type === "quiz" ? " data-quiz" : ""} data-block-id="${escapeHtml(block.id)}" data-block-type="${type}">
+      <button type="button" class="accordion-head cb-acc-head" aria-expanded="false">
+        ${head}
+        ${ICON.chevron}
+      </button>
+      <div class="accordion-body">
+        <div class="cb-body">${contentBlockBodyHTML(block, index)}</div>
+      </div>
+    </div>`;
   }
 
   function courseCurriculumHTML(c) {
     if (Array.isArray(c.contentBlocks) && c.contentBlocks.length) {
-      return `<div data-mount="course-progress-summary"></div><div class="content-blocks">${c.contentBlocks.map(contentBlockHTML).join("")}</div>`;
+      // One shared notice under the list instead of a locked panel repeated
+      // inside every row — the padlock on each head already says which rows
+      // are shut, so the enrol CTA only needs to appear once.
+      const anyLocked = c.contentBlocks.some((b) => b.locked);
+      const lockedNote = anyLocked
+        ? `<div class="curriculum-locked-note">
+             <span class="lock-icon">${ICON.lock}</span>
+             <div class="cln-copy">
+               <b>কনটেন্টগুলো লক করা আছে</b>
+               <p>সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।</p>
+             </div>
+             <a href="#course-buy" class="btn btn-primary btn-sm">কোর্সে ভর্তি হোন</a>
+           </div>`
+        : "";
+      return `<div data-mount="course-progress-summary"></div><div class="content-blocks curriculum-accordion">${c.contentBlocks.map(contentBlockHTML).join("")}</div>${lockedNote}`;
     }
     // Legacy fallback for courses that only have the old modules/lessons list
     if (Array.isArray(c.modules) && c.modules.length) {
@@ -266,23 +318,24 @@
     return `<p class="small-note">কারিকুলাম শীঘ্রই আসছে।</p>`;
   }
 
-  /* ---------- Course hero preview player ----------
-     Shows the first playable curriculum video in the course-detail hero's
-     right column. For a paid course the visitor isn't enrolled in, the
-     `courses_safe` view strips every video URL, so we fall back to the
-     course thumbnail with a locked-state note instead. */
-  function coursePreviewHTML(c) {
-    const blocks = Array.isArray(c.contentBlocks) ? c.contentBlocks : [];
-    const first = blocks.find((b) => b.type === "video" && !b.locked && youtubeEmbedId(b.youtube_url));
-    if (first) {
-      return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${youtubeEmbedId(first.youtube_url)}" title="${escapeHtml(first.title || c.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
-        <div class="course-preview-cap">${CB_ICON.video} <span>${escapeHtml(first.title || "কোর্স প্রিভিউ")}</span></div>`;
+  /* ---------- Course hero backdrop ----------
+     The hero used to carry a 16:9 preview player in a second column. The
+     thumbnail now runs full bleed behind the whole band instead (see
+     .course-hero-media in css/style.css), and the curriculum dropdowns below
+     are where videos actually get watched. A course with no thumbnail simply
+     keeps the hero's gradient — the layout does not depend on the image
+     being there. */
+  function courseHeroMedia(c) {
+    const el = document.querySelector("[data-mount='course-hero-media']");
+    if (!el) return;
+    const hero = el.closest(".course-hero");
+    if (c.image) {
+      el.innerHTML = `<img src="${escapeHtml(c.image)}" alt="" decoding="async" fetchpriority="high">`;
+      if (hero) hero.classList.add("has-media");
+    } else {
+      el.innerHTML = "";
+      if (hero) hero.classList.remove("has-media");
     }
-    const poster = c.image
-      ? ` class="course-preview-poster has-image" style="background-image:url('${escapeHtml(c.image)}');"`
-      : ` class="course-preview-poster"`;
-    return `<div${poster}><span class="lock-icon">${blocks.length ? ICON.lock : ICON.videoOff}</span></div>
-      <div class="course-preview-cap">${blocks.length ? ICON.lock : ICON.videoOff}<span>${blocks.length ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।" : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।"}</span></div>`;
   }
 
   const DEFAULT_MENTOR = {
@@ -529,8 +582,8 @@
         }));
         const buyEl = document.querySelector("[data-mount='course-buy']");
         if (buyEl) buyEl.remove();
-        const previewEl = document.querySelector("[data-mount='course-preview']");
-        if (previewEl) previewEl.remove();
+        const mediaEl = document.querySelector("[data-mount='course-hero-media']");
+        if (mediaEl) mediaEl.remove();
         document.dispatchEvent(new Event("contentready"));
         return;
       }
@@ -551,7 +604,7 @@
          </div>
          ${c.desc ? `<p class="course-desc">${escapeHtml(c.desc)}</p>` : ""}`
       );
-      mount("[data-mount='course-preview']", coursePreviewHTML(c));
+      courseHeroMedia(c);
       mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
       const curriculumEl = document.querySelector("[data-mount='course-curriculum']");
       if (curriculumEl) wireQuizzes(curriculumEl);

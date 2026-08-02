@@ -276,8 +276,6 @@ alter table courses add column if not exists extra jsonb not null default '{}'::
 alter table courses add column if not exists includes jsonb not null default '[]'::jsonb; -- "What's included" checklist on the buy card, e.g. [{"text":"4 weeks on-demand video"}]
 alter table courses add column if not exists faqs jsonb not null default '[]'::jsonb; -- per-course FAQ, e.g. [{"question":"...","answer":"..."}], any number of entries
 alter table courses add column if not exists mentor jsonb not null default '{}'::jsonb; -- {"name":"...","bio":"...","avatar_url":"..."} shown as "Your instructor" on the course page — set per course from the admin panel, so different courses can have different mentors
-alter table courses add column if not exists course_type text not null default 'course' check (course_type in ('course','career_track','foundation')); -- drives the 'Course Type' filter and the badge on the catalogue card
-alter table courses add column if not exists old_price_bdt integer; -- same pattern as products.old_price_bdt: set it to show a strikethrough original price, leave blank for none
 alter table courses drop column if exists level; -- "levels" (beginner/intermediate/advanced) have been removed from the site entirely
 
 -- Give every course a default mentor if it doesn't have one yet, so existing
@@ -908,8 +906,7 @@ select
   c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
   c.duration_bn, c.duration_en, c.price_bdt, c.is_free, c.thumbnail_url,
   c.external_url, c.is_published, c.sort_order, c.created_at, c.updated_at,
-  c.rating, c.students_count, c.tone, c.category, c.course_type, c.old_price_bdt,
-  c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
   case
     when c.is_free then c.content_blocks
     when auth.uid() in (select id from admins) then c.content_blocks

@@ -68,40 +68,19 @@ window.ShahedinAuth = (function () {
     return (user.user_metadata && user.user_metadata.full_name) || formatPhone(user.phone) || "";
   }
 
-  /* ---------- Bangladeshi phone number formatting ----------
-     Accepts "01712345678", "1712345678", "+8801712345678", "8801712345678",
-     with or without spaces/dashes — always normalizes to "+8801712345678".
-
-     BUG THIS FIXES: normalizePhone() stripped a country code and a leading
-     zero, but isValidLocalPhone() tested the RAW digits against
-     /^1[3-9]\d{8}$/ — a pattern that can only match the ten-digit form. So
-     "01711455449", the way virtually everyone in Bangladesh writes their own
-     number, failed validation before normalisation ever ran, and the form
-     refused to send an OTP.
-
-     It was self-contradicting in two more ways: the error message told the
-     user to enter "017XXXXXXXX", the exact format it had just rejected, and
-     maxlength="11" on the input only makes room for that same eleven-digit
-     form. Both are correct now that the validator is as tolerant as the
-     normaliser.
-
-     Prefix stripping lives in ONE function so the two can never drift apart
-     again. */
-  function localDigits(raw) {
+  /* ---------- Bangladeshi phone number formatting ---------- */
+  // Accepts "01712345678", "1712345678", "+8801712345678", "8801712345678",
+  // with or without spaces/dashes — always normalizes to "+8801712345678".
+  function normalizePhone(raw) {
     let digits = (raw || "").replace(/[^\d]/g, "");
     if (digits.startsWith("880")) digits = digits.slice(3);
     if (digits.startsWith("0")) digits = digits.slice(1);
-    return digits;
-  }
-
-  function normalizePhone(raw) {
-    return "+880" + localDigits(raw);
+    return "+880" + digits;
   }
 
   function isValidLocalPhone(raw) {
-    // Ten digits, "1", then an operator prefix of 3-9 (013 Grameenphone …
-    // 019 Banglalink). Checked AFTER the same stripping normalizePhone does.
-    return /^1[3-9]\d{8}$/.test(localDigits(raw));
+    const digits = (raw || "").replace(/[^\d]/g, "");
+    return /^1[3-9]\d{8}$/.test(digits);
   }
 
   function formatPhone(e164) {
@@ -283,50 +262,13 @@ window.ShahedinAuth = (function () {
     if (step === "phone") paintPhoneStep();
   }
 
-  /* The old version collapsed every SMS or provider failure into
-     "try again shortly", which is only true for a rate limit. A missing or
-     misconfigured SMS provider is PERMANENT — telling the visitor to wait
-     makes them retry a thing that can never succeed, and the raw reason was
-     discarded so nobody could tell the two apart.
-
-     Now: transient and permanent read differently, and the underlying
-     message always reaches the console so the cause is diagnosable. */
   function translateAuthError(msg) {
-    const raw = msg || "";
-    const m = raw.toLowerCase();
-    if (raw && typeof console !== "undefined" && console.warn) {
-      console.warn("[Shahedin auth] " + raw);
-    }
-
-    if (m.includes("token") && (m.includes("invalid") || m.includes("expired"))) {
-      return "OTP কোডটি সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে — আবার চেষ্টা করুন।";
-    }
-    // Rate limit first: it is the one case where waiting genuinely helps.
-    if (m.includes("rate limit") || m.includes("too many") || m.includes("429")) {
-      return "অনেকবার চেষ্টা করা হয়েছে — কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।";
-    }
-    // Supabase says "Unsupported phone provider" when phone auth is on but no
-    // SMS gateway is wired up, and "provider is disabled" when it is off.
-    if (
-      m.includes("unsupported phone provider") ||
-      m.includes("phone provider") ||
-      (m.includes("provider") && (m.includes("disabled") || m.includes("not enabled") || m.includes("unsupported")))
-    ) {
-      return "ফোন নম্বর দিয়ে লগইন এখনো চালু করা হয়নি। অনুগ্রহ করে সাইট অ্যাডমিনের সাথে যোগাযোগ করুন।";
-    }
-    // The gateway itself refused — bad Twilio credentials, or a trial account
-    // that can only text verified numbers.
-    if (m.includes("error sending") || (m.includes("sms") && m.includes("provider"))) {
-      return "SMS পাঠানো যায়নি — OTP সেবা এই মুহূর্তে কাজ করছে না। সাইট অ্যাডমিনের সাথে যোগাযোগ করুন।";
-    }
-    if (m.includes("signups not allowed") || m.includes("signup is disabled")) {
-      return "নতুন অ্যাকাউন্ট খোলা এই মুহূর্তে বন্ধ আছে।";
-    }
-    if (m.includes("sms")) {
-      return "OTP পাঠানো যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।";
-    }
+    const m = (msg || "").toLowerCase();
+    if (m.includes("token") && (m.includes("invalid") || m.includes("expired"))) return "OTP কোডটি সঠিক নয় অথবা মেয়াদ শেষ হয়ে গেছে — আবার চেষ্টা করুন।";
+    if (m.includes("sms") || m.includes("provider")) return "OTP পাঠানো যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন।";
+    if (m.includes("rate limit") || m.includes("too many")) return "অনেকবার চেষ্টা করা হয়েছে — কিছুক্ষণ অপেক্ষা করে আবার চেষ্টা করুন।";
     if (m.includes("phone") && m.includes("valid")) return "সঠিক একটি ফোন নম্বর দিন।";
-    return raw || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।";
+    return msg || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।";
   }
 
   /* ---------- Modal wrapper ---------- */

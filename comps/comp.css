@@ -807,26 +807,6 @@ body.cd-body{
   position:relative; z-index:1;
 }
 
-/* Footer cutout. Not one of the three treatments 2.1 names (hero, story,
-   portfolio) — this is a fourth instance, so it is deliberately pushed all the
-   way down to a watermark: heavy fade, low opacity, bleeding off the corner.
-   It reads as a presence rather than a fourth portrait competing with the
-   hero. Keeps .footer-cutout-wrap and data-parallax="0.1" in the contract. */
-.v2-footer-cutout{
-  position:absolute; inset-block-end:0; inset-inline-end:0;
-  inline-size:min(30%,300px); z-index:0; pointer-events:none;
-}
-.v2-footer-cutout img{
-  display:block; inline-size:100%; aspect-ratio:800/900;
-  object-fit:cover; object-position:50% 0%;
-  opacity:.16; filter:saturate(.4) contrast(1.05);
-  -webkit-mask-image:linear-gradient(to top, transparent 4%, #000 46%),
-                     linear-gradient(to left, #000 40%, transparent 92%);
-          mask-image:linear-gradient(to top, transparent 4%, #000 46%),
-                     linear-gradient(to left, #000 40%, transparent 92%);
-  -webkit-mask-composite:source-in; mask-composite:intersect;
-}
-
 /* =========================================================================
    B12. RESPONSIVE
    Every multi-column layout above collapses explicitly. The hero collapses

@@ -219,7 +219,7 @@
      drawer must be able to preview a count before the visitor commits: the
      grid keeps showing the committed selection while Apply(N) counts the
      pending one. Chips and search outside the drawer stay immediate. */
-  const drawerState = { courseType: "all", categories: [] };
+  const drawerState = { courseTypes: [], categories: [] };
 
   function readSingleGroups() {
     const out = {};
@@ -233,7 +233,7 @@
   function buildState(overrides) {
     const base = {
       single: readSingleGroups(),
-      courseType: drawerState.courseType,
+      courseTypes: drawerState.courseTypes.slice(),
       categories: drawerState.categories.slice(),
       search: (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase(),
     };
@@ -248,9 +248,10 @@
         if (cardVal && cardVal !== value) return false;
       }
     }
-    if (state.courseType && state.courseType !== "all") {
-      // a course with no type set is a plain "course"
-      if ((card.dataset.courseType || "course") !== state.courseType) return false;
+    if (state.courseTypes && state.courseTypes.length) {
+      // OR within the group, same as categories. A course with no type set is
+      // a plain "course".
+      if (state.courseTypes.indexOf(card.dataset.courseType || "course") === -1) return false;
     }
     if (state.categories && state.categories.length) {
       // OR within the group: matching any one selected category is enough

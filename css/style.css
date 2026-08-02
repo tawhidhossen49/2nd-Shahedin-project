@@ -595,8 +595,19 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    nav. It is a wrapper DIV inside the page's existing <section>, not a second
    section: the redesign brief fixes the section count per page. */
 .catalog-page{display:block;}
-.page-head{padding-block:calc(var(--nav-h) + clamp(44px,6vw,76px)) clamp(36px,5vw,60px);}
+/* The banner was 148px of top padding under a 72px nav, with an h1 at
+   --step-5 (up to 65px) and then --section-lg (up to 132px) again before the
+   content — so roughly a third of a 900px viewport was spent before anything
+   useful appeared. Tightened on all three counts: less headroom, a smaller
+   heading, and the page body pulled up under it. */
+.page-head{padding-block:calc(var(--nav-h) + clamp(16px,2.4vw,30px)) clamp(20px,2.6vw,34px);}
 .page-head .section-head{margin-bottom:0;}
+.page-head h1{font-size:clamp(1.85rem,3.2vw,2.6rem); line-height:var(--lh-heading);}
+.page-head .eyebrow{margin-block-end:var(--space-3);}
+.page-head .section-head p{margin-block-start:var(--space-3);}
+/* Pull the catalogue/grid up under the banner. Bottom padding is left at the
+   full section rhythm so the footer still gets its breathing room. */
+.catalog-page .section-pad{padding-block:clamp(24px,3.4vw,44px) var(--section-lg);}
 
 /* Section titles on the inner pages, replacing per-page inline margins. */
 .section-title{margin-block-end:var(--space-6);}
@@ -1982,25 +1993,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    weights rather than by a border around every element (brief 2.5).
    ========================================================================= */
 
-/* --- CATALOGUE: lead course runs full width as an editorial feature, the
-       rest stay 3-up. Breaks the uniform grid without touching markup. --- */
-[data-mount="course-grid"] > :first-child{
-  grid-column:1 / -1;
-  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
-  align-items:stretch; overflow:hidden;
-}
-[data-mount="course-grid"] > :first-child .thumb{
-  aspect-ratio:auto; block-size:100%; min-block-size:clamp(240px,26vw,340px);
-}
-[data-mount="course-grid"] > :first-child .card-body{
-  justify-content:center; padding:var(--space-8);
-}
-[data-mount="course-grid"] > :first-child .card-title{
-  font-size:var(--step-3); line-height:var(--lh-heading);
-}
-[data-mount="course-grid"] > :first-child .card-desc{
-  font-size:var(--step-0); max-inline-size:52ch;
-}
+/* --- CATALOGUE: every card is identical.
+       An earlier pass promoted the first course to a full-width two-column
+       feature, to break up what was then a uniform wall of tiles. The
+       reference layout wants a plain 3-up grid where every course reads the
+       same, and the two cannot both be true — the feature card was spanning
+       the entire row and pushing everything after it out of alignment.
+
+       Uniformity is now enforced rather than assumed: the grid stretches
+       every card in a row to a common height, .card-body flexes to fill it,
+       and the price + stats block is pinned to the bottom, so cards with
+       shorter titles or descriptions still line up along the foot. --- */
+[data-mount="course-grid"]{align-items:stretch;}
+[data-mount="course-grid"] > .card{block-size:100%;}
+[data-mount="course-grid"] .thumb{aspect-ratio:16/9;}
 
 /* --- ACCORDION: ruled rows, not stacked boxes. The open state is carried by
        a warm surface lift plus an accent edge, not by a heavier border. --- */
@@ -2717,10 +2723,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* --- 19c. RESPONSIVE for the course surfaces (section 18d) --------------- */
 @media (max-width:1080px){
   /* the catalogue feature card stops being a 2-up composition */
-  [data-mount="course-grid"] > :first-child{grid-template-columns:minmax(0,1fr);}
-  [data-mount="course-grid"] > :first-child .thumb{min-block-size:0; aspect-ratio:16/9;}
-  [data-mount="course-grid"] > :first-child .card-body{padding:var(--space-6);}
-  [data-mount="course-grid"] > :first-child .card-title{font-size:var(--step-2);}
 }
 
 /* --- 19d. RESPONSIVE for the store surfaces (section 18e) ---------------- */
@@ -2927,109 +2929,110 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .cp-nav-next{text-align:start;}
 }
 
-/* =========================================================================
-   21. COURSE FILTER DRAWER  (courses.html)
-   -------------------------------------------------------------------------
-   Layout follows the reference; every colour, radius, hairline and easing is
-   from css/tokens.css so it reads as part of this site rather than as a
-   transplant. Structure and dismissal mirror .mobile-menu in js/main.js —
-   backdrop, Escape, focus trap — so there is one drawer idiom, not two.
-   ========================================================================= */
-.filter-trigger{display:inline-flex; align-items:center; gap:var(--space-2);}
-.filter-trigger.has-filters{border-color:var(--line-accent); color:var(--accent-ink);}
-.filter-count{
-  display:inline-flex; align-items:center; justify-content:center;
-  min-inline-size:20px; block-size:20px; padding:0 6px; margin-inline-start:2px;
-  border-radius:var(--radius-pill); background:var(--accent-fill);
-  color:var(--text-on-accent); font-family:var(--font-num);
-  font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; line-height:1;
-}
-
-.fdrawer{position:fixed; inset:0; z-index:var(--z-drawer); visibility:hidden;}
-.fdrawer.open{visibility:visible;}
-.fdrawer-backdrop{
-  position:absolute; inset:0; background:rgba(7,5,4,.62);
-  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
-  opacity:0; transition:opacity var(--dur-3) var(--ease-out);
-}
-.fdrawer.open .fdrawer-backdrop{opacity:1;}
-
-.fdrawer-panel{
-  position:absolute; inset-block:0; inset-inline-end:0;
-  inline-size:min(420px,100%); display:flex; flex-direction:column;
-  background:var(--surface-1); border-inline-start:1px solid var(--line-strong);
-  box-shadow:var(--shadow-4);
-  transform:translateX(100%);
-  transition:transform var(--dur-4) var(--ease-out);
-}
-.fdrawer.open .fdrawer-panel{transform:none;}
-
-.fdrawer-head{
-  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
-  padding:var(--space-6); border-block-end:1px solid var(--line-strong);
-  background:var(--surface-2);
-}
-.fdrawer-head h2{font-size:var(--step-1); line-height:var(--lh-heading);}
-
-.fdrawer-body{flex:1; min-block-size:0; overflow-y:auto; padding:var(--space-6);}
-.fdrawer-sec + .fdrawer-sec{
-  margin-block-start:var(--space-8); padding-block-start:var(--space-7);
+/* Lesson / student counts, matching the reference: each figure sits behind a
+   small circular icon and the pair is separated from the price by a hairline
+   so the card foot reads as its own band. */
+.card-stats{
+  display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;
+  margin-block-start:var(--space-4); padding-block-start:var(--space-4);
   border-block-start:1px solid var(--line);
+  font-family:var(--font-mixed); font-variant-numeric:tabular-nums;
+  font-size:var(--step--1); color:var(--text-2);
 }
-.fdrawer-h{
-  font-family:var(--font-body); font-size:var(--step--1); font-weight:600;
-  letter-spacing:var(--tracking-wide); text-transform:uppercase;
-  color:var(--text-3); margin-block-end:var(--space-4);
+.card-stats > span{display:inline-flex; align-items:center; gap:var(--space-2); min-inline-size:0;}
+.card-stats .ic{
+  display:grid; place-items:center; flex:0 0 auto;
+  inline-size:26px; block-size:26px; border-radius:var(--radius-pill);
+  background:var(--surface-3); border:1px solid var(--line-strong);
+  color:var(--accent-ink);
 }
-.fdrawer-chips{display:flex; flex-wrap:wrap; gap:var(--space-2);}
-.fdrawer-find{margin-block-end:var(--space-4);}
+.card-stats svg{inline-size:13px; block-size:13px;}
+.card:hover .card-stats .ic{border-color:var(--line-accent);}
 
-.fdrawer-list{list-style:none; margin:0; padding:0;}
-.fdrawer-row + .fdrawer-row{border-block-start:1px solid var(--line);}
-.fdrawer-row[hidden]{display:none;}
+/* Status sub-filter inside the dashboard's "আমার কোর্স" tab. Layout only —
+   the chips themselves reuse .chip / .chip.active unchanged. */
+.dash-course-filter{margin-block-end:var(--space-4);}
+.dash-course-summary{margin-block-end:var(--space-5); color:var(--text-2);}
 
-/* Toggle switch. Built from the checkbox that carries the value, so the
-   control stays a real input — keyboard, label click and :checked all free. */
-.fswitch{
-  display:flex; align-items:center; gap:var(--space-4);
-  padding-block:var(--space-4); cursor:pointer;
-}
-.fswitch input{position:absolute; opacity:0; inline-size:1px; block-size:1px;}
-.fswitch-track{
-  position:relative; flex:0 0 auto; inline-size:40px; block-size:22px;
-  border-radius:var(--radius-pill); background:var(--surface-3);
-  border:1px solid var(--line-strong);
-  transition:background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
-}
-.fswitch-track::after{
-  content:""; position:absolute; inset-block-start:3px; inset-inline-start:3px;
-  inline-size:14px; block-size:14px; border-radius:50%; background:var(--text-3);
-  transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);
-}
-.fswitch input:checked + .fswitch-track{background:var(--accent-dim); border-color:var(--accent-fill);}
-.fswitch input:checked + .fswitch-track::after{transform:translateX(18px); background:var(--accent-ink);}
-.fswitch input:focus-visible + .fswitch-track{outline:2px solid var(--accent-ink); outline-offset:2px;}
-.fswitch-label{font-size:var(--step-0); color:var(--text-2);}
-.fswitch input:checked ~ .fswitch-label{color:var(--text-1);}
+/* =========================================================================
+   21. COURSE CATALOGUE — filter rail + grid  (courses.html)
+   -------------------------------------------------------------------------
+   Layout matches the supplied reference: centred banner, a persistent filter
+   rail on the left, a three-up card grid on the right. Every colour, radius,
+   hairline and easing is from css/tokens.css, so the structure is the
+   reference's and the skin is ours.
 
-.fdrawer-foot{
-  display:grid; grid-template-columns:auto 1fr; gap:var(--space-3);
-  padding:var(--space-5) var(--space-6);
+   The rail and the mobile drawer are THE SAME ELEMENT — .catalog-side is a
+   grid column above 1080 and a fixed slide-in panel below it. One set of
+   markup, one set of controls, no duplicated state.
+   ========================================================================= */
+.page-head-center .section-head{margin-inline:auto; text-align:center;}
+.page-head-center .section-head p{margin-inline:auto; max-inline-size:56ch;}
+
+.catalog-layout{
+  display:grid; grid-template-columns:minmax(0,272px) minmax(0,1fr);
+  gap:var(--space-8); align-items:start;
+}
+.catalog-main{min-inline-size:0;}
+
+.catalog-toolbar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:var(--space-4); flex-wrap:wrap; margin-block-end:var(--space-6);
+}
+.catalog-toolbar .search-input-wrap{flex:1; min-inline-size:220px; max-inline-size:420px;}
+.catalog-toolbar .filter-trigger{display:none;}   /* rail is visible on desktop */
+
+.catalog-side{
+  position:sticky; inset-block-start:calc(var(--nav-h) + 20px);
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1); overflow:hidden;
+}
+.catalog-side-head{display:none;}                 /* only needed as a drawer */
+.catalog-side-body{padding:var(--space-6);}
+.catalog-side-foot{
+  display:none; gap:var(--space-3);
+  padding:var(--space-4) var(--space-5);
   border-block-start:1px solid var(--line-strong); background:var(--surface-2);
 }
-.fdrawer-foot .btn{justify-content:center;}
 
-@media (prefers-reduced-motion: reduce){
-  .fdrawer-panel,.fdrawer-backdrop,.fswitch-track,.fswitch-track::after{transition:none;}
+.fgroup + .fgroup{
+  margin-block-start:var(--space-6); padding-block-start:var(--space-6);
+  border-block-start:1px solid var(--line);
 }
+.fgroup-h{
+  font-family:var(--font-body); font-size:var(--step--1); font-weight:600;
+  color:var(--text-1); margin-block-end:var(--space-4); line-height:var(--lh-tight);
+}
+.fgroup-list{list-style:none; margin:0; padding:0;}
 
-/* Full-screen on mobile, matching the breakpoint the filter bar already
-   un-sticks at. */
-@media (max-width:560px){
-  .fdrawer-panel{inline-size:100%; border-inline-start:0;}
-  .fdrawer-body{padding:var(--space-5);}
-  .fdrawer-foot{padding:var(--space-4) var(--space-5); grid-template-columns:1fr 1fr;}
+/* Checkbox rows. The native input carries the value and stays focusable; the
+   square is a sibling span so it can be styled without losing any of that. */
+.fcheck{display:flex; align-items:center; gap:var(--space-3); padding-block:7px; cursor:pointer;}
+.fcheck input{position:absolute; opacity:0; inline-size:1px; block-size:1px;}
+.fcheck-box{
+  position:relative; flex:0 0 auto; inline-size:18px; block-size:18px;
+  border:1px solid var(--line-strong); border-radius:var(--radius-xs);
+  background:var(--surface-3);
+  transition:background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
 }
+.fcheck-box::after{
+  content:""; position:absolute; inset-block-start:2px; inset-inline-start:5px;
+  inline-size:5px; block-size:9px; border:solid var(--text-on-accent);
+  border-width:0 2px 2px 0; transform:rotate(45deg) scale(0);
+  transition:transform var(--dur-2) var(--ease-spring);
+}
+.fcheck input:checked + .fcheck-box{background:var(--accent-fill); border-color:var(--accent-fill);}
+.fcheck input:checked + .fcheck-box::after{transform:rotate(45deg) scale(1);}
+.fcheck input:focus-visible + .fcheck-box{outline:2px solid var(--accent-ink); outline-offset:2px;}
+.fcheck-label{font-size:var(--step--1); color:var(--text-2); line-height:var(--lh-tight);}
+.fcheck:hover .fcheck-label{color:var(--text-1);}
+.fcheck input:checked ~ .fcheck-label{color:var(--text-1);}
+
+.catalog-backdrop{
+  position:fixed; inset:0; z-index:calc(var(--z-drawer) - 1);
+  background:rgba(7,5,4,.62); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+}
+.catalog-backdrop[hidden]{display:none;}
 
 /* Lesson / student counts under the card description. */
 .card-stats{
@@ -3041,7 +3044,89 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .card-stats span{display:inline-flex; align-items:center; gap:5px;}
 .card-stats svg{inline-size:14px; block-size:14px; color:var(--text-3);}
 
-/* Status sub-filter inside the dashboard's "আমার কোর্স" tab. Layout only —
-   the chips themselves reuse .chip / .chip.active unchanged. */
-.dash-course-filter{margin-block-end:var(--space-4);}
-.dash-course-summary{margin-block-end:var(--space-5); color:var(--text-2);}
+.filter-trigger{display:inline-flex; align-items:center; gap:var(--space-2);}
+.filter-trigger.has-filters{border-color:var(--line-accent); color:var(--accent-ink);}
+.filter-count{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-inline-size:20px; block-size:20px; padding:0 6px; margin-inline-start:2px;
+  border-radius:var(--radius-pill); background:var(--accent-fill);
+  color:var(--text-on-accent); font-family:var(--font-num);
+  font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; line-height:1;
+}
+
+/* --- The rail becomes a drawer below 1080 --------------------------------- */
+@media (max-width:1080px){
+  .catalog-layout{grid-template-columns:minmax(0,1fr);}
+  .catalog-toolbar .filter-trigger{display:inline-flex;}
+  .catalog-side{
+    position:fixed; inset-block:0; inset-inline-end:0; inset-inline-start:auto;
+    z-index:var(--z-drawer); inline-size:min(360px,100%);
+    display:flex; flex-direction:column; border-radius:0;
+    border-inline-start:1px solid var(--line-strong); box-shadow:var(--shadow-4);
+    transform:translateX(100%); transition:transform var(--dur-4) var(--ease-out);
+  }
+  .catalog-side.is-open{transform:none;}
+  .catalog-side-head{
+    display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
+    padding:var(--space-5) var(--space-6);
+    border-block-end:1px solid var(--line-strong); background:var(--surface-2);
+  }
+  .catalog-side-head h2{font-size:var(--step-1);}
+  .catalog-side-body{flex:1; min-block-size:0; overflow-y:auto;}
+  .catalog-side-foot{display:grid; grid-template-columns:auto 1fr;}
+}
+@media (max-width:760px){
+  .grid.grid-3{grid-template-columns:minmax(0,1fr);}
+  .catalog-toolbar .search-input-wrap{max-inline-size:none;}
+}
+@media (prefers-reduced-motion: reduce){
+  .catalog-side,.fcheck-box,.fcheck-box::after{transition:none;}
+}
+
+/* --- Catalogue column counts.
+       The generic .grid-3 falls to two columns at 1080 and one at 760, which
+       is right for store.html but wrong here: at 1080 the filter rail has
+       already collapsed into a drawer, so the grid has the full container to
+       itself and can hold three. These step down on their own schedule and
+       leave store.html alone. --- */
+@media (max-width:1080px){
+  .catalog-main .grid.grid-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:900px){
+  .catalog-main .grid.grid-3{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:560px){
+  .catalog-main .grid.grid-3{grid-template-columns:minmax(0,1fr);}
+}
+
+/* =========================================================================
+   22. NAV SEARCH + MY COURSES
+   -------------------------------------------------------------------------
+   The catalogue search moves into the nav on courses.html, and every page
+   gains a direct "আমার কোর্স" entry pointing at the dashboard tab that
+   already lists a student's enrolments.
+   ========================================================================= */
+
+/* .has-nav-search only exists on courses.html. The nav keeps its single-line
+   rule (max 80px) — the search takes the slack between the logo and the links
+   rather than adding a row. */
+.site-nav.has-nav-search{gap:var(--space-5);}
+.nav-search{
+  flex:1 1 220px; min-inline-size:0; max-inline-size:340px;
+  margin-inline-end:var(--space-2);
+}
+.nav-search .search-input{block-size:40px;}
+
+/* Text link, not a second filled button: --accent-fill is already spoken for
+   by যোগাযোগ, and two solid CTAs side by side compete for the same click. */
+.nav-mycourses{
+  white-space:nowrap; font-size:var(--step--1); font-weight:600;
+  padding-inline:var(--space-3);
+}
+
+@media (max-width:1080px){
+  /* Below this the burger takes over, so the nav search and the extra link
+     would only crowd the bar — both live in the mobile menu instead. */
+  .nav-search{display:none;}
+  .nav-mycourses{display:none;}
+}

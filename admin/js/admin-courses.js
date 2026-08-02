@@ -143,6 +143,18 @@
               <input type="number" id="f_price" min="0" value="${course?.price_bdt ?? 0}">
             </div>
             <div class="form-field">
+              <label>Old price (৳ BDT) <span class="hint">optional — shows the original struck through, same as products</span></label>
+              <input type="number" id="f_old_price" min="0" value="${course?.old_price_bdt ?? ""}">
+            </div>
+            <div class="form-field">
+              <label>Course type <span class="hint">drives the catalogue filter and the badge on the card</span></label>
+              <select id="f_course_type">
+                <option value="course"${(course?.course_type || "course") === "course" ? " selected" : ""}>Regular course</option>
+                <option value="career_track"${course?.course_type === "career_track" ? " selected" : ""}>Career Track Program</option>
+                <option value="foundation"${course?.course_type === "foundation" ? " selected" : ""}>Foundation Course</option>
+              </select>
+            </div>
+            <div class="form-field">
               <label>&nbsp;</label>
               <label class="form-check"><input type="checkbox" id="f_free" ${course?.is_free ? "checked" : ""}> This course is free</label>
             </div>
@@ -522,6 +534,13 @@
         duration_en: document.getElementById("f_duration").value.trim(),
         duration_bn: document.getElementById("f_duration_bn").value.trim() || null,
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
+        /* Blank means "no discount", so send null rather than 0 — a 0 would
+           render as a struck-through ৳০ on the card. Same convention as
+           products.old_price_bdt. */
+        old_price_bdt: document.getElementById("f_old_price").value.trim() === ""
+          ? null
+          : parseInt(document.getElementById("f_old_price").value, 10),
+        course_type: document.getElementById("f_course_type").value || "course",
         is_free: document.getElementById("f_free").checked,
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
         tone: selectedTone ? parseInt(selectedTone.dataset.tone, 10) : 1,

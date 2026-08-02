@@ -74,6 +74,11 @@
         <button type="button" class="chip" data-filter-value="free">ফ্রি</button>
         <button type="button" class="chip" data-filter-value="paid">পেইড</button>
       </div>
+      <button type="button" class="btn btn-ghost btn-sm filter-trigger" id="courseFilterBtn"
+              aria-haspopup="dialog" aria-expanded="false" aria-controls="courseFilterDrawer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M3 5h18M6 12h12M10 19h4"/></svg>
+        ফিল্টার<span class="filter-count" data-filter-count hidden>0</span>
+      </button>
       <div class="search-input-wrap">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         <label class="visually-hidden" for="courseSearch">কোর্স খুঁজুন</label>
@@ -146,5 +151,6 @@
   
   <script src="js/video-facade.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/course-filters.js"></script>
 </body>
 </html>

@@ -2926,3 +2926,122 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .cp-nav{grid-template-columns:1fr;}
   .cp-nav-next{text-align:start;}
 }
+
+/* =========================================================================
+   21. COURSE FILTER DRAWER  (courses.html)
+   -------------------------------------------------------------------------
+   Layout follows the reference; every colour, radius, hairline and easing is
+   from css/tokens.css so it reads as part of this site rather than as a
+   transplant. Structure and dismissal mirror .mobile-menu in js/main.js —
+   backdrop, Escape, focus trap — so there is one drawer idiom, not two.
+   ========================================================================= */
+.filter-trigger{display:inline-flex; align-items:center; gap:var(--space-2);}
+.filter-trigger.has-filters{border-color:var(--line-accent); color:var(--accent-ink);}
+.filter-count{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-inline-size:20px; block-size:20px; padding:0 6px; margin-inline-start:2px;
+  border-radius:var(--radius-pill); background:var(--accent-fill);
+  color:var(--text-on-accent); font-family:var(--font-num);
+  font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; line-height:1;
+}
+
+.fdrawer{position:fixed; inset:0; z-index:var(--z-drawer); visibility:hidden;}
+.fdrawer.open{visibility:visible;}
+.fdrawer-backdrop{
+  position:absolute; inset:0; background:rgba(7,5,4,.62);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  opacity:0; transition:opacity var(--dur-3) var(--ease-out);
+}
+.fdrawer.open .fdrawer-backdrop{opacity:1;}
+
+.fdrawer-panel{
+  position:absolute; inset-block:0; inset-inline-end:0;
+  inline-size:min(420px,100%); display:flex; flex-direction:column;
+  background:var(--surface-1); border-inline-start:1px solid var(--line-strong);
+  box-shadow:var(--shadow-4);
+  transform:translateX(100%);
+  transition:transform var(--dur-4) var(--ease-out);
+}
+.fdrawer.open .fdrawer-panel{transform:none;}
+
+.fdrawer-head{
+  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4);
+  padding:var(--space-6); border-block-end:1px solid var(--line-strong);
+  background:var(--surface-2);
+}
+.fdrawer-head h2{font-size:var(--step-1); line-height:var(--lh-heading);}
+
+.fdrawer-body{flex:1; min-block-size:0; overflow-y:auto; padding:var(--space-6);}
+.fdrawer-sec + .fdrawer-sec{
+  margin-block-start:var(--space-8); padding-block-start:var(--space-7);
+  border-block-start:1px solid var(--line);
+}
+.fdrawer-h{
+  font-family:var(--font-body); font-size:var(--step--1); font-weight:600;
+  letter-spacing:var(--tracking-wide); text-transform:uppercase;
+  color:var(--text-3); margin-block-end:var(--space-4);
+}
+.fdrawer-chips{display:flex; flex-wrap:wrap; gap:var(--space-2);}
+.fdrawer-find{margin-block-end:var(--space-4);}
+
+.fdrawer-list{list-style:none; margin:0; padding:0;}
+.fdrawer-row + .fdrawer-row{border-block-start:1px solid var(--line);}
+.fdrawer-row[hidden]{display:none;}
+
+/* Toggle switch. Built from the checkbox that carries the value, so the
+   control stays a real input — keyboard, label click and :checked all free. */
+.fswitch{
+  display:flex; align-items:center; gap:var(--space-4);
+  padding-block:var(--space-4); cursor:pointer;
+}
+.fswitch input{position:absolute; opacity:0; inline-size:1px; block-size:1px;}
+.fswitch-track{
+  position:relative; flex:0 0 auto; inline-size:40px; block-size:22px;
+  border-radius:var(--radius-pill); background:var(--surface-3);
+  border:1px solid var(--line-strong);
+  transition:background var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
+}
+.fswitch-track::after{
+  content:""; position:absolute; inset-block-start:3px; inset-inline-start:3px;
+  inline-size:14px; block-size:14px; border-radius:50%; background:var(--text-3);
+  transition:transform var(--dur-3) var(--ease-spring), background var(--dur-2) var(--ease-out);
+}
+.fswitch input:checked + .fswitch-track{background:var(--accent-dim); border-color:var(--accent-fill);}
+.fswitch input:checked + .fswitch-track::after{transform:translateX(18px); background:var(--accent-ink);}
+.fswitch input:focus-visible + .fswitch-track{outline:2px solid var(--accent-ink); outline-offset:2px;}
+.fswitch-label{font-size:var(--step-0); color:var(--text-2);}
+.fswitch input:checked ~ .fswitch-label{color:var(--text-1);}
+
+.fdrawer-foot{
+  display:grid; grid-template-columns:auto 1fr; gap:var(--space-3);
+  padding:var(--space-5) var(--space-6);
+  border-block-start:1px solid var(--line-strong); background:var(--surface-2);
+}
+.fdrawer-foot .btn{justify-content:center;}
+
+@media (prefers-reduced-motion: reduce){
+  .fdrawer-panel,.fdrawer-backdrop,.fswitch-track,.fswitch-track::after{transition:none;}
+}
+
+/* Full-screen on mobile, matching the breakpoint the filter bar already
+   un-sticks at. */
+@media (max-width:560px){
+  .fdrawer-panel{inline-size:100%; border-inline-start:0;}
+  .fdrawer-body{padding:var(--space-5);}
+  .fdrawer-foot{padding:var(--space-4) var(--space-5); grid-template-columns:1fr 1fr;}
+}
+
+/* Lesson / student counts under the card description. */
+.card-stats{
+  display:flex; flex-wrap:wrap; gap:var(--space-4);
+  margin-block-start:var(--space-3);
+  font-family:var(--font-mixed); font-variant-numeric:tabular-nums;
+  font-size:var(--step--2); color:var(--text-3);
+}
+.card-stats span{display:inline-flex; align-items:center; gap:5px;}
+.card-stats svg{inline-size:14px; block-size:14px; color:var(--text-3);}
+
+/* Status sub-filter inside the dashboard's "আমার কোর্স" tab. Layout only —
+   the chips themselves reuse .chip / .chip.active unchanged. */
+.dash-course-filter{margin-block-end:var(--space-4);}
+.dash-course-summary{margin-block-end:var(--space-5); color:var(--text-2);}

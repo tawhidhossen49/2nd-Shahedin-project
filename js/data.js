@@ -25,6 +25,7 @@ window.SITE_DATA = {
   courses: [
     {
       id: "geo-101",
+      courseType: "foundation",
       title: "জিওপলিটিক্স ১০১: বিশ্ব মানচিত্র পড়ার পাঠ",
       price: 0,
       free: true,
@@ -53,6 +54,8 @@ window.SITE_DATA = {
     },
     {
       id: "analyst-pro",
+      courseType: "career_track",
+      oldPrice: 1990,
       title: "পলিটিক্যাল অ্যানালিস্ট টুলকিট",
       price: 1490,
       free: false,
@@ -79,6 +82,7 @@ window.SITE_DATA = {
     },
     {
       id: "content-creator",
+      oldPrice: 1290,
       title: "শিক্ষকদের জন্য কনটেন্ট তৈরি",
       price: 990,
       free: false,
@@ -131,6 +135,8 @@ window.SITE_DATA = {
     },
     {
       id: "exam-writing",
+      courseType: "career_track",
+      oldPrice: 2490,
       title: "লিখিত পরীক্ষা ও ভাইভা মাস্টারি (বিসিএস ট্র্যাক)",
       price: 1990,
       free: false,

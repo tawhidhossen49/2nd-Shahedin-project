@@ -751,15 +751,29 @@
   }
 
   /* ---------- Course card ---------- */
+  /* Course type badge. Only the two special tracks get one — a plain course
+     needs no label, and badging everything would make the badge meaningless. */
+  const COURSE_TYPE_BN = { career_track: "ক্যারিয়ার ট্র্যাক", foundation: "ফাউন্ডেশন কোর্স" };
+
   function courseCard(c) {
     const title = escapeHtml(c.title);
     const duration = durationBn(c.duration);
+    const type = c.courseType || "course";
+    const typeLabel = COURSE_TYPE_BN[type] || "";
+    const lessons = Array.isArray(c.contentBlocks) ? c.contentBlocks.length : 0;
+    const students = Number(c.students) || 0;
+    /* Same strikethrough markup productCard already uses, so a discounted
+       course and a discounted product read identically across the site. */
+    const price = c.free
+      ? `<span class="price price-free">ফ্রি</span>`
+      : `<span class="price">${c.oldPrice ? `<span class="old">৳${bnNum(Number(c.oldPrice))}</span>` : ""}৳${bnNum(Number(c.price))}</span>`;
     return `
-    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}">
+    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-course-type="${escapeHtml(type)}" data-title="${title}">
       <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
         ${thumbArt(c, c.title)}
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
+          ${typeLabel ? `<span class="badge badge-accent">${escapeHtml(typeLabel)}</span>` : ``}
           ${c.free ? `<span class="badge badge-free">ফ্রি</span>` : ``}
           ${duration ? `<span class="badge badge-dur">${escapeHtml(duration)}</span>` : ``}
         </div>
@@ -768,8 +782,12 @@
         <div class="card-meta">${stars(c.rating)}<span>${escapeHtml(categoryLabel(c.category))}</span></div>
         <div class="card-title card-title-clamp">${title}</div>
         <p class="card-desc">${escapeHtml(c.desc)}</p>
+        ${lessons || students ? `<div class="card-stats">
+          ${lessons ? `<span>${ICON.book}${bnNum(lessons)} লেসন</span>` : ``}
+          ${students ? `<span>${ICON.users}${bnNum(students)} শিক্ষার্থী</span>` : ``}
+        </div>` : ``}
         <div class="card-foot">
-          ${priceLabel(c)}
+          ${price}
           <span class="text-link">কোর্স দেখুন ${ICON.arrow}</span>
         </div>
       </div>
@@ -1076,5 +1094,8 @@
   }
 
   window.ShahedinCourse = { refresh: refreshCourse };
-  window.ShahedinRender = { courseCard, productCard, videoCard };
+  // categoryLabel is exposed so js/course-filters.js can label the category
+  // toggles from the same CATEGORY_BN map the cards use, rather than keeping a
+  // second copy of those Bangla names in sync by hand.
+  window.ShahedinRender = { courseCard, productCard, videoCard, categoryLabel };
 })();

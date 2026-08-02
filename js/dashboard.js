@@ -205,6 +205,19 @@
       </div>`;
   }
 
+  /* Status sub-filter for "আমার কোর্স".
+     Deliberately NOT a [data-filter-group]: js/main.js has a delegated .chip
+     handler that keys off that attribute and calls applyFilters(), which is
+     the catalogue's engine and has nothing to do with this list. The class
+     alone gives the same look with none of that wiring, so these chips stay
+     local to the tab. The main TABS sidebar owns window.location.hash — this
+     filter never touches it and re-renders only its own list. */
+  const COURSE_FILTERS = [
+    { id: "all", label: "সব", match: function () { return true; } },
+    { id: "active", label: "চলমান", match: function (x) { return x.p.pct < 100; } },
+    { id: "done", label: "সম্পন্ন", match: function (x) { return x.p.pct >= 100; } },
+  ];
+
   function renderCourses(main) {
     main.innerHTML = `<h1 class="dash-page-title">আমার কোর্স</h1><div id="allCourses"></div>`;
     const wrap = document.getElementById("allCourses");
@@ -212,11 +225,58 @@
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
       return;
     }
-    wrap.innerHTML = state.enrollments
+
+    // Resolved once. progressFor() and courseFor() are used exactly as they are.
+    const rows = state.enrollments
       .map((e) => ({ e, p: progressFor(e), c: courseFor(e) }))
-      .filter((x) => x.c)
-      .map((x) => courseRowHTML(x.c, x.p))
-      .join("");
+      .filter((x) => x.c);
+
+    const inProgress = rows.filter((x) => x.p.pct < 100);
+    /* Average of what is LEFT on the unfinished courses only. Averaging across
+       everything would let finished courses drag the figure toward zero and
+       make the remaining work look smaller than it is. */
+    const remaining = inProgress.length
+      ? Math.round(inProgress.reduce((sum, x) => sum + (100 - x.p.pct), 0) / inProgress.length)
+      : 0;
+
+    let current = "all";   // every visit to the tab starts unfiltered
+
+    wrap.innerHTML = `
+      <div class="filter-group dash-course-filter" role="group" aria-label="অবস্থা অনুযায়ী ফিল্টার">
+        ${COURSE_FILTERS.map(
+          (f) =>
+            `<button type="button" class="chip${f.id === current ? " active" : ""}" data-dash-filter="${f.id}" aria-pressed="${f.id === current}">${f.label}</button>`
+        ).join("")}
+      </div>
+      ${inProgress.length
+        ? `<p class="small-note dash-course-summary">${inProgress.length} কোর্স চলমান · গড়ে ${remaining}% বাকি</p>`
+        : ""}
+      <div id="dashCourseList"></div>`;
+
+    const list = document.getElementById("dashCourseList");
+
+    function paint() {
+      const f = COURSE_FILTERS.find((x) => x.id === current) || COURSE_FILTERS[0];
+      const shown = rows.filter(f.match);
+      // courseRowHTML is reused unmodified — the row markup was already right.
+      list.innerHTML = shown.length
+        ? shown.map((x) => courseRowHTML(x.c, x.p)).join("")
+        : `<div class="empty-state"><p>এই ফিল্টারে কোনো কোর্স নেই।</p></div>`;
+    }
+
+    wrap.querySelectorAll("[data-dash-filter]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        current = btn.dataset.dashFilter;
+        wrap.querySelectorAll("[data-dash-filter]").forEach((b) => {
+          const on = b === btn;
+          b.classList.toggle("active", on);
+          b.setAttribute("aria-pressed", String(on));
+        });
+        paint();
+      });
+    });
+
+    paint();
   }
 
   function renderResources(main) {

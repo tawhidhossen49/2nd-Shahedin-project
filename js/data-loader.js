@@ -34,6 +34,11 @@
       students: row.students_count || 0,
       tone: row.tone || 1,
       category: row.category || "general",
+      // Drives the "Course Type" filter and the catalogue badge.
+      courseType: row.course_type || "course",
+      // Same shape products already use, so courseCard can reuse productCard's
+      // strikethrough markup verbatim.
+      oldPrice: row.old_price_bdt || undefined,
       desc: row.description_bn || row.description_en || "",
       image: row.thumbnail_url || null,
       modules: Array.isArray(row.modules) ? row.modules.map(mapModule) : [],

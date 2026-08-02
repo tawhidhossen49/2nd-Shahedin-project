@@ -203,37 +203,100 @@
   });
   document.addEventListener("contentready", applyFilters);
 
-  function applyFilters() {
-    const cards = document.querySelectorAll("[data-filterable]");
-    if (!cards.length) return;
-    const activeFilters = {};
+  /* ---------- Filter engine ----------
+     Two kinds of filter now, deliberately kept separate:
+
+     SINGLE-SELECT chip groups — [data-filter-group="x"] + .chip.active.
+       Unchanged. store.html and the price row on courses.html both rely on
+       this exact contract, so the behaviour and the attribute names are
+       untouched.
+
+     DRAWER filters — a single-select course type plus a MULTI-select category
+       list. OR within the category list, AND across every group, so
+       type AND (cat1 OR cat2) AND search must all pass.
+
+     These are held in `drawerState` rather than read from the DOM because the
+     drawer must be able to preview a count before the visitor commits: the
+     grid keeps showing the committed selection while Apply(N) counts the
+     pending one. Chips and search outside the drawer stay immediate. */
+  const drawerState = { courseType: "all", categories: [] };
+
+  function readSingleGroups() {
+    const out = {};
     document.querySelectorAll("[data-filter-group]").forEach((group) => {
       const active = group.querySelector(".chip.active");
-      activeFilters[group.dataset.filterGroup] = active ? active.dataset.filterValue : "all";
+      out[group.dataset.filterGroup] = active ? active.dataset.filterValue : "all";
     });
-    const searchVal = (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase();
+    return out;
+  }
 
-    cards.forEach((card) => {
-      let visible = true;
-      Object.entries(activeFilters).forEach(([group, value]) => {
-        if (value && value !== "all") {
-          const cardVal = card.dataset[group];
-          if (cardVal && cardVal !== value) visible = false;
-        }
-      });
-      if (searchVal) {
-        const title = (card.dataset.title || card.textContent || "").toLowerCase();
-        if (!title.includes(searchVal)) visible = false;
+  function buildState(overrides) {
+    const base = {
+      single: readSingleGroups(),
+      courseType: drawerState.courseType,
+      categories: drawerState.categories.slice(),
+      search: (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase(),
+    };
+    return Object.assign(base, overrides || {});
+  }
+
+  function cardMatches(card, state) {
+    for (const group in state.single) {
+      const value = state.single[group];
+      if (value && value !== "all") {
+        const cardVal = card.dataset[group];
+        if (cardVal && cardVal !== value) return false;
       }
+    }
+    if (state.courseType && state.courseType !== "all") {
+      // a course with no type set is a plain "course"
+      if ((card.dataset.courseType || "course") !== state.courseType) return false;
+    }
+    if (state.categories && state.categories.length) {
+      // OR within the group: matching any one selected category is enough
+      if (state.categories.indexOf(card.dataset.category) === -1) return false;
+    }
+    if (state.search) {
+      const title = (card.dataset.title || card.textContent || "").toLowerCase();
+      if (!title.includes(state.search)) return false;
+    }
+    return true;
+  }
+
+  /* How many cards WOULD match — used for the drawer's live Apply(N) count
+     without touching what is currently on screen. */
+  function countMatches(state) {
+    const cards = document.querySelectorAll("[data-filterable]");
+    let n = 0;
+    cards.forEach((card) => { if (cardMatches(card, state)) n++; });
+    return n;
+  }
+
+  function applyFilters() {
+    const cards = document.querySelectorAll("[data-filterable]");
+    if (!cards.length) return 0;
+    const state = buildState();
+    let visibleCount = 0;
+    cards.forEach((card) => {
+      const visible = cardMatches(card, state);
+      if (visible) visibleCount++;
       card.style.display = visible ? "" : "none";
     });
-
     document.querySelectorAll("[data-empty-state]").forEach((emptyEl) => {
-      const anyVisible = Array.from(cards).some((c) => c.style.display !== "none");
-      emptyEl.style.display = anyVisible ? "none" : "block";
+      emptyEl.style.display = visibleCount ? "none" : "block";
     });
+    return visibleCount;
   }
   applyFilters();
+
+  /* Exposed for js/course-filters.js, which owns the drawer UI. Keeping the
+     engine here means store.html and courses.html still share one code path. */
+  window.ShahedinFilters = {
+    apply: applyFilters,
+    count: countMatches,
+    build: buildState,
+    state: drawerState,
+  };
 
   /* ---------- Toast ---------- */
   function ensureToast() {

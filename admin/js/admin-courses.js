@@ -59,7 +59,7 @@
                 <div class="row-title-cell">
                   <div class="row-thumb" style="${course.thumbnail_url ? `background-image:url('${course.thumbnail_url}')` : ""}"></div>
                   <div>
-                    <div class="row-title">${Admin.escapeHtml(course.title_bn || course.title_en)}</div>
+                    <div class="row-title">${Admin.escapeHtml(course.title_en || course.title_bn)}</div>
                     <div class="row-sub">${Admin.escapeHtml(course.category)} · /${Admin.escapeHtml(course.slug)}</div>
                   </div>
                 </div>
@@ -83,7 +83,7 @@
 
   async function deleteCourse(id) {
     const course = courses.find((x) => x.id === id);
-    if (!confirm(`Delete "${course.title_bn || course.title_en}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${course.title_en || course.title_bn}"? This can't be undone.`)) return;
     const { error } = await c.from("courses").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Course deleted.");
@@ -106,23 +106,19 @@
         <form id="courseForm">
           <div class="form-grid">
             <div class="form-field">
-              <label>Title (Bangla) <span class="hint">this is what visitors see</span></label>
-              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}" required>
+              <label>Title (English)</label>
+              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}" required>
             </div>
             <div class="form-field">
-              <label>Title (English) <span class="hint">used for the page link and this admin list</span></label>
-              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}" required>
+              <label>Title (Bangla) <span class="hint">optional</span></label>
+              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
             </div>
             <div class="form-field full">
               <label>Link on the site <span class="hint">auto-filled from the English title — only change this if you know what it does</span></label>
               <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}" required>
             </div>
             <div class="form-field full">
-              <label>Description (Bangla) <span class="hint">this is what visitors see</span></label>
-              <textarea id="f_desc_bn">${Admin.escapeHtml(course?.description_bn || "")}</textarea>
-            </div>
-            <div class="form-field full">
-              <label>Description (English) <span class="hint">optional fallback</span></label>
+              <label>Description (English)</label>
               <textarea id="f_desc_en">${Admin.escapeHtml(course?.description_en || "")}</textarea>
             </div>
             <div class="form-field">
@@ -131,28 +127,12 @@
               <datalist id="categoryList">${CATEGORY_SUGGESTIONS.map((x) => `<option value="${x}">`).join("")}</datalist>
             </div>
             <div class="form-field">
-              <label>Duration <span class="hint">write it in English, e.g. "3h 20m" or "6 weeks" — the site converts it to Bangla automatically</span></label>
+              <label>Duration <span class="hint">shown as a badge, e.g. "3h 20m"</span></label>
               <input type="text" id="f_duration" value="${Admin.escapeHtml(course?.duration_en || "")}">
-            </div>
-            <div class="form-field">
-              <label>Duration (Bangla) <span class="hint">optional — only fill this if you want to override the automatic conversion</span></label>
-              <input type="text" id="f_duration_bn" value="${Admin.escapeHtml(course?.duration_bn || "")}">
             </div>
             <div class="form-field">
               <label>Price (৳ BDT)</label>
               <input type="number" id="f_price" min="0" value="${course?.price_bdt ?? 0}">
-            </div>
-            <div class="form-field">
-              <label>Old price (৳ BDT) <span class="hint">optional — shows the original struck through, same as products</span></label>
-              <input type="number" id="f_old_price" min="0" value="${course?.old_price_bdt ?? ""}">
-            </div>
-            <div class="form-field">
-              <label>Course type <span class="hint">drives the catalogue filter and the badge on the card</span></label>
-              <select id="f_course_type">
-                <option value="course"${(course?.course_type || "course") === "course" ? " selected" : ""}>Regular course</option>
-                <option value="career_track"${course?.course_type === "career_track" ? " selected" : ""}>Career Track Program</option>
-                <option value="foundation"${course?.course_type === "foundation" ? " selected" : ""}>Foundation Course</option>
-              </select>
             </div>
             <div class="form-field">
               <label>&nbsp;</label>
@@ -190,7 +170,6 @@
 
           <div class="form-field full">
             <label>Course content <span class="hint">what students see on the course page, in this order — add, edit, reorder, or remove anytime</span></label>
-            <datalist id="sectionList"></datalist>
             <div id="contentBlockList"></div>
             <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
               <button type="button" class="btn btn-ghost btn-sm" data-add-block="video">+ Video</button>
@@ -364,14 +343,6 @@
         <button type="button" class="icon-btn move-down" title="Move down">↓</button>
         <button type="button" class="icon-btn remove-block" title="Remove">✕</button>
       </div>
-      <div class="module-head" style="margin-top:8px;">
-        <input type="text" placeholder="Section, e.g. Section 7: Milestone Project" class="cb-section" list="sectionList"
-               value="${Admin.escapeHtml(existing?.section || "")}"
-               style="flex:2; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
-        <input type="text" placeholder="Length, e.g. 13min" class="cb-duration"
-               value="${Admin.escapeHtml(existing?.duration || "")}"
-               style="flex:1; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
-      </div>
       <div class="cb-body">${blockFieldsHTML(type, existing)}</div>`;
     document.getElementById("contentBlockList").appendChild(el);
 
@@ -445,35 +416,10 @@
     row.querySelector(".remove-option").addEventListener("click", () => row.remove());
   }
 
-  /* Keeps the Section datalist in step with whatever section names this
-     course already uses, so admins pick an existing group instead of
-     retyping it slightly differently and splitting the section in two. */
-  function refreshSectionList() {
-    const list = document.getElementById("sectionList");
-    if (!list) return;
-    const seen = [];
-    document.querySelectorAll("#contentBlockList .cb-section").forEach((i) => {
-      const v = i.value.trim();
-      if (v && seen.indexOf(v) === -1) seen.push(v);
-    });
-    list.innerHTML = seen.map((v) => `<option value="${Admin.escapeHtml(v)}">`).join("");
-  }
-
-  document.addEventListener("input", (e) => {
-    if (e.target && e.target.classList && e.target.classList.contains("cb-section")) refreshSectionList();
-  });
-
   function collectContentBlocks() {
     return Array.from(document.querySelectorAll("#contentBlockList > .module-block")).map((el) => {
       const type = el.dataset.type;
       const base = { id: el.dataset.blockId, type, title: el.querySelector(".cb-title").value.trim() || (BLOCK_TYPES[type] || "Untitled") };
-      /* Optional grouping + length. Both are omitted entirely when blank so an
-         untouched course keeps exactly the jsonb shape it had before, and the
-         player falls back to one untitled group with no duration shown. */
-      const sectionName = (el.querySelector(".cb-section")?.value || "").trim();
-      if (sectionName) base.section = sectionName;
-      const blockLen = (el.querySelector(".cb-duration")?.value || "").trim();
-      if (blockLen) base.duration = blockLen;
 
       if (type === "quiz") {
         base.questions = Array.from(el.querySelectorAll(".quiz-editor-list > div")).map((qRow) => {
@@ -519,28 +465,12 @@
 
       const payload = {
         title_en: document.getElementById("f_title_en").value.trim(),
-        /* courses.title_bn is NOT NULL in schema.sql. This used to send null
-           when the field was blank, which made the insert fail with a
-           constraint violation and no useful message in the UI. The field is
-           required in the form now, and the English title is the last-resort
-           fallback so a save can never be rejected for this reason again. */
-        title_bn:
-          document.getElementById("f_title_bn").value.trim() ||
-          document.getElementById("f_title_en").value.trim(),
+        title_bn: document.getElementById("f_title_bn").value.trim() || null,
         slug: Admin.slugify(document.getElementById("f_slug").value),
-        description_bn: document.getElementById("f_desc_bn").value.trim() || null,
         description_en: document.getElementById("f_desc_en").value.trim(),
         category: document.getElementById("f_category").value.trim() || "general",
         duration_en: document.getElementById("f_duration").value.trim(),
-        duration_bn: document.getElementById("f_duration_bn").value.trim() || null,
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
-        /* Blank means "no discount", so send null rather than 0 — a 0 would
-           render as a struck-through ৳০ on the card. Same convention as
-           products.old_price_bdt. */
-        old_price_bdt: document.getElementById("f_old_price").value.trim() === ""
-          ? null
-          : parseInt(document.getElementById("f_old_price").value, 10),
-        course_type: document.getElementById("f_course_type").value || "course",
         is_free: document.getElementById("f_free").checked,
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
         tone: selectedTone ? parseInt(selectedTone.dataset.tone, 10) : 1,

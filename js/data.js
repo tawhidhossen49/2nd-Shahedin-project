@@ -2,31 +2,12 @@
    data.js — shared demo content used by data-driven pages
    (course catalog, store, dashboard). Replace with real API
    data later; the front-end logic already reads from here.
-
-   LANGUAGE: Bangla-first. Every visitor-facing string here is
-   Bangla. The keys that are NOT prose are deliberately left in
-   their original form because other code parses them:
-
-     id        -> URL param, enrolment record, cart key
-     category  -> data-category filter value
-     type      -> data-type filter value (digital / physical)
-     free      -> data-price filter value (free / paid)
-     duration  -> parsed by durationBn() in render.js, which
-                  converts "8h 45m" to "৮ ঘণ্টা ৪৫ মিনিট" at
-                  render time. Writing Bangla here would bypass
-                  that conversion, so the ASCII form stays.
-     "20:11"   -> lesson lengths, converted by bnNum() the same way.
-
-   Latin fragments that ARE kept inside Bangla prose (PDF, bKash)
-   are intentional: --font-mixed in tokens.css exists to set them
-   on the same optical baseline as the Bangla around them.
    ========================================================= */
 window.SITE_DATA = {
   courses: [
     {
       id: "geo-101",
-      courseType: "foundation",
-      title: "জিওপলিটিক্স ১০১: বিশ্ব মানচিত্র পড়ার পাঠ",
+      title: "Geopolitics 101: Reading the World Map",
       price: 0,
       free: true,
       duration: "3h 20m",
@@ -34,29 +15,27 @@ window.SITE_DATA = {
       students: 12400,
       tone: 1,
       category: "politics",
-      desc: "বিশ্ব রাজনীতিতে ক্ষমতা আসলে কীভাবে চলে — সীমান্ত, সম্পদ ও জোট নিয়ে একটি মৌলিক কোর্স।",
+      desc: "A foundational course on how global power actually moves — borders, resources, alliances.",
       modules: [
-        { title: "ভূগোল কেন আজও রাজনীতি নিয়ন্ত্রণ করে", lessons: [["ভূমিকা ও কোর্সের রূপরেখা", "6:12", true], ["হার্টল্যান্ড তত্ত্ব", "14:03", false], ["যে চোকপয়েন্টগুলো বিশ্ব নিয়ন্ত্রণ করে", "11:40", false]] },
-        { title: "আজকের শক্তি-জোটগুলো", lessons: [["ন্যাটো, ইইউ ও পশ্চিমা জোট", "16:22", false], ["বহুমেরু বিশ্বের উত্থান", "13:15", false]] },
-        { title: "কেস স্টাডি", lessons: [["দক্ষিণ চীন সাগর: সহজ ব্যাখ্যা", "18:04", false], ["বাংলাদেশের অবস্থান", "15:30", false]] },
+        { title: "Why Geography Still Rules Politics", lessons: [["Introduction & Course Map", "6:12", true], ["The Heartland Theory", "14:03", false], ["Chokepoints That Run the World", "11:40", false]] },
+        { title: "Power Blocs Today", lessons: [["NATO, EU & the Western Bloc", "16:22", false], ["The Rise of Multipolarity", "13:15", false]] },
+        { title: "Case Studies", lessons: [["South China Sea, Explained", "18:04", false], ["The Bangladesh Position", "15:30", false]] },
       ],
       includes: [
-        { text: "৩ ঘণ্টা ২০ মিনিট অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
-        { text: "bKash-এ পেমেন্ট" },
+        { text: "3h 20m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
+        { text: "Pay with bKash" },
       ],
       faqs: [
-        { question: "রাজনীতি সম্পর্কে আগে থেকে জানা থাকা কি জরুরি?", answer: "না — এই কোর্সটি একদম শূন্য থেকে শুরু করে ধাপে ধাপে এগোয়, তাই এটিই যদি আপনার প্রথম ভূ-রাজনীতি চর্চা হয়, তাতেও কোনো সমস্যা নেই।" },
-        { question: "কোর্সটিতে কতদিন অ্যাক্সেস থাকবে?", answer: "আজীবন অ্যাক্সেস। একবার ভর্তি হলে যেকোনো সময় যেকোনো লেসনে ফিরে আসতে পারবেন।" },
+        { question: "Do I need any prior knowledge of politics?", answer: "No — this course starts from zero and builds up gradually, so it's fine if this is your first time studying geopolitics." },
+        { question: "How long do I have access to the course?", answer: "Lifetime access. Once you enroll, you can revisit any lesson whenever you like." },
       ],
     },
     {
       id: "analyst-pro",
-      courseType: "career_track",
-      oldPrice: 1990,
-      title: "পলিটিক্যাল অ্যানালিস্ট টুলকিট",
+      title: "The Political Analyst Toolkit",
       price: 1490,
       free: false,
       duration: "8h 45m",
@@ -64,26 +43,25 @@ window.SITE_DATA = {
       students: 3800,
       tone: 4,
       category: "politics",
-      desc: "বাস্তব সংবাদ দ্রুত বিশ্লেষণ করার ফ্রেমওয়ার্ক, সূত্র যাচাইয়ের পদ্ধতি ও লেখার কৌশল।",
+      desc: "Frameworks, source-checking, and writing techniques used to break down real news, fast.",
       modules: [
-        { title: "নিজের ফ্রেমওয়ার্ক তৈরি", lessons: [["চার-লেন্স বিশ্লেষণ মডেল", "20:11", true], ["পক্ষপাত চেনার অনুশীলন", "17:40", false]] },
-        { title: "গবেষণা থেকে স্ক্রিপ্ট", lessons: [["প্রাথমিক সূত্র খুঁজে বের করা", "15:00", false], ["১০ মিনিটের এক্সপ্লেইনার সাজানো", "22:18", false], ["ডেডলাইনের ভেতর ফ্যাক্ট-চেক", "12:55", false]] },
+        { title: "Building Your Framework", lessons: [["The 4-Lens Analysis Model", "20:11", true], ["Bias Detection Drills", "17:40", false]] },
+        { title: "From Research to Script", lessons: [["Finding Primary Sources", "15:00", false], ["Structuring a 10-Minute Explainer", "22:18", false], ["Fact-Checking Under Deadline", "12:55", false]] },
       ],
       includes: [
-        { text: "৮ ঘণ্টা ৪৫ মিনিট অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
-        { text: "bKash-এ পেমেন্ট" },
+        { text: "8h 45m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
+        { text: "Pay with bKash" },
       ],
       faqs: [
-        { question: "এই কোর্সটি কি শুধু লেখালেখি নিয়ে?", answer: "না — এতে বিশ্লেষণের ফ্রেমওয়ার্ক তৈরি ও সূত্র যাচাই করাও শেখানো হয়, শুধু লেখার প্রক্রিয়া নয়।" },
+        { question: "Is this course only about writing?", answer: "No — it also covers building an analysis framework and source-checking, not just the writing process." },
       ],
     },
     {
       id: "content-creator",
-      oldPrice: 1290,
-      title: "শিক্ষকদের জন্য কনটেন্ট তৈরি",
+      title: "Content Creation for Educators",
       price: 990,
       free: false,
       duration: "5h 10m",
@@ -91,25 +69,25 @@ window.SITE_DATA = {
       students: 6200,
       tone: 2,
       category: "skills",
-      desc: "ক্যামেরা, স্ক্রিপ্ট, থাম্বনেইল ও গ্রোথ — শূন্য থেকে প্রথম ১,০০০ সাবস্ক্রাইবার পর্যন্ত একটি ব্যবহারিক পথ।",
+      desc: "Camera, scripting, thumbnails and growth — a practical path from zero to your first 1,000 subscribers.",
       modules: [
-        { title: "শুরু করা", lessons: [["কম বাজেটে গিয়ার", "9:30", true], ["কার্যকর হুক লেখা", "13:12", false]] },
-        { title: "গ্রোথ", lessons: [["থাম্বনেইল ও টাইটেল", "11:45", false], ["ইউটিউব অ্যানালিটিকস পড়া", "16:02", false]] },
+        { title: "Getting Started", lessons: [["Gear on a Budget", "9:30", true], ["Writing Hooks That Work", "13:12", false]] },
+        { title: "Growth", lessons: [["Thumbnails & Titles", "11:45", false], ["Reading YouTube Analytics", "16:02", false]] },
       ],
       includes: [
-        { text: "৫ ঘণ্টা ১০ মিনিট অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
-        { text: "bKash-এ পেমেন্ট" },
+        { text: "5h 10m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
+        { text: "Pay with bKash" },
       ],
       faqs: [
-        { question: "শুরু করতে কি দামি সরঞ্জাম লাগবে?", answer: "না — কোর্সে আলাদা করে দেখানো হয়েছে কীভাবে হাতের কাছের সাধারণ গিয়ার দিয়েই শুরু করা যায়।" },
+        { question: "Do I need expensive equipment to start?", answer: "No — the course specifically covers how to start with budget-friendly gear you likely already own." },
       ],
     },
     {
       id: "economy-explained",
-      title: "বাংলাদেশের অর্থনীতি: সহজ ব্যাখ্যা",
+      title: "Bangladesh Economy, Explained",
       price: 1290,
       free: false,
       duration: "6h 00m",
@@ -117,27 +95,25 @@ window.SITE_DATA = {
       students: 2950,
       tone: 5,
       category: "economy",
-      desc: "মূল্যস্ফীতি, রেমিট্যান্স, তৈরি পোশাক খাত ও মুদ্রানীতি — জটিল পরিভাষা ছাড়াই।",
+      desc: "Inflation, remittance, RMG sector, and monetary policy — decoded without the jargon.",
       modules: [
-        { title: "পুরো ছবিটা", lessons: [["টাকা কীভাবে চলে", "14:20", true], ["রেমিট্যান্স ও রিজার্ভ", "18:33", false]] },
-        { title: "যে খাতগুলো গুরুত্বপূর্ণ", lessons: [["তৈরি পোশাক: অর্থনীতির মেরুদণ্ড", "19:10", false], ["ডিজিটাল অর্থনীতির উত্থান", "15:44", false]] },
+        { title: "The Big Picture", lessons: [["How the Taka Moves", "14:20", true], ["Remittance & Reserves", "18:33", false]] },
+        { title: "Sectors That Matter", lessons: [["The RMG Backbone", "19:10", false], ["Digital Economy Rising", "15:44", false]] },
       ],
       includes: [
-        { text: "৬ ঘণ্টা অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
-        { text: "bKash-এ পেমেন্ট" },
+        { text: "6h 00m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
+        { text: "Pay with bKash" },
       ],
       faqs: [
-        { question: "অর্থনীতি বদলালে কি কোর্সটি হালনাগাদ করা হয়?", answer: "মূল ফ্রেমওয়ার্কগুলো দীর্ঘমেয়াদে প্রাসঙ্গিক থাকে; বড় কোনো হালনাগাদ হলে ভর্তি হওয়া শিক্ষার্থীদের জানিয়ে দেওয়া হয়।" },
+        { question: "Is this course updated as the economy changes?", answer: "The core frameworks stay relevant long-term; any major update notes are shared with enrolled students." },
       ],
     },
     {
       id: "exam-writing",
-      courseType: "career_track",
-      oldPrice: 2490,
-      title: "লিখিত পরীক্ষা ও ভাইভা মাস্টারি (বিসিএস ট্র্যাক)",
+      title: "Written Exam & Viva Mastery (BCS Track)",
       price: 1990,
       free: false,
       duration: "12h 30m",
@@ -145,25 +121,25 @@ window.SITE_DATA = {
       students: 9100,
       tone: 3,
       category: "exam",
-      desc: "প্রতিযোগিতামূলক পরীক্ষার জন্য উত্তর সাজানো, সমসাময়িক বিষয়ের সমন্বয় ও ভাইভায় আত্মবিশ্বাস।",
+      desc: "Structuring answers, current affairs synthesis, and viva confidence for competitive exams.",
       modules: [
-        { title: "উত্তরের কাঠামো", lessons: [["তিন-অংশের উত্তর ফ্রেমওয়ার্ক", "17:00", true], ["পরীক্ষার হলে সময় ব্যবস্থাপনা", "10:20", false]] },
-        { title: "ভাইভা প্রস্তুতি", lessons: [["ভাইভার পরিচিত ফাঁদ", "14:55", false], ["মক ভাইভা: সম্পূর্ণ অনুশীলন", "26:10", false]] },
+        { title: "Answer Architecture", lessons: [["The 3-Part Answer Framework", "17:00", true], ["Time Management in the Hall", "10:20", false]] },
+        { title: "Viva Prep", lessons: [["Common Viva Traps", "14:55", false], ["Mock Viva Walkthrough", "26:10", false]] },
       ],
       includes: [
-        { text: "১২ ঘণ্টা ৩০ মিনিট অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
-        { text: "bKash-এ পেমেন্ট" },
+        { text: "12h 30m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
+        { text: "Pay with bKash" },
       ],
       faqs: [
-        { question: "লিখিত পরীক্ষার পাশাপাশি ভাইভাও কি এতে আছে?", answer: "হ্যাঁ — ভাইভা প্রস্তুতির জন্য আলাদা একটি মডিউল আছে, সেখানে সম্পূর্ণ একটি মক ভাইভাও রয়েছে।" },
+        { question: "Does this cover viva as well as the written exam?", answer: "Yes — there's a dedicated module on viva prep, including a full mock viva walkthrough." },
       ],
     },
     {
       id: "career-roadmap",
-      title: "আগামী দশকের ক্যারিয়ার রোডম্যাপ",
+      title: "Career Roadmap for the Next Decade",
       price: 0,
       free: true,
       duration: "2h 40m",
@@ -171,29 +147,29 @@ window.SITE_DATA = {
       students: 15600,
       tone: 6,
       category: "skills",
-      desc: "সবকিছু যখন বদলে যাচ্ছে তখন কীভাবে দিক ঠিক করবেন — বাড়তি কথা ছাড়া একটি ব্যবহারিক রোডম্যাপ।",
+      desc: "How to pick a direction when everything is changing — a practical, no-fluff roadmap.",
       modules: [
-        { title: "আগে দিক ঠিক করুন", lessons: [["যে দক্ষতাগুলো পুরোনো হয় না", "11:00", true], ["পরবর্তী ৫ বছরের পরিকল্পনা", "13:45", false]] },
+        { title: "Direction First", lessons: [["Skills That Won't Expire", "11:00", true], ["Mapping Your Next 5 Years", "13:45", false]] },
       ],
       includes: [
-        { text: "২ ঘণ্টা ৪০ মিনিট অন-ডিমান্ড ভিডিও" },
-        { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-        { text: "সম্পন্নতার সার্টিফিকেট" },
-        { text: "বাংলা সাপোর্ট" },
+        { text: "2h 40m on-demand video" },
+        { text: "Downloadable resources & notes" },
+        { text: "Certificate of completion" },
+        { text: "Bangla support" },
       ],
       faqs: [
-        { question: "কোর্সটি কি সত্যিই ফ্রি?", answer: "হ্যাঁ, সম্পূর্ণ ফ্রি — ভর্তি হতে কোনো পেমেন্ট বা কার্ডের তথ্য লাগবে না।" },
+        { question: "Is this course really free?", answer: "Yes, completely free — no payment or card details needed to enroll." },
       ],
     },
   ],
 
   products: [
-    { id: "book-politics-simplified", title: "রাজনীতি, সহজ ভাষায় — বইটি", type: "physical", price: 650, oldPrice: 800, tone: 1, category: "books", desc: "চ্যানেলের সঙ্গী বেস্টসেলিং বই — ভূ-রাজনীতি সহজ বাংলায় ব্যাখ্যা করা।" },
-    { id: "notes-geo-pdf", title: "ভূ-রাজনীতি ক্র্যাশ কোর্স নোট (PDF)", type: "digital", price: 250, tone: 4, category: "notes", desc: "৪২ পৃষ্ঠার সংক্ষিপ্ত নোট — চ্যানেলে ব্যবহৃত প্রতিটি বড় ভূ-রাজনৈতিক ফ্রেমওয়ার্ক নিয়ে।" },
-    { id: "tshirt-logo", title: "শাহেদীন লোগো টি-শার্ট", type: "physical", price: 590, tone: 2, category: "merch", desc: "ভারী সুতির টি-শার্ট, মিনিমাল ওয়ার্ডমার্ক প্রিন্ট। ইউনিসেক্স ফিট।" },
-    { id: "guide-bcs-pdf", title: "বিসিএস লিখিত উত্তরের টেমপ্লেট (PDF)", type: "digital", price: 350, tone: 3, category: "notes", desc: "লিখিত পরীক্ষার সবচেয়ে পরিচিত প্রশ্নের ধরনগুলোর জন্য তৈরি, সহজে মানিয়ে নেওয়ার মতো উত্তর কাঠামো।" },
-    { id: "mug-brand", title: "সিরামিক মগ — রাজনীতি, সহজ ভাষায়", type: "physical", price: 390, tone: 5, category: "merch", desc: "৩৫০ মিলি সিরামিক মগ, ডিশওয়াশার সেফ, সিগনেচার লাইন প্রিন্ট সহ।" },
-    { id: "ebook-economy", title: "বাংলাদেশের অর্থনীতি এক্সপ্লেইনার (ইবুক)", type: "digital", price: 300, tone: 6, category: "notes", desc: "জাতীয় অর্থনীতি আসলে কীভাবে কাজ করে, সহজ ভাষায় তার পূর্ণ ব্যাখ্যা।" },
+    { id: "book-politics-simplified", title: "Politics, Simplified — The Book", type: "physical", price: 650, oldPrice: 800, tone: 1, category: "books", desc: "The bestselling companion book to the channel — geopolitics explained in plain Bangla and English." },
+    { id: "notes-geo-pdf", title: "Geopolitics Crash-Course Notes (PDF)", type: "digital", price: 250, tone: 4, category: "notes", desc: "42-page condensed notes covering every major geopolitical framework used in the channel." },
+    { id: "tshirt-logo", title: "Shahedin Logo Tee", type: "physical", price: 590, tone: 2, category: "merch", desc: "Heavyweight cotton tee with the minimal wordmark. Unisex fit." },
+    { id: "guide-bcs-pdf", title: "BCS Written Answer Templates (PDF)", type: "digital", price: 350, tone: 3, category: "notes", desc: "Ready-to-adapt answer structures for the most common written exam question types." },
+    { id: "mug-brand", title: "Ceramic Mug — Politics, Simplified", type: "physical", price: 390, tone: 5, category: "merch", desc: "350ml ceramic mug, dishwasher safe, with the signature line print." },
+    { id: "ebook-economy", title: "Bangladesh Economy Explainer (eBook)", type: "digital", price: 300, tone: 6, category: "notes", desc: "A plain-language walkthrough of how the national economy actually works." },
   ],
 
 };

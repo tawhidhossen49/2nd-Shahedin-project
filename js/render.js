@@ -32,25 +32,17 @@
     person: svg(`<circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/>`),
   };
 
-  /* Rating. One labelled group, SVG stars, Bangla numerals.
-     Precise fill, not Math.round. Rounding meant 4.6 through 4.9 all rendered
-     five solid stars — so five of the six seeded courses looked identical and
-     the catalogue became a wall of flat 5/5, while the numeral beside them
-     said ৪.৬. A filled row clipped to value/5 over an outline row shows the
-     real figure. An unrated course renders "নতুন" rather than inventing one. */
+  /* Rating.
+     Was: literal ★/☆ glyphs plus a bare "(4.8)". Screen readers announced
+     "star star star star star (4.8)" and the digits rendered Latin on a
+     Bangla page. Now: one labelled group, SVG stars, Bangla numerals. */
   function stars(rating) {
-    const raw = rating === null || rating === undefined || rating === "" ? NaN : Number(rating);
-    if (!isFinite(raw) || raw <= 0) {
-      return `<span class="stars stars-new">নতুন</span>`;
-    }
-    const value = Math.max(0, Math.min(5, raw));
-    const pct = (value / 5) * 100;
+    const value = Number(rating) || 0;
+    const full = Math.max(0, Math.min(5, Math.round(value)));
     const shown = value.toFixed(1).replace(/\.0$/, "");
-    return `<span class="stars" role="img" aria-label="৫-এর মধ্যে ${bnNum(shown, { group: false })} রেটিং"><span class="stars-track" aria-hidden="true"><span class="stars-base">${
-      ICON.starOutline.repeat(5)
-    }</span><span class="stars-fill" style="inline-size:${pct.toFixed(2)}%;">${
-      ICON.star.repeat(5)
-    }</span></span><span class="rating-value" aria-hidden="true">${bnNum(shown, { group: false })}</span></span>`;
+    return `<span class="stars" role="img" aria-label="৫-এর মধ্যে ${bnNum(shown, { group: false })} রেটিং">${
+      ICON.star.repeat(full)
+    }${ICON.starOutline.repeat(5 - full)}<span class="rating-value" aria-hidden="true">${bnNum(shown, { group: false })}</span></span>`;
   }
 
   function escapeHtml(str) {
@@ -163,19 +155,10 @@
     pdf: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>`,
   };
 
-  /* contentBlockHTML — unchanged name and signature, but it now renders the
-     MAIN PANE of the course player rather than one row of a stacked list.
-
-     One contract detail moved deliberately: data-block-id is no longer on the
-     pane, it is on the sidebar row. js/course-progress.js counts
-     [data-block-id] to work out the total for the progress bar, and if both
-     the pane and the sidebar carried it every lesson would be counted twice.
-     The sidebar is the canonical list of blocks now, so it owns the id, the
-     type, the .cb-title and the [data-cb-progress] checkbox that
-     paintProgress() looks for. Nothing in course-progress.js changed. */
   function contentBlockHTML(block, index) {
     const title = escapeHtml(block.title || "");
-    const head = (icon) => `<div class="cb-head"><span class="cb-icon">${icon}</span><h3 class="cb-title">${bnNum(index + 1, { group: false })}. ${title}</h3></div>`;
+    const head = (icon) => `<div class="cb-head"><span class="cb-icon">${icon}</span><h3 class="cb-title">${index + 1}. ${title}</h3></div>`;
+    const progressControl = `<label class="cb-progress form-check" data-cb-progress hidden><input type="checkbox" class="cb-complete-check"> সম্পন্ন হিসেবে চিহ্নিত করুন</label>`;
     const lockedNotice = () => `
       <div class="content-block-locked">
         <span class="lock-icon">${ICON.lock}</span>
@@ -185,7 +168,7 @@
 
     if (block.locked) {
       const icon = { video: CB_ICON.video, quiz: CB_ICON.quiz, live_class: CB_ICON.live_class, resource: CB_ICON.resource, pdf: CB_ICON.pdf }[block.type] || CB_ICON.video;
-      return `<div class="content-block content-block-locked-wrap" data-block-type="${escapeHtml(block.type)}">
+      return `<div class="content-block content-block-locked-wrap" data-block-id="${escapeHtml(block.id)}" data-block-type="${escapeHtml(block.type)}">
         ${head(icon)}
         ${lockedNotice()}
       </div>`;
@@ -193,27 +176,25 @@
 
     if (block.type === "video") {
       const vid = youtubeEmbedId(block.youtube_url);
-      return `<div class="content-block content-block-video" data-block-type="video">
+      return `<div class="content-block content-block-video" data-block-id="${escapeHtml(block.id)}" data-block-type="video">
         ${head(CB_ICON.video)}
         ${vid
-          ? videoFacade({ url: block.youtube_url, title: block.title || "" })
+          ? `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
           : `<p class="small-note">ভিডিও লিংক এখনো দেওয়া হয়নি।</p>`}
+        ${progressControl}
       </div>`;
     }
 
     if (block.type === "quiz") {
       const questions = Array.isArray(block.questions) ? block.questions : [];
-      /* data-quiz-block-id rather than data-block-id, for the counting reason
-         above. wireQuizzes() reads either, so the quiz-checked event still
-         carries the same blockId course-progress.js already listens for. */
-      return `<div class="content-block content-block-quiz" data-quiz data-quiz-block-id="${escapeHtml(block.id)}" data-block-type="quiz">
+      return `<div class="content-block content-block-quiz" data-quiz data-block-id="${escapeHtml(block.id)}" data-block-type="quiz">
         ${head(CB_ICON.quiz)}
         <div class="quiz-questions">
           ${questions
             .map(
               (q, qi) => `
             <div class="quiz-question" data-qi="${qi}" data-correct="${q.correct_index}">
-              <p class="quiz-q-text">${bnNum(qi + 1, { group: false })}. ${escapeHtml(q.question)}</p>
+              <p class="quiz-q-text">${qi + 1}. ${escapeHtml(q.question)}</p>
               <div class="quiz-options">
                 ${(q.options || [])
                   .map(
@@ -230,141 +211,38 @@
     }
 
     if (block.type === "live_class") {
-      return `<div class="content-block content-block-live" data-block-type="live_class">
+      return `<div class="content-block content-block-live" data-block-id="${escapeHtml(block.id)}" data-block-type="live_class">
         ${head(CB_ICON.live_class)}
         <p class="live-datetime">${escapeHtml(formatLiveDateTime(block.date, block.time))}</p>
         ${block.meeting_link ? `<a href="${escapeHtml(block.meeting_link)}" target="_blank" rel="noopener" class="btn btn-primary btn-sm">লাইভ ক্লাসে যোগ দিন</a>` : `<p class="small-note">মিটিং লিংক এখনো দেওয়া হয়নি।</p>`}
+        ${progressControl}
       </div>`;
     }
 
     if (block.type === "resource") {
-      return `<div class="content-block content-block-resource" data-block-type="resource">
+      return `<div class="content-block content-block-resource" data-block-id="${escapeHtml(block.id)}" data-block-type="resource">
         ${head(CB_ICON.resource)}
         ${block.url ? `<a href="${escapeHtml(block.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">রিসোর্স দেখুন ${ICON.arrow}</a>` : `<p class="small-note">লিংক এখনো দেওয়া হয়নি।</p>`}
+        ${progressControl}
       </div>`;
     }
 
     if (block.type === "pdf") {
-      return `<div class="content-block content-block-pdf" data-block-type="pdf">
+      return `<div class="content-block content-block-pdf" data-block-id="${escapeHtml(block.id)}" data-block-type="pdf">
         ${head(CB_ICON.pdf)}
         ${block.pdf_url
           ? `<div class="pdf-embed"><iframe src="${escapeHtml(block.pdf_url)}" title="${title}" loading="lazy"></iframe></div><a href="${escapeHtml(block.pdf_url)}" target="_blank" rel="noopener" class="text-link" style="margin-top:10px;">নতুন ট্যাবে খুলুন ${ICON.arrow}</a>`
           : `<p class="small-note">PDF এখনো দেওয়া হয়নি।</p>`}
+        ${progressControl}
       </div>`;
     }
 
     return "";
   }
 
-  /* ---------- Course player ----------
-     Groups content_blocks by their optional `section` string, preserving the
-     order the admin panel saved them in. A block with no section falls into a
-     single untitled group, which is also what every existing course does —
-     so a course saved before this field existed renders as one flat list and
-     nothing had to be migrated.
-
-     NOTE on locked courses: the courses_safe view in schema.sql rebuilds each
-     block as {id, type, title, locked} for visitors who haven't enrolled, and
-     that projection does not carry `section`. So a non-enrolled visitor sees
-     one untitled group rather than the real section names. That is a
-     deliberate degrade, not a bug — changing it means editing the view, and
-     that is a schema change to ask about first. */
-  /* Returns { groups, order } where `order` is the flat DISPLAY sequence.
-     Grouping reorders blocks (a section collects its members even when other
-     sections sit between them), so the saved array order and the on-screen
-     order are different lists. Everything downstream — the sidebar ordinal,
-     the pane heading, and prev/next — reads `order`, so all three agree.
-     Previously the sidebar counted the regrouped order while the pane counted
-     the raw array, and interleaved sections made them disagree. */
-  function groupBlocks(blocks) {
-    const groups = [];
-    const index = {};
-    blocks.forEach((b) => {
-      const key = (b.section || "").trim();
-      if (!(key in index)) {
-        index[key] = groups.length;
-        groups.push({ title: key, blocks: [] });
-      }
-      groups[index[key]].blocks.push(b);
-    });
-    const order = [];
-    groups.forEach((g) => g.blocks.forEach((b) => order.push(b)));
-    return { groups, order };
-  }
-
-  const CB_TYPE_ICON = (type) =>
-    ({ video: CB_ICON.video, quiz: CB_ICON.quiz, live_class: CB_ICON.live_class, resource: CB_ICON.resource, pdf: CB_ICON.pdf }[type] || CB_ICON.video);
-
-  /* One sidebar row. This element — not the pane — carries data-block-id,
-     data-block-type, .cb-title and [data-cb-progress], because those are
-     exactly what paintProgress() in js/course-progress.js looks for. The
-     checkbox stays hidden until that file un-hides it for enrolled students,
-     which is the same behaviour the old inline list had. */
-  function courseLessonHTML(block, n) {
-    const locked = !!block.locked;
-    const len = block.duration ? durationBn(block.duration) : "";
-    /* data-quiz-scored marks a quiz that can actually be completed by taking
-       it. A quiz saved with no questions renders no "check answers" button, so
-       quiz-checked can never fire for it and its id could never enter
-       completed_blocks — while it still counted toward the total, which left
-       the course permanently stuck below 100%. paintProgress keys its quiz
-       early-return on this attribute, so an unscorable quiz falls through to
-       the ordinary checkbox and stays completable by hand. */
-    const scorable = block.type === "quiz" && Array.isArray(block.questions) && block.questions.length > 0;
-    /* A locked block gets NO progress control at all. paintProgress un-hides
-       every [data-cb-progress] it finds without checking `locked`, which meant
-       a padlocked row could show a working "mark complete" checkbox. */
-    const control = locked
-      ? ""
-      : `<label class="cb-progress form-check" data-cb-progress hidden>
-        <input type="checkbox" class="cb-complete-check" aria-label="${escapeHtml(block.title || "")} — সম্পন্ন হিসেবে চিহ্নিত করুন">
-      </label>`;
-    return `<div class="cp-lesson${locked ? " is-locked" : ""}" data-block-id="${escapeHtml(block.id)}" data-block-type="${escapeHtml(block.type)}"${scorable ? ' data-quiz-scored="1"' : ""}>
-      ${control}
-      <button type="button" class="cp-lesson-btn" data-cp-select="${escapeHtml(block.id)}" tabindex="-1">
-        <span class="cp-lesson-ic">${locked ? ICON.lock : CB_TYPE_ICON(block.type)}</span>
-        <span class="cb-title">${bnNum(n, { group: false })}. ${escapeHtml(block.title || "")}</span>
-        ${len ? `<span class="cp-lesson-len">${escapeHtml(len)}</span>` : ""}
-      </button>
-    </div>`;
-  }
-
-  function coursePlayerHTML(c) {
-    const blocks = c.contentBlocks;
-    const groups = groupBlocks(blocks).groups;
-    let n = 0;
-    const sections = groups
-      .map((g, gi) => {
-        const rows = g.blocks.map((b) => courseLessonHTML(b, ++n)).join("");
-        const title = g.title || "সব লেসন";
-        return `<section class="cp-section" data-cp-section="${gi}">
-          <h3 class="cp-section-h">
-            <button type="button" class="cp-section-head" aria-expanded="true" data-cp-toggle="${gi}">
-              <span class="cp-section-title">${escapeHtml(title)}</span>
-              <span class="cp-section-meta"><span data-cp-count>০</span>/${bnNum(g.blocks.length, { group: false })}</span>
-              <span class="cp-chev">${ICON.chevron}</span>
-            </button>
-          </h3>
-          <div class="cp-section-body" data-cp-body="${gi}"><div class="cp-section-inner">${rows}</div></div>
-        </section>`;
-      })
-      .join("");
-
-    return `<div class="course-player" data-course-player data-course-slug="${escapeHtml(c.id || "")}">
-      <div class="cp-main"><div class="cp-pane" data-cp-pane tabindex="-1"></div></div>
-      <aside class="cp-side" aria-label="কোর্স কনটেন্ট">
-        <div class="cp-side-head">
-          <span class="cp-side-title">কোর্স কনটেন্ট</span>
-          <div data-mount="course-progress-summary"></div>
-        </div>
-        <div class="cp-sections">${sections}</div>
-      </aside>
-    </div>`;
-  }
-
   function courseCurriculumHTML(c) {
     if (Array.isArray(c.contentBlocks) && c.contentBlocks.length) {
-      return coursePlayerHTML(c);
+      return `<div data-mount="course-progress-summary"></div><div class="content-blocks">${c.contentBlocks.map(contentBlockHTML).join("")}</div>`;
     }
     // Legacy fallback for courses that only have the old modules/lessons list
     if (Array.isArray(c.modules) && c.modules.length) {
@@ -373,14 +251,14 @@
           (m, i) => `
         <div class="accordion-item">
           <button type="button" class="accordion-head" aria-expanded="false"><span>মডিউল ${bnNum(i + 1, { group: false })}: ${escapeHtml(m.title)}</span>${ICON.chevron}</button>
-          <div class="accordion-body"><div class="accordion-inner">
+          <div class="accordion-body">
             ${m.lessons
               .map(
                 ([title, len, preview]) => `
               <div class="lesson-row ${preview ? "preview" : ""}">${ICON.play}<span>${escapeHtml(title)}</span>${preview ? '<span class="badge badge-free">প্রিভিউ</span>' : ""}<span class="len">${escapeHtml(durationBn(len))}</span></div>`
               )
               .join("")}
-          </div></div>
+          </div>
         </div>`
         )
         .join("");
@@ -388,43 +266,23 @@
     return `<p class="small-note">কারিকুলাম শীঘ্রই আসছে।</p>`;
   }
 
-  /* ---------- Video facade bridge (brief 2.4) ----------
-     js/video-facade.js owns the poster, the accent play button, the duration
-     badge and the locked / coming-soon states, and only creates the real
-     iframe on click. This wrapper keeps render.js working even if that file
-     fails to load: the fallback is the old inline embed rather than a hole
-     where the video should be. */
-  function videoFacade(opts) {
-    if (window.VideoFacade && typeof window.VideoFacade.html === "function") {
-      return window.VideoFacade.html(opts);
-    }
-    const vid = youtubeEmbedId(opts.url || opts.id);
-    if (!vid) return `<p class="small-note">ভিডিও শীঘ্রই যোগ করা হবে।</p>`;
-    return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${escapeHtml(opts.title || "")}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`;
-  }
-
   /* ---------- Course hero preview player ----------
-     Shows the first playable curriculum video as a facade. For a paid course
-     the visitor isn't enrolled in, the `courses_safe` view strips every video
-     URL, so we fall back to the locked state over the course artwork. */
+     Shows the first playable curriculum video in the course-detail hero's
+     right column. For a paid course the visitor isn't enrolled in, the
+     `courses_safe` view strips every video URL, so we fall back to the
+     course thumbnail with a locked-state note instead. */
   function coursePreviewHTML(c) {
     const blocks = Array.isArray(c.contentBlocks) ? c.contentBlocks : [];
     const first = blocks.find((b) => b.type === "video" && !b.locked && youtubeEmbedId(b.youtube_url));
     if (first) {
-      return videoFacade({
-        url: first.youtube_url,
-        title: first.title || c.title || "কোর্স প্রিভিউ",
-        image: c.image || "",
-      });
+      return `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${youtubeEmbedId(first.youtube_url)}" title="${escapeHtml(first.title || c.title)}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>
+        <div class="course-preview-cap">${CB_ICON.video} <span>${escapeHtml(first.title || "কোর্স প্রিভিউ")}</span></div>`;
     }
-    return videoFacade({
-      state: blocks.length ? "locked" : "soon",
-      title: c.title || "",
-      image: c.image || "",
-      caption: blocks.length
-        ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।"
-        : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।",
-    });
+    const poster = c.image
+      ? ` class="course-preview-poster has-image" style="background-image:url('${escapeHtml(c.image)}');"`
+      : ` class="course-preview-poster"`;
+    return `<div${poster}><span class="lock-icon">${blocks.length ? ICON.lock : ICON.videoOff}</span></div>
+      <div class="course-preview-cap">${blocks.length ? ICON.lock : ICON.videoOff}<span>${blocks.length ? "কোর্সে ভর্তি হলে সম্পূর্ণ কারিকুলামের ভিডিও দেখতে পারবেন।" : "কারিকুলামের ভিডিও শীঘ্রই যোগ করা হবে।"}</span></div>`;
   }
 
   const DEFAULT_MENTOR = {
@@ -499,239 +357,11 @@
         const scoreEl = quizEl.querySelector(".quiz-score");
         if (scoreEl) {
           scoreEl.hidden = false;
-          scoreEl.textContent = `আপনি ${bnNum(questions.length, { group: false })}টির মধ্যে ${bnNum(correct, { group: false })}টি সঠিক উত্তর দিয়েছেন।`;
+          scoreEl.textContent = `আপনি ${questions.length}টির মধ্যে ${correct}টি সঠিক উত্তর দিয়েছেন।`;
         }
-        document.dispatchEvent(new CustomEvent("quiz-checked", { detail: { blockId: quizEl.dataset.quizBlockId || quizEl.dataset.blockId } }));
+        document.dispatchEvent(new CustomEvent("quiz-checked", { detail: { blockId: quizEl.dataset.blockId } }));
       });
     });
-  }
-
-  /* ---------- Course player wiring ----------
-     Swaps the main pane without a reload, remembers which sections are open
-     for the session, and keeps each section's completed count in step with
-     the checkboxes. It deliberately does NOT track progress itself: the
-     checkboxes are the ones js/course-progress.js finds and wires to
-     markComplete(), so this only reads their state to update the counts. */
-  function wireCoursePlayer(root, c) {
-    const player = root.querySelector("[data-course-player]");
-    if (!player) return;
-    const pane = player.querySelector("[data-cp-pane]");
-    const blocks = Array.isArray(c.contentBlocks) ? c.contentBlocks : [];
-    /* `order` is the DISPLAY sequence after grouping, not the saved array
-       order. Sidebar ordinals, the pane heading and prev/next all index into
-       it, so all three agree even when sections interleave. */
-    const order = groupBlocks(blocks).order;
-    const byId = {};
-    order.forEach((b, i) => { byId[b.id] = { block: b, displayIndex: i }; });
-    const storeKey = "cp-open:" + (c.id || "");
-    let currentId = null;
-
-    /* The player mounts inside the left column of .course-body-grid, which is
-       a 1.35fr / 1fr split — so without this the video pane resolved to ~230px
-       while the instructor bio beside it got ~446px. See the layout note in
-       css/style.css §18i. */
-    const bodyGrid = player.closest(".course-body-grid");
-    if (bodyGrid) bodyGrid.classList.add("has-player");
-
-    /* Which lesson opens first: an explicit #lesson-<id> wins, then the first
-       block the student hasn't completed, then the first unlocked one. */
-    function startingBlockId() {
-      const hash = (location.hash || "").replace(/^#lesson-/, "");
-      if (hash) {
-        try {
-          const id = decodeURIComponent(hash);
-          if (byId[id]) return id;
-        } catch (e) { /* malformed hash — fall through to resume */ }
-      }
-      const done = window.SHAHEDIN_COMPLETED_BLOCKS;
-      if (Array.isArray(done) && done.length) {
-        const next = order.find((b) => !b.locked && done.indexOf(b.id) === -1);
-        if (next) return next.id;
-      }
-      return (order.find((b) => !b.locked) || order[0]).id;
-    }
-
-    function rowFor(id) {
-      const rows = player.querySelectorAll(".cp-lesson");
-      for (let i = 0; i < rows.length; i++) if (rows[i].dataset.blockId === id) return rows[i];
-      return null;
-    }
-
-    function setSection(sec, isOpen) {
-      sec.classList.toggle("is-open", isOpen);
-      const head = sec.querySelector(".cp-section-head");
-      if (head) head.setAttribute("aria-expanded", String(isOpen));
-    }
-
-    function persist() {
-      try {
-        const openIds = [];
-        player.querySelectorAll(".cp-section").forEach((s) => {
-          if (s.classList.contains("is-open")) openIds.push(s.dataset.cpSection);
-        });
-        sessionStorage.setItem(storeKey, JSON.stringify(openIds));
-      } catch (e) { /* private mode — the accordion just won't remember */ }
-    }
-
-    let saved = null;
-    try { saved = JSON.parse(sessionStorage.getItem(storeKey) || "null"); } catch (e) { saved = null; }
-
-    player.querySelectorAll(".cp-section").forEach((sec) => {
-      // default open, so a first-time visitor sees the whole curriculum
-      setSection(sec, saved ? saved.indexOf(sec.dataset.cpSection) !== -1 : true);
-      const head = sec.querySelector(".cp-section-head");
-      if (head) head.addEventListener("click", () => {
-        setSection(sec, !sec.classList.contains("is-open"));
-        persist();
-      });
-    });
-
-    /* Roving tabindex, the same pattern js/main.js already uses for [data-tabs].
-       Without it a 60-lesson course is 60 tab stops before the mentor card. */
-    function setRoving(id) {
-      player.querySelectorAll(".cp-lesson").forEach((el) => {
-        const btn = el.querySelector(".cp-lesson-btn");
-        if (!btn) return;
-        const current = el.dataset.blockId === id;
-        btn.tabIndex = current ? 0 : -1;
-        if (current) btn.setAttribute("aria-current", "true");
-        else btn.removeAttribute("aria-current");
-      });
-    }
-
-    function scrollRowIntoView(row) {
-      if (!row || typeof row.scrollIntoView !== "function") return;
-      // "nearest" keeps the scroll inside .cp-sections instead of yanking the page
-      row.scrollIntoView({ block: "nearest", inline: "nearest" });
-    }
-
-    function select(id, moveFocus) {
-      const entry = byId[id];
-      if (!entry) return;
-      currentId = id;
-      pane.innerHTML = contentBlockHTML(entry.block, entry.displayIndex) + paneNavHTML(entry.displayIndex);
-      wireQuizzes(pane);
-      player.querySelectorAll(".cp-lesson").forEach((el) => {
-        el.classList.toggle("is-current", el.dataset.blockId === id);
-      });
-      setRoving(id);
-      const row = rowFor(id);
-      if (row) {
-        const sec = row.closest(".cp-section");
-        if (sec && !sec.classList.contains("is-open")) {
-          setSection(sec, true);
-          persist();   // otherwise a section the student closed silently re-opens every load
-        }
-        scrollRowIntoView(row);
-      }
-      try {
-        // Deep link, so a lesson is bookmarkable and shareable. replaceState
-        // rather than push, so Back leaves the course instead of walking
-        // backwards through every lesson the student clicked.
-        history.replaceState(null, "", "#lesson-" + encodeURIComponent(id));
-      } catch (e) { /* file:// or a locked-down context — the player still works */ }
-      if (moveFocus) {
-        // On mobile the sidebar sits BELOW the pane, so preventScroll would
-        // leave the viewport exactly where it was and the tap would look inert.
-        const stacked = window.matchMedia("(max-width: 1080px)").matches;
-        pane.focus({ preventScroll: !stacked });
-        if (stacked && typeof pane.scrollIntoView === "function") {
-          pane.scrollIntoView({ block: "start", behavior: "smooth" });
-        }
-      }
-    }
-
-    /* Prev / next, so a student never has to go back to the sidebar to advance.
-       Built here rather than inside contentBlockHTML so it wraps the pane once
-       instead of being repeated in all six block branches. */
-    function paneNavHTML(i) {
-      const prev = order[i - 1];
-      const next = order[i + 1];
-      const label = (b) => escapeHtml((b.title || "").slice(0, 42));
-      return `<nav class="cp-nav" aria-label="লেসন নেভিগেশন">
-        ${prev
-          ? `<button type="button" class="cp-nav-btn cp-nav-prev" data-cp-select="${escapeHtml(prev.id)}">
-               <span class="cp-nav-dir">পূর্ববর্তী</span><span class="cp-nav-title">${label(prev)}</span></button>`
-          : `<span class="cp-nav-btn is-empty" aria-hidden="true"></span>`}
-        ${next
-          ? `<button type="button" class="cp-nav-btn cp-nav-next" data-cp-select="${escapeHtml(next.id)}">
-               <span class="cp-nav-dir">পরবর্তী লেসন</span><span class="cp-nav-title">${label(next)}</span></button>`
-          : `<span class="cp-nav-btn is-empty" aria-hidden="true"></span>`}
-      </nav>`;
-    }
-
-    let userSelected = false;
-    player.addEventListener("click", (e) => {
-      const btn = e.target.closest ? e.target.closest("[data-cp-select]") : null;
-      if (!btn) return;
-      userSelected = true;
-      select(btn.getAttribute("data-cp-select"), true);
-    });
-
-    player.addEventListener("keydown", (e) => {
-      if (!e.target.closest || !e.target.closest(".cp-lesson-btn")) return;
-      const rows = Array.from(player.querySelectorAll(".cp-lesson"));
-      const at = rows.findIndex((r) => r.dataset.blockId === currentId);
-      let to = -1;
-      if (e.key === "ArrowDown") to = Math.min(rows.length - 1, at + 1);
-      else if (e.key === "ArrowUp") to = Math.max(0, at - 1);
-      else if (e.key === "Home") to = 0;
-      else if (e.key === "End") to = rows.length - 1;
-      else return;
-      e.preventDefault();
-      const row = rows[to];
-      if (!row) return;
-      select(row.dataset.blockId, false);
-      const btn = row.querySelector(".cp-lesson-btn");
-      if (btn) btn.focus();
-    });
-
-    function refreshCounts() {
-      player.querySelectorAll(".cp-section").forEach((sec) => {
-        const rows = sec.querySelectorAll(".cp-lesson");
-        let done = 0;
-        rows.forEach((r) => {
-          const box = r.querySelector(".cb-complete-check");
-          // A completed quiz has no checkbox — course-progress.js records it by
-          // injecting .cb-done-badge instead. Reading only the checkbox meant a
-          // section containing any quiz could never reach its own total.
-          const isDone = !!((box && box.checked) || r.querySelector(".cb-done-badge"));
-          r.classList.toggle("is-done", isDone);
-          if (isDone) done++;
-        });
-        const out = sec.querySelector("[data-cp-count]");
-        if (out) out.textContent = bnNum(done, { group: false });
-        const complete = rows.length > 0 && done === rows.length;
-        if (complete && !sec.classList.contains("is-complete")) sec.dataset.justDone = "1";
-        sec.classList.toggle("is-complete", complete);
-      });
-    }
-
-    player.addEventListener("change", (e) => {
-      if (e.target && e.target.classList.contains("cb-complete-check")) refreshCounts();
-    });
-    document.addEventListener("course-completion-changed", refreshCounts);
-    /* course-progress.js sets checkbox.checked programmatically, which fires no
-       change event. The old setTimeout(…, 0) tried to read the state afterwards
-       but lost the race against two awaited network round trips in its init(),
-       so a returning student saw every section header at ০/N. It now tells us
-       when it has actually painted. */
-    document.addEventListener("course-progress-painted", () => {
-      refreshCounts();
-      /* Progress arrives after the first paint (two awaited network calls), so
-         the resume target isn't knowable when the player first mounts. If the
-         student hasn't picked a lesson and there's no explicit deep link, jump
-         to where they left off now that we know. */
-      if (!userSelected && !location.hash) {
-        const resumeTo = startingBlockId();
-        if (resumeTo && resumeTo !== currentId) select(resumeTo, false);
-      }
-    });
-
-    if (order.length) {
-      select(startingBlockId(), false);
-    }
-    refreshCounts();
   }
 
   /* ---------- Shared card artwork ----------
@@ -751,41 +381,15 @@
   }
 
   /* ---------- Course card ---------- */
-  /* Course type badge. Only the two special tracks get one — a plain course
-     needs no label, and badging everything would make the badge meaningless. */
-  const COURSE_TYPE_BN = { career_track: "ক্যারিয়ার ট্র্যাক", foundation: "ফাউন্ডেশন কোর্স" };
-
   function courseCard(c) {
     const title = escapeHtml(c.title);
     const duration = durationBn(c.duration);
-    const type = c.courseType || "course";
-    const typeLabel = COURSE_TYPE_BN[type] || "";
-    /* content_blocks is the current curriculum shape, but plenty of courses
-       still carry the legacy modules/lessons list — including every one in
-       js/data.js. Counting only content_blocks meant the lesson figure was 0
-       for all of them and the chip silently disappeared, so fall back to
-       summing the modules the same way courseCurriculumHTML does. */
-    const lessons = Array.isArray(c.contentBlocks) && c.contentBlocks.length
-      ? c.contentBlocks.length
-      : Array.isArray(c.modules)
-        ? c.modules.reduce((sum, m) => sum + (Array.isArray(m.lessons) ? m.lessons.length : 0), 0)
-        : 0;
-    const students = Number(c.students) || 0;
-    /* Same strikethrough markup productCard already uses, so a discounted
-       course and a discounted product read identically across the site. */
-    const price = c.free
-      ? `<span class="price price-free">ফ্রি</span>`
-      /* Reference order: current price first, THEN the struck-through original
-         after it. productCard puts the old price first — the catalogue card
-         follows the layout being matched here rather than that precedent. */
-      : `<span class="price">৳${bnNum(Number(c.price))}${c.oldPrice ? ` <span class="old">৳${bnNum(Number(c.oldPrice))}</span>` : ""}</span>`;
     return `
-    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-course-type="${escapeHtml(type)}" data-title="${title}">
+    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}">
       <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
         ${thumbArt(c, c.title)}
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
-          ${typeLabel ? `<span class="badge badge-accent">${escapeHtml(typeLabel)}</span>` : ``}
           ${c.free ? `<span class="badge badge-free">ফ্রি</span>` : ``}
           ${duration ? `<span class="badge badge-dur">${escapeHtml(duration)}</span>` : ``}
         </div>
@@ -795,13 +399,9 @@
         <div class="card-title card-title-clamp">${title}</div>
         <p class="card-desc">${escapeHtml(c.desc)}</p>
         <div class="card-foot">
-          ${price}
+          ${priceLabel(c)}
           <span class="text-link">কোর্স দেখুন ${ICON.arrow}</span>
         </div>
-        ${lessons || students ? `<div class="card-stats">
-          ${lessons ? `<span><span class="ic">${ICON.play}</span>${bnNum(lessons)} লেসন</span>` : ``}
-          ${students ? `<span><span class="ic">${ICON.users}</span>${bnNum(students)} শিক্ষার্থী</span>` : ``}
-        </div>` : ``}
       </div>
     </a>`;
   }
@@ -954,7 +554,7 @@
       mount("[data-mount='course-preview']", coursePreviewHTML(c));
       mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
       const curriculumEl = document.querySelector("[data-mount='course-curriculum']");
-      if (curriculumEl) { wireQuizzes(curriculumEl); wireCoursePlayer(curriculumEl, c); }
+      if (curriculumEl) wireQuizzes(curriculumEl);
       mount("[data-mount='course-faq']", courseFaqHTML(c));
       mount("[data-mount='course-mentor']", courseMentorHTML(c));
       // Layout note: the price + enrol block lives in the hero's LEFT column
@@ -1079,35 +679,5 @@
     setTimeout(() => runRender(), 1500);
   });
 
-  /* Re-pull this course and re-mount the parts that depend on enrolment.
-     courses_safe is fetched once at load, so immediately after a free
-     enrolment the buy card said "ভর্তি হয়েছেন ✓" while the pane still said
-     "ভর্তি হতে হবে" and every row kept its padlock. course-progress.js calls
-     this on success, then repaints progress itself. */
-  async function refreshCourse() {
-    if (!document.querySelector("[data-mount='course-curriculum']")) return false;
-    try {
-      if (window.ShahedinData && typeof window.ShahedinData.reload === "function") {
-        await window.ShahedinData.reload();
-      }
-      const data = D();
-      if (!data.courses.length) return false;
-      const id = qs("id") || data.courses[0].id;
-      const c = data.courses.find((x) => x.id === id) || data.courses[0];
-      mount("[data-mount='course-preview']", coursePreviewHTML(c));
-      mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
-      const el = document.querySelector("[data-mount='course-curriculum']");
-      if (el) { wireQuizzes(el); wireCoursePlayer(el, c); }
-      document.dispatchEvent(new Event("contentready"));
-      return true;
-    } catch (e) {
-      return false;   // caller falls back to a reload
-    }
-  }
-
-  window.ShahedinCourse = { refresh: refreshCourse };
-  // categoryLabel is exposed so js/course-filters.js can label the category
-  // toggles from the same CATEGORY_BN map the cards use, rather than keeping a
-  // second copy of those Bangla names in sync by hand.
-  window.ShahedinRender = { courseCard, productCard, videoCard, categoryLabel };
+  window.ShahedinRender = { courseCard, productCard, videoCard };
 })();

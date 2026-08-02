@@ -18,28 +18,17 @@
     return {
       id: row.slug,
       dbId: row.id,
-      // Bangla-first: the site is lang="bn", so the Bangla column leads and
-      // English is the fallback. This was the other way round, which is why an
-      // admin-created course showed its English title to every visitor.
-      title: row.title_bn || row.title_en,
+      title: row.title_en || row.title_bn,
       title_bn: row.title_bn,
       title_en: row.title_en,
       price: row.price_bdt,
       free: row.is_free,
-      duration: row.duration_bn || row.duration_en || "",
-      /* Pass a missing rating through as null. It used to default to 4.8,
-         so a brand-new course with no reviews displayed a fabricated ৪.৮
-         and five stars. render.js shows "নতুন" for null instead. */
-      rating: row.rating === null || row.rating === undefined || row.rating === "" ? null : Number(row.rating),
+      duration: row.duration_en || row.duration_bn || "",
+      rating: Number(row.rating) || 4.8,
       students: row.students_count || 0,
       tone: row.tone || 1,
       category: row.category || "general",
-      // Drives the "Course Type" filter and the catalogue badge.
-      courseType: row.course_type || "course",
-      // Same shape products already use, so courseCard can reuse productCard's
-      // strikethrough markup verbatim.
-      oldPrice: row.old_price_bdt || undefined,
-      desc: row.description_bn || row.description_en || "",
+      desc: row.description_en || row.description_bn || "",
       image: row.thumbnail_url || null,
       modules: Array.isArray(row.modules) ? row.modules.map(mapModule) : [],
       contentBlocks: Array.isArray(row.content_blocks) ? row.content_blocks : [],
@@ -62,7 +51,7 @@
     return {
       id: row.slug,
       dbId: row.id,
-      title: row.name_bn || row.name_en,
+      title: row.name_en || row.name_bn,
       title_bn: row.name_bn,
       title_en: row.name_en,
       type: row.type || "digital",
@@ -70,7 +59,7 @@
       oldPrice: row.old_price_bdt || undefined,
       tone: row.tone || 1,
       category: row.category || "notes",
-      desc: row.description_bn || row.description_en || "",
+      desc: row.description_en || row.description_bn || "",
       image: row.image_url || null,
       stock: row.stock,
     };
@@ -107,11 +96,6 @@
       return false;
     }
   }
-
-  /* Exposed so js/render.js can re-pull courses_safe after a student enrols.
-     Until enrolment, that view returns every block as {id,type,title,locked},
-     so without a re-fetch the player stays padlocked until a manual reload. */
-  window.ShahedinData = { reload: tryLoadFromSupabase };
 
   function ready(fn) {
     if (document.readyState !== "loading") fn();

@@ -4,10 +4,14 @@
 (function () {
   "use strict";
 
-  /* ---------- Nav scroll state ----------
-     The .scrolled toggle moved into js/motion.js's shared scroll task, so the
-     whole site runs on ONE passive scroll listener and one rAF loop
-     (brief 2.3). Nothing in this file listens to scroll any more. */
+  /* ---------- Nav scroll state ---------- */
+  const nav = document.querySelector(".site-nav");
+  function onScroll() {
+    if (!nav) return;
+    nav.classList.toggle("scrolled", window.scrollY > 20);
+  }
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
 
   /* ---------- Mobile menu ----------
      Keyboard-complete: the burger reports its state, Escape closes, focus
@@ -161,19 +165,19 @@
     const head = e.target.closest(".accordion-head");
     if (!head) return;
     const item = head.closest(".accordion-item");
+    const body = item.querySelector(".accordion-body");
     const isOpen = item.classList.contains("open");
     const parent = item.parentElement;
     parent.querySelectorAll(".accordion-item.open").forEach((openItem) => {
       if (openItem !== item) {
         openItem.classList.remove("open");
+        openItem.querySelector(".accordion-body").style.maxHeight = null;
         const otherHead = openItem.querySelector(".accordion-head");
         if (otherHead) otherHead.setAttribute("aria-expanded", "false");
       }
     });
-    /* Height is CSS-driven now (grid-template-rows 0fr -> 1fr), so there is no
-       scrollHeight read and no inline max-height to keep in sync. The .open
-       class is the single source of truth. */
     item.classList.toggle("open", !isOpen);
+    body.style.maxHeight = !isOpen ? body.scrollHeight + "px" : null;
     // The heads are <button aria-expanded> — keep the reported state honest.
     head.setAttribute("aria-expanded", String(!isOpen));
   });
@@ -183,6 +187,8 @@
       firstAcc.classList.add("open");
       const head = firstAcc.querySelector(".accordion-head");
       if (head) head.setAttribute("aria-expanded", "true");
+      const b = firstAcc.querySelector(".accordion-body");
+      if (b) requestAnimationFrame(() => (b.style.maxHeight = b.scrollHeight + "px"));
     }
   }
   openFirstAccordion();
@@ -203,101 +209,37 @@
   });
   document.addEventListener("contentready", applyFilters);
 
-  /* ---------- Filter engine ----------
-     Two kinds of filter now, deliberately kept separate:
-
-     SINGLE-SELECT chip groups — [data-filter-group="x"] + .chip.active.
-       Unchanged. store.html and the price row on courses.html both rely on
-       this exact contract, so the behaviour and the attribute names are
-       untouched.
-
-     DRAWER filters — a single-select course type plus a MULTI-select category
-       list. OR within the category list, AND across every group, so
-       type AND (cat1 OR cat2) AND search must all pass.
-
-     These are held in `drawerState` rather than read from the DOM because the
-     drawer must be able to preview a count before the visitor commits: the
-     grid keeps showing the committed selection while Apply(N) counts the
-     pending one. Chips and search outside the drawer stay immediate. */
-  const drawerState = { courseTypes: [], categories: [] };
-
-  function readSingleGroups() {
-    const out = {};
-    document.querySelectorAll("[data-filter-group]").forEach((group) => {
-      const active = group.querySelector(".chip.active");
-      out[group.dataset.filterGroup] = active ? active.dataset.filterValue : "all";
-    });
-    return out;
-  }
-
-  function buildState(overrides) {
-    const base = {
-      single: readSingleGroups(),
-      courseTypes: drawerState.courseTypes.slice(),
-      categories: drawerState.categories.slice(),
-      search: (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase(),
-    };
-    return Object.assign(base, overrides || {});
-  }
-
-  function cardMatches(card, state) {
-    for (const group in state.single) {
-      const value = state.single[group];
-      if (value && value !== "all") {
-        const cardVal = card.dataset[group];
-        if (cardVal && cardVal !== value) return false;
-      }
-    }
-    if (state.courseTypes && state.courseTypes.length) {
-      // OR within the group, same as categories. A course with no type set is
-      // a plain "course".
-      if (state.courseTypes.indexOf(card.dataset.courseType || "course") === -1) return false;
-    }
-    if (state.categories && state.categories.length) {
-      // OR within the group: matching any one selected category is enough
-      if (state.categories.indexOf(card.dataset.category) === -1) return false;
-    }
-    if (state.search) {
-      const title = (card.dataset.title || card.textContent || "").toLowerCase();
-      if (!title.includes(state.search)) return false;
-    }
-    return true;
-  }
-
-  /* How many cards WOULD match — used for the drawer's live Apply(N) count
-     without touching what is currently on screen. */
-  function countMatches(state) {
-    const cards = document.querySelectorAll("[data-filterable]");
-    let n = 0;
-    cards.forEach((card) => { if (cardMatches(card, state)) n++; });
-    return n;
-  }
-
   function applyFilters() {
     const cards = document.querySelectorAll("[data-filterable]");
-    if (!cards.length) return 0;
-    const state = buildState();
-    let visibleCount = 0;
+    if (!cards.length) return;
+    const activeFilters = {};
+    document.querySelectorAll("[data-filter-group]").forEach((group) => {
+      const active = group.querySelector(".chip.active");
+      activeFilters[group.dataset.filterGroup] = active ? active.dataset.filterValue : "all";
+    });
+    const searchVal = (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase();
+
     cards.forEach((card) => {
-      const visible = cardMatches(card, state);
-      if (visible) visibleCount++;
+      let visible = true;
+      Object.entries(activeFilters).forEach(([group, value]) => {
+        if (value && value !== "all") {
+          const cardVal = card.dataset[group];
+          if (cardVal && cardVal !== value) visible = false;
+        }
+      });
+      if (searchVal) {
+        const title = (card.dataset.title || card.textContent || "").toLowerCase();
+        if (!title.includes(searchVal)) visible = false;
+      }
       card.style.display = visible ? "" : "none";
     });
+
     document.querySelectorAll("[data-empty-state]").forEach((emptyEl) => {
-      emptyEl.style.display = visibleCount ? "none" : "block";
+      const anyVisible = Array.from(cards).some((c) => c.style.display !== "none");
+      emptyEl.style.display = anyVisible ? "none" : "block";
     });
-    return visibleCount;
   }
   applyFilters();
-
-  /* Exposed for js/course-filters.js, which owns the drawer UI. Keeping the
-     engine here means store.html and courses.html still share one code path. */
-  window.ShahedinFilters = {
-    apply: applyFilters,
-    count: countMatches,
-    build: buildState,
-    state: drawerState,
-  };
 
   /* ---------- Toast ---------- */
   function ensureToast() {

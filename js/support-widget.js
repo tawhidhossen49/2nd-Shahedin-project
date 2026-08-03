@@ -39,18 +39,33 @@
     document.body.appendChild(a);
   }
 
+  function applyLink(link) {
+    if (!link || typeof link !== "string" || !link.trim()) return;
+    var btn = document.getElementById("supportWidgetBtn");
+    if (btn) btn.href = link.trim();
+  }
+
   async function loadLinkAndInject() {
     injectButton(DEFAULT_LINK); // show right away — never make visitors wait on a network round trip for this
 
     if (!isSupabaseConfigured()) return;
+
+    // js/site-settings.js already fetches site_settings for the whole page.
+    // Reuse its result so we don't make the same request twice.
+    if (window.SiteSettings && typeof window.SiteSettings.ready === "function") {
+      try {
+        var settings = await window.SiteSettings.ready();
+        if (settings && settings.contact) applyLink(settings.contact.whatsapp);
+        return;
+      } catch (e) {
+        // fall through to the standalone fetch below
+      }
+    }
+
     try {
       var client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       var res = await client.from("site_settings").select("value").eq("key", "contact").maybeSingle();
-      var link = res && res.data && res.data.value && res.data.value.whatsapp;
-      if (link && typeof link === "string" && link.trim()) {
-        var btn = document.getElementById("supportWidgetBtn");
-        if (btn) btn.href = link.trim();
-      }
+      applyLink(res && res.data && res.data.value && res.data.value.whatsapp);
     } catch (e) {
       // Supabase unreachable/misconfigured — keep the placeholder link, never break the page over this.
     }

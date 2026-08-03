@@ -6,6 +6,12 @@ website analytics — all from a web page, with zero coding.
 
 Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 
+> **Already set this up before?** Re-run `schema.sql` (Step 2) once more. The
+> latest version adds the `contact_submissions` table that the contact form
+> writes to, and a few new Settings fields. Re-running is safe — it never
+> duplicates data and never overwrites anything you've already typed into the
+> admin panel. Until you do, the contact form won't be able to save messages.
+
 ---
 
 ## 1. Create a Supabase project
@@ -86,8 +92,66 @@ and Step 3 (create your login).
   editing it. It stays saved but disappears from the site.
 - **Reorder items** → change the "Order" number (lower numbers show first).
 - **See how the site is doing** → Admin panel → Analytics.
-- **Update contact email / social links / a site banner** → Admin panel → Settings.
+- **Read messages from the contact form** → Admin panel → **Contact Messages**.
+  Everything anyone sends through the form on `contact.html` lands here
+  automatically. You can search it, star the important ones, keep private
+  notes against a message, reply by email in one click, and delete messages
+  one at a time, in bulk, or all at once. There's also an "Export CSV" button
+  if you'd rather work through them in a spreadsheet.
+- **Update contact email / phone / WhatsApp / social links / a site banner** →
+  Admin panel → **Settings**. These are site-wide: the social icons in the
+  footer of *every* page and the contact details on the contact page all read
+  from here, so you change a link once and it updates everywhere. Clearing a
+  social field removes that icon from the whole site.
 - **Add another admin** → repeat Step 3 above for the new person.
+
+## One value, every page
+
+Two things are deliberately shared across the whole site, so you never edit
+the same number or link twice:
+
+**Stats** live in Admin panel → *Portfolio & Stats*. The homepage, the
+portfolio page and the contact page all read the same values. Change the
+subscriber count once and all three pages update — there is no per-page copy
+to keep in sync.
+
+**Contact details and social links** live in Admin panel → *Settings*. Every
+page's footer reads the same social links, and the contact page reads the same
+email, phone and WhatsApp link.
+
+For the links you can paste whatever's easiest and the site tidies it up:
+
+| You paste | Visitors get |
+|---|---|
+| `hello@shahedin.com` | a `mailto:` link |
+| `+8801711223344` | a tappable `tel:` link |
+| `youtube.com/@shahedin` | `https://youtube.com/@shahedin` |
+| `https://wa.me/8801711223344` | used exactly as-is |
+
+Leave a social field **empty** and that icon disappears from every page —
+that's how you remove a network you no longer use.
+
+If Supabase is ever unreachable, every page quietly falls back to the text and
+links already written into the HTML, so nothing goes blank.
+
+## Contact form messages
+
+The form on `contact.html` writes straight into the `contact_submissions`
+table. The security on that table is one-way on purpose:
+
+- **anyone** may submit a message
+- **only logged-in admins** may read, update or delete them
+
+So visitors can write to it but nobody can read anyone else's messages back
+out of it — not even their own.
+
+If someone submits while the database is unreachable, the form tells them
+honestly that it failed and keeps what they typed so they can retry. It never
+shows a "sent!" message for something that didn't send.
+
+> **Deleting is permanent.** "Clear all" asks you to type `DELETE` to confirm,
+> because there's no undo and no recycle bin. Export a CSV first if you might
+> want the messages later.
 
 ## Student accounts (new)
 

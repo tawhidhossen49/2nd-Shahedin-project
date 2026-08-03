@@ -34,7 +34,8 @@ store.html             Store catalogue (filterable)
 product-detail.html    Single product — reads ?id= from the URL
 checkout.html          Single-item checkout (bKash)
 portfolio.html         Media kit / partnership page
-contact.html           Contact form + booking calendar
+contact.html           Contact form (saves to Admin → Contact Messages)
+                        + booking calendar
 dashboard.html         Student dashboard (courses, resources, certificates)
 
 admin/                 Zero-code admin panel (see ADMIN_SETUP.md)
@@ -50,6 +51,14 @@ js/data.js             Sample course/product content (fallback when Supabase
 js/data-loader.js      Swaps in live Supabase content when it is.
 js/render.js           Turns that data into cards and detail pages.
 js/home-content.js     Applies admin-editable copy via data-field / data-repeat.
+                        The shared "stats" row means editing a stat once
+                        updates it on every page that shows it.
+js/site-settings.js    Applies admin-editable contact details and social
+                        links via data-link (href) / data-setting (text).
+                        Loaded on every page, so the footer social icons and
+                        contact info are edited in ONE place.
+js/contact-form.js     Sends the contact form to Supabase, where it shows up
+                        in Admin → Contact Messages.
 js/section-visibility.js  Hides sections the admin has switched off.
 js/auth.js             Student accounts (name + phone + SMS OTP).
 js/main.js             Nav, mobile menu, reveals, tabs, accordion, filters.

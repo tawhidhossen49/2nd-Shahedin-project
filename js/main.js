@@ -331,7 +331,13 @@
     toast._t = setTimeout(() => toast.classList.remove("show"), ms);
   };
 
-  /* ---------- Generic contact / auth-less forms (fake submit) ---------- */
+  /* ---------- Demo-only forms (fake submit) ----------
+     NOTE: the contact form no longer uses this. It's handled by
+     js/contact-form.js, which really does save to Supabase and shows
+     up in Admin -> Contact Messages. This stays only for any
+     placeholder form that has no backend yet -- do NOT put
+     data-fake-form on a form you expect to receive replies from,
+     because it shows a success message and discards the input. */
   document.querySelectorAll("[data-fake-form]").forEach((form) => {
     form.addEventListener("submit", (e) => {
       e.preventDefault();

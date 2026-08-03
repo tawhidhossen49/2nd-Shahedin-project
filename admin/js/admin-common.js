@@ -15,6 +15,7 @@ window.Admin = (function () {
     { href: "portfolio.html", label: "Portfolio & Stats", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
     { href: "courses.html", label: "Courses", icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" },
     { href: "reviews.html", label: "Reviews", icon: "M12 2l2.9 6.3 6.9.9-5 4.9 1.2 6.9-6-3.2-6 3.2 1.2-6.9-5-4.9 6.9-.9z" },
+    { href: "submissions.html", label: "Contact Messages", icon: "M4 4h16v16H4zM4 6l8 6 8-6" },
     { href: "students.html", label: "Students", icon: "M12 2 1 7l11 5 9-4.1V17h2V7zM5 13.2V17c0 2 3.1 4 7 4s7-2 7-4v-3.8l-7 3.2z" },
     { href: "products.html", label: "Store Products", icon: "M6 2 3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7l-3-5H6zM3 7h18M16 11a4 4 0 0 1-8 0" },
     { href: "analytics.html", label: "Analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },

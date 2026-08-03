@@ -1018,3 +1018,138 @@ where key = 'hero';
 -- The 'trust' row is no longer read by any page (the trust bar now reads
 -- from 'stats'); it's left in place rather than deleted in case you want
 -- to repurpose it later.
+
+
+-- =========================================================================
+-- MIGRATION: contact form submissions + site-wide contact/social links
+-- (safe to run again on a database that was already set up before this
+-- change — every statement below is idempotent)
+-- =========================================================================
+
+-- -------------------------------------------------------------------------
+-- 16. CONTACT FORM SUBMISSIONS
+--     Every message sent through the form on contact.html lands here, and
+--     shows up in the admin panel under "Contact Messages".
+--
+--     Security model, deliberately one-way:
+--       * anyone (logged out visitors included) may INSERT a message
+--       * ONLY admins may SELECT, UPDATE or DELETE
+--     So the public can write to this table but can never read anyone
+--     else's messages back out of it — not even their own.
+-- -------------------------------------------------------------------------
+create table if not exists contact_submissions (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  email text not null,
+  inquiry_type text not null default 'general',
+  message text not null,
+  -- Which day the visitor picked in the "book a speaking slot" calendar
+  -- on contact.html, if any. Plain text so it survives any format change.
+  preferred_date text,
+  -- Admin workflow fields
+  is_read boolean not null default false,
+  is_starred boolean not null default false,
+  admin_notes text,
+  -- Light context, useful for spotting spam waves. No IP address is stored.
+  source_page text,
+  created_at timestamptz not null default now()
+);
+
+alter table contact_submissions enable row level security;
+
+-- Public may submit a message...
+drop policy if exists "anyone can submit a contact message" on contact_submissions;
+create policy "anyone can submit a contact message"
+  on contact_submissions for insert
+  with check (true);
+
+-- ...but only admins can ever read them back.
+drop policy if exists "admins can read contact messages" on contact_submissions;
+create policy "admins can read contact messages"
+  on contact_submissions for select
+  using (auth.uid() in (select id from admins));
+
+drop policy if exists "admins can update contact messages" on contact_submissions;
+create policy "admins can update contact messages"
+  on contact_submissions for update
+  using (auth.uid() in (select id from admins))
+  with check (auth.uid() in (select id from admins));
+
+drop policy if exists "admins can delete contact messages" on contact_submissions;
+create policy "admins can delete contact messages"
+  on contact_submissions for delete
+  using (auth.uid() in (select id from admins));
+
+-- Newest-first listing is the only sort the admin panel uses.
+create index if not exists contact_submissions_created_at_idx
+  on contact_submissions (created_at desc);
+create index if not exists contact_submissions_is_read_idx
+  on contact_submissions (is_read);
+
+-- -------------------------------------------------------------------------
+-- 17. EXTRA CONTACT / SOCIAL SETTINGS KEYS
+--     The site_settings rows already existed, but the public pages now
+--     actually read them (see js/site-settings.js), and a few extra fields
+--     were added:
+--       contact.whatsapp_label — the clickable text under "হোয়াটসঅ্যাপ"
+--       contact.phone_display  — the human-readable phone shown on the page
+--       social.facebook_profile — the personal profile, separate from the page
+--       social.*_label          — button text for the homepage channel links
+--
+--     jsonb_strip_nulls + || means: keep whatever is already saved, and
+--     only fill in keys that are missing. Nothing an admin has already
+--     typed gets overwritten.
+-- -------------------------------------------------------------------------
+-- Helper: drop keys whose value is an empty string, so that the defaults
+-- below can fill in genuinely blank fields. Without this, the original seed
+-- (which stored email as "") would win the || merge and the field would stay
+-- empty forever — because in jsonb concatenation the RIGHT side wins.
+create or replace function strip_blank_settings(v jsonb) returns jsonb
+language sql immutable as $$
+  select coalesce(
+    (select jsonb_object_agg(key, value)
+     from jsonb_each(v)
+     where value <> '""'::jsonb),
+    '{}'::jsonb
+  );
+$$;
+
+insert into site_settings (key, value) values
+  ('contact', '{}'::jsonb),
+  ('social',  '{}'::jsonb)
+on conflict (key) do nothing;
+
+update site_settings
+set value = '{
+  "email": "hello@shahedin.com",
+  "phone": "https://wa.me/8801000000000",
+  "phone_display": "+880 1000-000000",
+  "whatsapp": "https://wa.me/8801000000000",
+  "whatsapp_label": "হোয়াটসঅ্যাপে মেসেজ করুন",
+  "response_time": "আমরা সাধারণত ২৪ ঘণ্টার মধ্যে উত্তর দিই।"
+}'::jsonb || strip_blank_settings(value)
+where key = 'contact';
+
+update site_settings
+set value = '{
+  "youtube": "https://youtube.com",
+  "youtube_label": "ইউটিউব চ্যানেল",
+  "facebook": "https://facebook.com",
+  "facebook_label": "ফেইসবুক পেইজ",
+  "facebook_profile": "https://facebook.com",
+  "facebook_profile_label": "ফেইসবুক প্রোফাইল",
+  "instagram": "https://instagram.com",
+  "linkedin": "https://linkedin.com"
+}'::jsonb || strip_blank_settings(value)
+where key = 'social';
+
+-- The 'phone' key used to hold a bare number in some installs. If it isn't
+-- a link, move it into phone_display and leave 'phone' for the tel:/wa.me
+-- link so the page always has something sensible to show.
+update site_settings
+set value = jsonb_set(value, '{phone_display}', value->'phone')
+where key = 'contact'
+  and coalesce(value->>'phone', '') <> ''
+  and value->>'phone' not like 'http%'
+  and value->>'phone' not like 'tel:%'
+  and coalesce(value->>'phone_display', '') = '';

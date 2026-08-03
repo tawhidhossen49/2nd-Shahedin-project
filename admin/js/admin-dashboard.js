@@ -9,12 +9,15 @@
 
   const c = Admin.client();
 
-  const [coursesRes, productsRes, viewsRes, viewsAllRes, logRes] = await Promise.all([
+  const [coursesRes, productsRes, viewsRes, viewsAllRes, logRes, messagesRes] = await Promise.all([
     c.from("courses").select("id,is_published", { count: "exact" }),
     c.from("products").select("id,is_published", { count: "exact" }),
     c.from("page_views").select("id").gte("viewed_at", new Date(Date.now() - 30 * 86400000).toISOString()),
     c.from("page_views").select("id"),
     c.from("activity_log").select("*").order("created_at", { ascending: false }).limit(8),
+    // Contact form messages. Wrapped in a catch so an older database that
+    // hasn't run the latest schema.sql yet still shows the rest of the dashboard.
+    c.from("contact_submissions").select("id,is_read").then((r) => r, () => ({ data: [] })),
   ]);
 
   const courses = coursesRes.data || [];
@@ -24,6 +27,8 @@
   const views30d = (viewsRes.data || []).length;
   const viewsAll = (viewsAllRes.data || []).length;
   const activity = logRes.data || [];
+  const messages = (messagesRes && messagesRes.data) || [];
+  const unreadMessages = messages.filter((m) => !m.is_read).length;
 
   content.innerHTML = `
     <div class="stat-grid">
@@ -42,6 +47,11 @@
         <div class="value">${views30d}</div>
         <div class="sub">${viewsAll} all-time</div>
       </div>
+      <div class="stat-card">
+        <div class="label">Contact messages</div>
+        <div class="value">${messages.length}</div>
+        <div class="sub">${unreadMessages ? `${unreadMessages} unread` : "all read"}</div>
+      </div>
     </div>
 
     <div class="panel">
@@ -54,8 +64,9 @@
       <div style="display:flex; gap:12px; flex-wrap:wrap;">
         <a href="courses.html?new=1" class="btn btn-primary">+ Add a course</a>
         <a href="products.html?new=1" class="btn btn-primary">+ Add a product</a>
+        <a href="submissions.html" class="btn ${unreadMessages ? "btn-primary" : "btn-ghost"}">Contact messages${unreadMessages ? ` (${unreadMessages} new)` : ""}</a>
         <a href="analytics.html" class="btn btn-ghost">View analytics</a>
-        <a href="settings.html" class="btn btn-ghost">Edit contact info</a>
+        <a href="settings.html" class="btn btn-ghost">Edit contact & social links</a>
       </div>
     </div>
 

@@ -241,6 +241,57 @@ img{max-width:100%; display:block;}
   .visibility-row{ align-items:flex-start; }
 }
 
+/* ---------- Contact Messages (submissions.html) ---------- */
+.sub-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:16px; }
+.filter-tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+.sub-search{
+  flex:1 1 240px; max-inline-size:320px; min-inline-size:180px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-s);
+  color:var(--text-1); padding:9px 12px; font:inherit; font-size:.85rem;
+}
+.sub-search::placeholder{ color:var(--text-3); }
+.sub-search:focus{ border-color:var(--line-strong); outline:none; }
+
+.bulk-bar{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--radius-s);
+  padding:10px 14px; margin-bottom:14px; font-size:.85rem;
+}
+
+.sub-table td{ vertical-align:middle; }
+.sub-table [data-open]{ cursor:pointer; }
+.sub-row.is-unread .row-title{ font-weight:700; }
+.sub-row.is-unread{ background:color-mix(in srgb, var(--accent-fill) 5%, transparent); }
+.sub-row:hover{ background:var(--surface-2); }
+
+.star-btn{ background:none; border:none; cursor:pointer; font-size:1.15rem; line-height:1; color:var(--text-3); padding:2px 4px; }
+.star-btn.is-on{ color:#e8b64c; }
+.star-btn:hover{ color:#e8b64c; }
+
+.row-select{ inline-size:15px; block-size:15px; accent-color:var(--accent-fill); cursor:pointer; }
+
+/* Message reader modal */
+.msg-meta{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px 18px;
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-s);
+  padding:14px 16px; margin-bottom:16px;
+}
+.msg-meta-label{ display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text-3); margin-bottom:3px; }
+.msg-meta-value{ font-size:.86rem; color:var(--text-1); word-break:break-word; }
+a.msg-meta-value{ color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px; }
+.msg-body{
+  background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-s);
+  padding:16px; font-size:.9rem; line-height:1.65; color:var(--text-1);
+  white-space:pre-wrap; word-break:break-word; max-block-size:340px; overflow-y:auto;
+}
+
+.danger-panel{ border-color:color-mix(in srgb, var(--accent-fill) 35%, var(--line)); }
+
+@media (max-width:860px){
+  .sub-toolbar{ flex-direction:column; align-items:stretch; }
+  .sub-search{ max-inline-size:none; }
+}
+
 /* ---------- Accessibility ----------
    The admin panel had no visible focus indicator at all, so the whole
    editor was unusable by keyboard. Same ring as the public site. */

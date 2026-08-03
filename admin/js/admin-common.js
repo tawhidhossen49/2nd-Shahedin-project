@@ -133,15 +133,27 @@ window.Admin = (function () {
       .replace(/^-+|-+$/g, "");
   }
 
-  async function uploadImage(file, folder) {
+  /* Uploads anything to the public "media" bucket and returns its public URL.
+     Every upload gets its own timestamped path (upsert:false) rather than
+     overwriting a fixed filename — that's what lets the admin swap the media
+     kit PDF whenever they like without a stale CDN copy being served, since
+     the URL changes too. contentType is passed explicitly so a PDF is served
+     as application/pdf and opens in the browser's viewer instead of
+     downloading as an unnamed binary. */
+  async function uploadFile(file, folder) {
     const c = client();
-    const ext = file.name.split(".").pop();
+    const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-    const { error } = await c.storage.from("media").upload(path, file, { upsert: false });
+    const { error } = await c.storage
+      .from("media")
+      .upload(path, file, { upsert: false, contentType: file.type || undefined });
     if (error) throw error;
     const { data } = c.storage.from("media").getPublicUrl(path);
     return data.publicUrl;
   }
+
+  // Kept under its original name for the existing photo-upload call sites.
+  const uploadImage = uploadFile;
 
   function timeAgo(iso) {
     const diff = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -155,5 +167,5 @@ window.Admin = (function () {
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  return { configured, client, requireAdmin, renderShell, toast, slugify, uploadImage, timeAgo, escapeHtml, showNotConfigured };
+  return { configured, client, requireAdmin, renderShell, toast, slugify, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured };
 })();

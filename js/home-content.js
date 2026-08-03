@@ -3,8 +3,10 @@
    ---------------------------------------------------------
    Applies homepage, portfolio, and contact page text (plus
    the about-section photo) from Supabase's home_content
-   table onto elements marked with data-field="section.field"
-   or data-repeat="section.list". If Supabase isn't configured,
+   table onto elements marked with data-field="section.field",
+   data-field-href="section.field" (link destinations, e.g. the
+   media kit PDF) or data-repeat="section.list".
+   If Supabase isn't configured,
    or a section has no saved data yet, the baked-in Bangla text
    already in the HTML is left exactly as-is — the page never
    breaks or goes blank.
@@ -13,6 +15,10 @@
    used on index.html (hero + trust bar), portfolio.html
    (performance snapshot), and contact.html (trust strip), so
    editing a stat once in the admin panel updates it everywhere.
+   This file is the ONLY writer of those figures — the count-up
+   animation that used to race it was removed from js/motion.js,
+   because whichever finished last won and the displayed number
+   changed from reload to reload.
    The footer tagline (data-field="footer.tagline") appears on
    every page, so this file is safe to include site-wide.
    ========================================================= */
@@ -34,6 +40,25 @@
       } else {
         el.textContent = val;
       }
+    });
+  }
+
+  /* data-field-href is deliberately separate from data-field: several
+     buttons (hero.cta1/2/3, portfolio.cta1) already use data-field for
+     their *label* while keeping a hard-coded href, so overloading the
+     one attribute would break them. This handles the other case — an
+     admin-uploaded file, currently the media kit PDF — where the link
+     text is fixed and the destination is what the admin changes.
+     Only http(s) and same-origin relative paths are honoured, so a
+     bad row can't turn a download button into a javascript: URL. */
+  function applyLinks(content) {
+    document.querySelectorAll("[data-field-href]").forEach((el) => {
+      const [section, field] = el.getAttribute("data-field-href").split(".");
+      const sectionData = content[section];
+      if (!sectionData || !sectionData[field]) return;
+      const val = String(sectionData[field]).trim();
+      if (!/^(https?:\/\/|\/|\.\/|[\w.-]+\/)/i.test(val)) return;
+      el.href = val;
     });
   }
 
@@ -98,6 +123,7 @@
       const content = {};
       data.forEach((row) => { content[row.key] = row.value || {}; });
       applyFields(content);
+      applyLinks(content);
       applyRepeats(content);
     } catch (e) {
       // never break the page over homepage content

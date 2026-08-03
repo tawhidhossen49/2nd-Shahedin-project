@@ -65,7 +65,12 @@
           <p data-field="portfolio.sub">একটি নিবেদিত, উচ্চ-বিশ্বাসযোগ্য দর্শকগোষ্ঠীর কাছে পৌঁছান।</p>
         </div>
         <div class="hero-ctas hero-ctas-flush">
-          <a href="assets/shahedin-media-kit.pdf" class="btn btn-primary" download><span data-field="portfolio.cta1">মিডিয়া কিট ডাউনলোড করুন (PDF)</span></a>
+          <!-- href is replaced by the admin-uploaded PDF (portfolio.media_kit_url).
+               The bundled file stays as the fallback so the button never 404s
+               before the first upload. download + target together: a same-origin
+               fallback downloads, a Supabase-hosted PDF (cross-origin, where
+               `download` is ignored) opens in a new tab instead of navigating away. -->
+          <a href="assets/shahedin-media-kit.pdf" data-field-href="portfolio.media_kit_url" class="btn btn-primary" download target="_blank" rel="noopener"><span data-field="portfolio.cta1">মিডিয়া কিট ডাউনলোড করুন (PDF)</span></a>
           <a href="#partner-options" class="btn btn-ghost"><span data-field="portfolio.cta2">চলুন একসাথে কাজ করি</span></a>
         </div>
       </div>

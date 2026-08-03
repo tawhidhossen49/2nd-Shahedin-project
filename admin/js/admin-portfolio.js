@@ -152,6 +152,15 @@
         <label>Hero photo <span class="hint">optional — leave empty to keep the current photo</span></label>
         <input type="file" id="po_image" accept="image/*">
       </div>
+      <div class="form-field full">
+        <label for="po_kit">Media kit PDF <span class="hint">what the "${Admin.escapeHtml(get("portfolio", "cta1", "মিডিয়া কিট ডাউনলোড করুন (PDF)"))}" button downloads — pick a new file any time to replace it</span></label>
+        <input type="file" id="po_kit" accept="application/pdf,.pdf">
+        <p id="po_kit_current" style="font-size:.8rem; color:var(--text-faint); margin-top:8px;">${
+          get("portfolio", "media_kit_url")
+            ? `Currently live: <a href="${Admin.escapeHtml(get("portfolio", "media_kit_url"))}" target="_blank" rel="noopener">view the uploaded PDF</a>`
+            : `No PDF uploaded yet — the button currently serves the file bundled at <code>assets/shahedin-media-kit.pdf</code>.`
+        }</p>
+      </div>
     </form>
 
     <form class="panel" data-section="portfolio-glance">
@@ -241,16 +250,29 @@
   content.querySelector('[data-section="portfolio-hero"]').addEventListener("submit", async (e) => {
     e.preventDefault();
     const btn = e.submitter;
-    const fileInput = document.getElementById("po_image");
+    const imageInput = document.getElementById("po_image");
+    const kitInput = document.getElementById("po_kit");
+
+    // Both uploads are optional: an empty file input means "keep what's live",
+    // which is what makes this panel safe to re-save just to edit the text.
     let image_url = get("portfolio", "image_url", "");
-    if (fileInput.files[0]) {
-      btn.disabled = true;
+    let media_kit_url = get("portfolio", "media_kit_url", "");
+
+    const kitFile = kitInput.files[0];
+    if (kitFile && kitFile.type && kitFile.type !== "application/pdf") {
+      Admin.toast("The media kit has to be a PDF file.", true);
+      return;
+    }
+
+    if (imageInput.files[0] || kitFile) {
       const original = btn.textContent;
+      btn.disabled = true;
       btn.textContent = "Uploading…";
       try {
-        image_url = await Admin.uploadImage(fileInput.files[0], "home");
+        if (imageInput.files[0]) image_url = await Admin.uploadFile(imageInput.files[0], "home");
+        if (kitFile) media_kit_url = await Admin.uploadFile(kitFile, "media-kit");
       } catch (err) {
-        Admin.toast("Couldn't upload the photo: " + (err.message || err), true);
+        Admin.toast("Couldn't upload the file: " + (err.message || err), true);
         btn.disabled = false;
         btn.textContent = original;
         return;
@@ -258,10 +280,21 @@
       btn.disabled = false;
       btn.textContent = original;
     }
+
     savePortfolioPatch({
       eyebrow: v("po_eyebrow"), title: v("po_title"), sub: v("po_sub"),
-      cta1: v("po_cta1"), cta2: v("po_cta2"), image_url,
+      cta1: v("po_cta1"), cta2: v("po_cta2"), image_url, media_kit_url,
     }, btn);
+
+    // Reflect the new PDF straight away so the admin can confirm the swap
+    // without reloading, and clear the picker so a second Save doesn't
+    // re-upload the same file.
+    if (kitFile) {
+      kitInput.value = "";
+      document.getElementById("po_kit_current").innerHTML =
+        `Currently live: <a href="${Admin.escapeHtml(media_kit_url)}" target="_blank" rel="noopener">view the uploaded PDF</a>`;
+    }
+    if (imageInput.files[0]) imageInput.value = "";
   });
 
   content.querySelector('[data-section="portfolio-glance"]').addEventListener("submit", (e) => {

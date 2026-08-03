@@ -5,7 +5,6 @@
    js/main.js drives through .reveal / .inview:
 
      · staggered group entrances   (.reveal-stagger)
-     · number counters on the stat blocks
      · scroll parallax on the hero and footer portraits
      · a scroll-progress rail on long pages
      · chart bars that grow when their section arrives
@@ -18,8 +17,19 @@
       scroll-driven effect. No per-element listeners.
    3. prefers-reduced-motion: reduce turns all of it off and
       jumps every element straight to its final state — no
-      counters, no parallax, no exceptions.
+      parallax, no exceptions.
    4. Anything it can't find, it skips. No page depends on it.
+
+   Deliberately NOT here: the stat number count-up that used to
+   run on .hero-stat b / .trust-item .num / .stat-mini .n /
+   .case-result / .kit-stat-card .n. It read the figure out of
+   the DOM, animated toward it, and wrote the snapshot back on
+   the final frame — but js/home-content.js fills those same
+   elements from Supabase asynchronously. Whichever finished
+   last won, so a stat showed the admin-panel value or the
+   hard-coded HTML fallback depending on network timing, and
+   changed between reloads. The stats are CMS data, not decoration:
+   they now render once, from the database, and stay put.
    ========================================================= */
 (function () {
   "use strict";
@@ -79,88 +89,7 @@
   }
 
   /* ---------------------------------------------------------
-     2. Number counters
-     Reads whatever the element ends up displaying — including
-     values Supabase writes in later — and counts up to it while
-     preserving any prefix/suffix ("৳", "M", "+", "%", "/5").
-     Bangla digits in, Bangla digits out.
-     --------------------------------------------------------- */
-  const BN_DIGITS = ["০", "১", "২", "৩", "৪", "৫", "৬", "৭", "৮", "৯"];
-  const bnToLatin = (s) => s.replace(/[০-৯]/g, (d) => String(BN_DIGITS.indexOf(d)));
-  const latinToBn = (s) => s.replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
-
-  function parseCountable(text) {
-    const raw = String(text || "").trim();
-    if (!raw) return null;
-    const hadBangla = /[০-৯]/.test(raw);
-    const normalized = bnToLatin(raw).replace(/,/g, "");
-    const match = normalized.match(/-?\d+(?:\.\d+)?/);
-    if (!match) return null;
-    const value = parseFloat(match[0]);
-    if (!isFinite(value)) return null;
-    const idx = normalized.indexOf(match[0]);
-    return {
-      value,
-      decimals: (match[0].split(".")[1] || "").length,
-      grouped: /,/.test(bnToLatin(raw)),
-      prefix: normalized.slice(0, idx),
-      suffix: normalized.slice(idx + match[0].length),
-      bangla: hadBangla,
-    };
-  }
-
-  function formatCount(n, spec) {
-    let body = spec.decimals ? n.toFixed(spec.decimals) : String(Math.round(n));
-    if (spec.grouped) {
-      const parts = body.split(".");
-      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-      body = parts.join(".");
-    }
-    const out = spec.prefix + body + spec.suffix;
-    return spec.bangla ? latinToBn(out) : out;
-  }
-
-  function runCounter(el) {
-    const spec = parseCountable(el.textContent);
-    if (!spec) return;
-    const finalText = el.textContent;
-    const duration = 1100;
-    const start = performance.now();
-    // Reserve the final width so the count-up can't reflow its neighbours.
-    el.style.display = el.style.display || "inline-block";
-    el.style.minInlineSize = el.getBoundingClientRect().width + "px";
-
-    function frame(now) {
-      const t = Math.min(1, (now - start) / duration);
-      // easeOutExpo — fast out of the gate, long settle.
-      const eased = t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-      el.textContent = formatCount(spec.value * eased, spec);
-      if (t < 1) requestAnimationFrame(frame);
-      else el.textContent = finalText;
-    }
-    requestAnimationFrame(frame);
-  }
-
-  function initCounters() {
-    const targets = document.querySelectorAll(
-      ".hero-stat b, .trust-item .num, .stat-mini .n, .case-result, .kit-stat-card .n"
-    );
-    if (!targets.length || !supportsIO || reduceMotion.matches) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          io.unobserve(entry.target);
-          runCounter(entry.target);
-        });
-      },
-      { threshold: 0.6 }
-    );
-    targets.forEach((el) => io.observe(el));
-  }
-
-  /* ---------------------------------------------------------
-     3. Parallax
+     2. Parallax
      Applied to the hero portrait and the footer cutout. The CSS
      also declares a scroll-driven version for browsers with
      animation-timeline; this is the fallback and stays cheap:
@@ -190,7 +119,7 @@
   }
 
   /* ---------------------------------------------------------
-     4. Scroll progress rail  (.read-progress > span)
+     3. Scroll progress rail  (.read-progress > span)
      --------------------------------------------------------- */
   function initReadProgress() {
     const bar = document.querySelector(".read-progress span");
@@ -204,7 +133,7 @@
   }
 
   /* ---------------------------------------------------------
-     5. Press feedback on cards — pointer only, no layout cost
+     4. Press feedback on cards — pointer only, no layout cost
      --------------------------------------------------------- */
   function initPressFeedback() {
     if (reduceMotion.matches) return;
@@ -231,7 +160,6 @@
   /* --------------------------------------------------------- */
   function init() {
     initStagger();
-    initCounters();
     initParallax();
     initReadProgress();
     initPressFeedback();
@@ -247,6 +175,5 @@
   // same treatment without re-running the scroll wiring.
   document.addEventListener("contentready", () => {
     initStagger();
-    initCounters();
   });
 })();

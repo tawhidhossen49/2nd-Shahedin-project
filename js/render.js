@@ -640,8 +640,15 @@
            <span class="pay-icon pay-bkash">bKash</span>
          </div>`}`
       );
-      // Related — hide the whole section rather than show one empty shelf.
-      const related = data.courses.filter((x) => x.id !== c.id).slice(0, 3);
+      /* Related — this used to be "the first three other courses", which
+         ignored the category entirely and put cooking next to geopolitics.
+         Same category first, then anything else only to fill the row out to
+         three, so the shelf is never half-empty either. */
+      const others = data.courses.filter((x) => x.id !== c.id);
+      const sameCategory = others.filter((x) => x.category === c.category);
+      const related = sameCategory
+        .concat(others.filter((x) => x.category !== c.category))
+        .slice(0, 3);
       const relatedMount = document.querySelector("[data-mount='related-courses']");
       if (relatedMount) {
         if (related.length) {
@@ -696,21 +703,45 @@
          <h1>${escapeHtml(p.title)}</h1>
          <div class="price" style="margin:14px 0;">${p.oldPrice ? `<span class="old">৳${bnNum(Number(p.oldPrice))}</span>` : ""}৳${bnNum(Number(p.price))}</div>
          <p>${escapeHtml(p.desc)}</p>
-         ${p.type === "physical" ? '<p class="small-note" style="margin-top:10px;">সারা বাংলাদেশে ৩–৫ কার্যদিবসে ডেলিভারি। ডেলিভারি ট্র্যাকিং সহ।</p>' : '<p class="small-note" style="margin-top:10px;">চেকআউটের পর আপনার ইমেইলে সাথে সাথে ডাউনলোড লিংক পাঠানো হবে।</p>'}`
+         ${p.type === "physical"
+           ? '<p class="small-note" style="margin-top:10px;">সারা বাংলাদেশে ৩–৫ কার্যদিবসে ডেলিভারি।</p>'
+           /* This used to promise a download link emailed "সাথে সাথে" after
+              checkout. Nothing can send it: accounts are created with a phone
+              number only, the email box at checkout is optional, and no email
+              is sent anywhere in the codebase. It now describes what the site
+              genuinely does — record the order where the buyer can see it. */
+           : '<p class="small-note" style="margin-top:10px;">অর্ডার সম্পন্ন হলে এটি আপনার ড্যাশবোর্ডের “অর্ডার” তালিকায় যুক্ত হবে, এবং ডাউনলোড লিংক পাঠাতে আমরা আপনার সাথে যোগাযোগ করব।</p>'}`
       );
       const buyMount = document.querySelector("[data-mount='product-buy']");
       if (buyMount) {
+        /* Stock was carried all the way from the database and then ignored:
+           an out-of-stock item could still be ordered, and the +/− stepper had
+           no ceiling at all, so 500 of a physical item you hold 2 of went
+           through as a completed order. null/undefined still means unlimited
+           (every digital good, and any product left blank in the admin). */
+        const stock = p.stock === null || p.stock === undefined || p.stock === "" ? null : Number(p.stock);
+        const tracked = stock !== null && Number.isFinite(stock);
+        const soldOut = tracked && stock <= 0;
+        const maxQty = tracked ? Math.max(1, stock) : 0; // 0 = no ceiling
+
         buyMount.innerHTML = `
           <div class="qty-row">
             <span class="small-note" style="font-weight:600;color:var(--text);">পরিমাণ</span>
-            <div class="qty-stepper">
-              <button type="button" data-qty-decr aria-label="Decrease">−</button>
+            <div class="qty-stepper" data-qty-max="${maxQty}">
+              <button type="button" data-qty-decr aria-label="Decrease"${soldOut ? " disabled" : ""}>−</button>
               <span data-qty-value>1</span>
-              <button type="button" data-qty-incr aria-label="Increase">+</button>
+              <button type="button" data-qty-incr aria-label="Increase"${soldOut || maxQty === 1 ? " disabled" : ""}>+</button>
             </div>
           </div>
+          ${tracked
+            ? `<p class="small-note" style="margin-top:10px;">${
+                soldOut
+                  ? "এই মুহূর্তে স্টকে নেই।"
+                  : `স্টকে আছে ${bnNum(stock)}টি${stock <= 5 ? " — শেষ হয়ে আসছে" : ""}।`
+              }</p>`
+            : ""}
           <div style="display:flex; gap:12px; flex-wrap:wrap;">
-            <button class="btn btn-primary btn-block" data-buy-product="${p.id}">কিনুন</button>
+            <button class="btn btn-primary btn-block" data-buy-product="${p.id}"${soldOut ? " disabled" : ""}>${soldOut ? "স্টক শেষ" : "কিনুন"}</button>
           </div>
           <div class="pay-icons">
             <span class="pay-icon pay-bkash">bKash</span>

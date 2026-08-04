@@ -71,16 +71,26 @@ window.ShahedinAuth = (function () {
   /* ---------- Bangladeshi phone number formatting ---------- */
   // Accepts "01712345678", "1712345678", "+8801712345678", "8801712345678",
   // with or without spaces/dashes — always normalizes to "+8801712345678".
-  function normalizePhone(raw) {
+  /* Both of the functions below MUST agree about what the "local" part of a
+     number is, or the form rejects numbers it would have accepted. They used
+     to strip differently: normalizePhone removed a 880/0 prefix while
+     isValidLocalPhone tested the raw digits, so "01711455449" — the way the
+     number is actually written in Bangladesh — failed the /^1[3-9]\d{8}$/
+     test purely because of its leading 0, while the error message told the
+     visitor to type that exact format. One shared stripper, no drift. */
+  function localDigits(raw) {
     let digits = (raw || "").replace(/[^\d]/g, "");
     if (digits.startsWith("880")) digits = digits.slice(3);
     if (digits.startsWith("0")) digits = digits.slice(1);
-    return "+880" + digits;
+    return digits;
+  }
+
+  function normalizePhone(raw) {
+    return "+880" + localDigits(raw);
   }
 
   function isValidLocalPhone(raw) {
-    const digits = (raw || "").replace(/[^\d]/g, "");
-    return /^1[3-9]\d{8}$/.test(digits);
+    return /^1[3-9]\d{8}$/.test(localDigits(raw));
   }
 
   function formatPhone(e164) {

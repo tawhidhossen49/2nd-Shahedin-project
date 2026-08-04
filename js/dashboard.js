@@ -74,9 +74,19 @@
     state.enrollments = enrollRes.data || [];
     state.orders = orderRes.data || [];
 
+    /* courses_safe, NOT courses. The raw `courses` table has no public read
+       policy at all — only "admins can read all courses" — so this query
+       returned zero rows for every student, and the whole dashboard silently
+       behaved as if they owned nothing: blank "আমার কোর্স", 0% progress,
+       no resources, no certificates. courses_safe is granted to
+       authenticated and, for a course the student is enrolled in, hands back
+       the full content_blocks array, which is what progressFor() counts.
+       (It only returns published courses — see courseFor's callers for how a
+       course that disappears mid-enrolment is reported.) */
     const courseIds = state.enrollments.map((e) => e.course_id);
     if (courseIds.length) {
-      const { data: courses } = await c.from("courses").select("*").in("id", courseIds);
+      const { data: courses, error } = await c.from("courses_safe").select("*").in("id", courseIds);
+      if (error) console.warn("Shahedin dashboard: couldn't load course details.", error);
       state.courses = courses || [];
     } else {
       state.courses = [];
@@ -95,9 +105,34 @@
     return { total, done, pct };
   }
 
+  /* Every tab used to do `.filter((x) => x.c)` and then treat what was left as
+     the whole truth. When course details failed to load, that turned "we
+     couldn't read your courses" into "you have no courses in progress" — which
+     the Overview tab then rendered as "all your courses are complete, well
+     done!" to a student sitting at 0%. Splitting the list here means a tab can
+     tell the difference between *finished*, *none yet*, and *couldn't load*,
+     and none of them can be mistaken for another. */
+  function enrollmentRows() {
+    const rows = state.enrollments.map((e) => ({ e, p: progressFor(e), c: courseFor(e) }));
+    const known = rows.filter((x) => x.c);
+    return { rows, known, missing: rows.length - known.length };
+  }
+
+  function unavailableHTML(count) {
+    return `<div class="empty-state"><p>আপনার ${bn(count)}টি কোর্সের তথ্য এই মুহূর্তে লোড করা যাচ্ছে না। কোর্সটি হয়তো সাময়িকভাবে সরিয়ে রাখা হয়েছে — একটু পরে আবার চেষ্টা করুন বা <a class="text-link" href="contact.html">আমাদের জানান</a>।</p></div>`;
+  }
+
+  // Bangla numerals, so the dashboard's figures match the rest of the site.
+  function bn(n) {
+    return String(n).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
+  }
+
   function stats() {
-    const enrolledCount = state.enrollments.length;
-    const progresses = state.enrollments.map(progressFor);
+    const { known, rows } = enrollmentRows();
+    const enrolledCount = rows.length;
+    const progresses = known.map((x) => x.p);
+    // Averaged over courses we could actually measure — counting an unreadable
+    // course as 0% would understate real progress.
     const avgProgress = progresses.length ? Math.round(progresses.reduce((s, p) => s + p.pct, 0) / progresses.length) : 0;
     const certificatesCount = progresses.filter((p) => p.total > 0 && p.done >= p.total).length;
 
@@ -164,10 +199,8 @@
   function renderOverview(main) {
     const s = stats();
     const name = window.ShahedinAuth.displayName(state.user);
-    const inProgress = state.enrollments
-      .map((e) => ({ e, p: progressFor(e), c: courseFor(e) }))
-      .filter((x) => x.c && x.p.pct < 100)
-      .slice(0, 3);
+    const { rows, known, missing } = enrollmentRows();
+    const inProgress = known.filter((x) => x.p.pct < 100).slice(0, 3);
 
     main.innerHTML = `
       <h1 class="dash-greeting"><span>স্বাগতম</span>, ${escapeHtml(name)}</h1>
@@ -183,12 +216,19 @@
 
     const wrap = document.getElementById("overviewCourses");
     if (!inProgress.length) {
-      wrap.innerHTML = state.enrollments.length
-        ? `<div class="empty-state"><p>আপনার সব কোর্স সম্পন্ন হয়েছে — দারুণ! <a class="text-link" href="courses.html">আরও কোর্স দেখুন →</a></p></div>`
-        : `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
+      // Three genuinely different situations, three different answers. The
+      // "all complete" line is now only reachable when courses actually loaded
+      // AND every one of them really is at 100%.
+      if (!rows.length) {
+        wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
+      } else if (!known.length) {
+        wrap.innerHTML = unavailableHTML(rows.length);
+      } else {
+        wrap.innerHTML = `<div class="empty-state"><p>আপনার সব কোর্স সম্পন্ন হয়েছে — দারুণ! <a class="text-link" href="courses.html">আরও কোর্স দেখুন →</a></p></div>`;
+      }
       return;
     }
-    wrap.innerHTML = inProgress.map((x) => courseRowHTML(x.c, x.p)).join("");
+    wrap.innerHTML = inProgress.map((x) => courseRowHTML(x.c, x.p)).join("") + (missing ? unavailableHTML(missing) : "");
   }
 
   function courseRowHTML(course, p) {
@@ -212,11 +252,12 @@
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
       return;
     }
-    wrap.innerHTML = state.enrollments
-      .map((e) => ({ e, p: progressFor(e), c: courseFor(e) }))
-      .filter((x) => x.c)
-      .map((x) => courseRowHTML(x.c, x.p))
-      .join("");
+    // This used to filter out every enrolment whose course details were
+    // missing, which could leave the page as a bare heading with nothing
+    // under it. Anything unreadable is now counted and reported instead.
+    const { known, missing } = enrollmentRows();
+    wrap.innerHTML =
+      known.map((x) => courseRowHTML(x.c, x.p)).join("") + (missing ? unavailableHTML(missing) : "");
   }
 
   function renderResources(main) {
@@ -254,10 +295,13 @@
   function renderCertificates(main) {
     main.innerHTML = `<h1 class="dash-page-title">সার্টিফিকেট</h1><div id="certList"></div>`;
     const wrap = document.getElementById("certList");
-    const rows = state.enrollments.map((e) => ({ e, p: progressFor(e), c: courseFor(e) })).filter((x) => x.c);
+    const { rows: allRows, known: rows, missing } = enrollmentRows();
 
     if (!rows.length) {
-      wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি।</p></div>`;
+      // Don't tell an enrolled student they've never enrolled.
+      wrap.innerHTML = allRows.length
+        ? unavailableHTML(allRows.length)
+        : `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি।</p></div>`;
       return;
     }
     wrap.innerHTML = rows
@@ -273,7 +317,7 @@
           : `<button class="btn btn-ghost btn-sm" disabled>লকড</button>`}
       </div>`
       )
-      .join("");
+      .join("") + (missing ? unavailableHTML(missing) : "");
 
     wrap.querySelectorAll("[data-view-cert]").forEach((btn) => {
       btn.addEventListener("click", () => {

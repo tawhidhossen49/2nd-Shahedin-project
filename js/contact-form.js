@@ -124,7 +124,11 @@
      so the admin sees which date they had in mind. */
   function selectedCalendarDate() {
     var picked = document.querySelector("[data-cal-grid] .cal-day.selected, [data-cal-grid] .cal-day.is-selected");
-    return picked ? String(picked.textContent || "").trim() : null;
+    if (!picked) return null;
+    // js/main.js stamps each selectable day with a full YYYY-MM-DD date.
+    // Fall back to the visible day number only if that's somehow absent —
+    // sending a bare "14" leaves the admin guessing which month.
+    return picked.dataset.date || String(picked.textContent || "").trim() || null;
   }
 
   function clearCalendarSelection() {

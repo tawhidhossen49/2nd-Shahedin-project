@@ -364,6 +364,15 @@
   });
 
   /* ---------- Quantity stepper + buy button (product-detail page) ---------- */
+  function qtyCeiling(stepper) {
+    const max = parseInt(stepper && stepper.dataset.qtyMax, 10);
+    return Number.isFinite(max) && max > 0 ? max : Infinity;
+  }
+
+  function bnDigits(n) {
+    return String(n).replace(/[0-9]/g, (d) => "০১২৩৪৫৬৭৮৯"[+d]);
+  }
+
   document.addEventListener("click", (e) => {
     const incr = e.target.closest("[data-qty-incr]");
     const decr = e.target.closest("[data-qty-decr]");
@@ -371,15 +380,29 @@
       const wrap = (incr || decr).closest(".qty-stepper");
       const valEl = wrap && wrap.querySelector("[data-qty-value]");
       if (!valEl) return;
+      // render.js writes data-qty-max from the product's stock. 0/absent means
+      // unlimited (digital goods, or stock left blank in the admin panel).
+      const ceiling = qtyCeiling(wrap);
       let val = parseInt(valEl.textContent, 10) || 1;
-      val = incr ? val + 1 : Math.max(1, val - 1);
+      if (incr && val >= ceiling) {
+        window.showToast(`এই প্রোডাক্টের সর্বোচ্চ ${bnDigits(ceiling)}টি নেওয়া যাবে।`);
+        return;
+      }
+      val = incr ? Math.min(ceiling, val + 1) : Math.max(1, val - 1);
       valEl.textContent = val;
+      const incrBtn = wrap.querySelector("[data-qty-incr]");
+      const decrBtn = wrap.querySelector("[data-qty-decr]");
+      if (incrBtn) incrBtn.disabled = val >= ceiling;
+      if (decrBtn) decrBtn.disabled = val <= 1;
       return;
     }
     const buyBtn = e.target.closest("[data-buy-product]");
     if (buyBtn) {
-      const wrap = document.querySelector(".qty-stepper [data-qty-value]");
-      const qty = wrap ? parseInt(wrap.textContent, 10) || 1 : 1;
+      if (buyBtn.disabled) return; // sold out
+      const stepper = document.querySelector(".qty-stepper");
+      const valEl = stepper && stepper.querySelector("[data-qty-value]");
+      // Clamped again here so a hand-edited quantity can't get past the stepper.
+      const qty = Math.max(1, Math.min(qtyCeiling(stepper), valEl ? parseInt(valEl.textContent, 10) || 1 : 1));
       window.location.href = `checkout.html?product=${encodeURIComponent(buyBtn.dataset.buyProduct)}&qty=${qty}`;
     }
   });
@@ -425,10 +448,26 @@
         cell.classList.add("disabled");
       } else {
         cell.classList.add("avail");
+        // The full date, not just the day number: contact-form.js sends this
+        // to the admin, and a bare "14" is unreadable a month later.
+        const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        cell.dataset.date = iso;
         cell.addEventListener("click", () => {
           calGrid.querySelectorAll(".cal-day.selected").forEach((c) => c.classList.remove("selected"));
           cell.classList.add("selected");
-          window.showToast(`${d} ${today.toLocaleString("bn-BD", { month: "long" })}-এর জন্য স্লট রিকোয়েস্ট করা হয়েছে — আমরা ইমেইলে নিশ্চিত করব।`);
+          /* This used to say the slot had been requested and would be
+             confirmed by email — but clicking a day sends nothing anywhere.
+             The date only reaches anyone if the visitor also submits the form,
+             so the message now says that instead of claiming a booking that
+             never happened. */
+          const label = `${d} ${today.toLocaleString("bn-BD", { month: "long" })}`;
+          window.showToast(`${label} বেছে নেওয়া হয়েছে। রিকোয়েস্ট পাঠাতে নিচের ফর্মটি পূরণ করে "পাঠিয়ে দিন" চাপুন।`);
+          const form = document.querySelector("[data-contact-form]");
+          if (form) {
+            form.scrollIntoView({ behavior: "smooth", block: "center" });
+            const firstEmpty = Array.from(form.querySelectorAll("input, textarea, select")).find((f) => !f.value);
+            if (firstEmpty) firstEmpty.focus({ preventScroll: true });
+          }
         });
       }
       calGrid.appendChild(cell);

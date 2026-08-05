@@ -1153,3 +1153,140 @@ where key = 'contact'
   and value->>'phone' not like 'http%'
   and value->>'phone' not like 'tel:%'
   and coalesce(value->>'phone_display', '') = '';
+
+
+-- =========================================================================
+-- 17. ORDER DETAILS + COUPONS
+--     Safe to re-run: every statement is IF NOT EXISTS / OR REPLACE.
+--
+--     Two problems this section fixes:
+--
+--     a) Checkout collected the buyer's name, phone, email and delivery
+--        address and then threw all four away — only the item, quantity and
+--        amount were saved. A physical order arrived with nowhere to ship it.
+--        The columns below give those fields somewhere to live.
+--
+--     b) The coupon box on checkout was decorative: no table behind it, no
+--        validation, no effect on the total. `coupons` + validate_coupon()
+--        make it real.
+-- =========================================================================
+
+-- ---------- a) Who bought it, and where it goes -------------------------
+alter table orders add column if not exists buyer_name       text;
+alter table orders add column if not exists buyer_phone      text;
+alter table orders add column if not exists buyer_email      text;
+alter table orders add column if not exists shipping_address text;
+-- What the item cost before any discount. amount_bdt stays the amount
+-- actually charged, so existing rows and reports keep their meaning.
+alter table orders add column if not exists subtotal_bdt     integer;
+alter table orders add column if not exists coupon_code      text;
+alter table orders add column if not exists discount_bdt     integer not null default 0;
+
+-- Backfill: orders placed before this migration had no discount, so their
+-- subtotal is simply what was charged.
+update orders set subtotal_bdt = amount_bdt where subtotal_bdt is null;
+
+-- ---------- b) Coupons --------------------------------------------------
+create table if not exists coupons (
+  code           text primary key,                    -- stored uppercase, e.g. 'EID25'
+  discount_type  text not null default 'percent' check (discount_type in ('percent', 'fixed')),
+  discount_value integer not null check (discount_value > 0), -- percent: 1–100. fixed: taka off.
+  min_order_bdt  integer not null default 0,           -- coupon only applies at/above this subtotal
+  max_uses       integer,                              -- null = unlimited
+  used_count     integer not null default 0,
+  is_active      boolean not null default true,
+  expires_at     timestamptz,                          -- null = never expires
+  note           text,                                 -- free text for the admin's own reference
+  created_at     timestamptz not null default now(),
+  updated_at     timestamptz not null default now()
+);
+
+alter table coupons add column if not exists note text;
+
+create index if not exists coupons_active_idx on coupons (is_active) where is_active;
+
+alter table coupons enable row level security;
+
+-- Deliberately NO public select policy. Visitors must not be able to list
+-- every code you have ever issued — they validate one code at a time through
+-- the function below, which is the only way in from the public site.
+drop policy if exists "admins manage coupons" on coupons;
+create policy "admins manage coupons"
+  on coupons for all
+  using (auth.uid() in (select id from admins))
+  with check (auth.uid() in (select id from admins));
+
+drop trigger if exists coupons_set_updated_at on coupons;
+create trigger coupons_set_updated_at
+  before update on coupons
+  for each row execute function set_updated_at();
+
+-- ---------- Validation -------------------------------------------------
+-- SECURITY DEFINER so it can read `coupons` past RLS, but it only ever
+-- returns a verdict for the single code it was asked about — never a list.
+-- Returns: { valid, reason, code, discount_type, discount_value, discount_bdt }
+create or replace function validate_coupon(p_code text, p_subtotal integer)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v   coupons%rowtype;
+  off integer;
+begin
+  if coalesce(trim(p_code), '') = '' then
+    return jsonb_build_object('valid', false, 'reason', 'empty');
+  end if;
+
+  select * into v from coupons where code = upper(trim(p_code));
+
+  if not found                                          then return jsonb_build_object('valid', false, 'reason', 'not_found');   end if;
+  if not v.is_active                                    then return jsonb_build_object('valid', false, 'reason', 'inactive');    end if;
+  if v.expires_at is not null and v.expires_at < now()  then return jsonb_build_object('valid', false, 'reason', 'expired');     end if;
+  if v.max_uses is not null and v.used_count >= v.max_uses
+                                                        then return jsonb_build_object('valid', false, 'reason', 'used_up');     end if;
+  if coalesce(p_subtotal, 0) < v.min_order_bdt          then return jsonb_build_object('valid', false, 'reason', 'min_order',
+                                                                                       'min_order_bdt', v.min_order_bdt);        end if;
+
+  off := case
+           when v.discount_type = 'percent' then floor(coalesce(p_subtotal, 0) * least(v.discount_value, 100) / 100.0)
+           else v.discount_value
+         end;
+  -- Never discount below zero, and never below zero for a free item.
+  off := greatest(0, least(off, coalesce(p_subtotal, 0)));
+
+  return jsonb_build_object(
+    'valid', true, 'code', v.code,
+    'discount_type', v.discount_type, 'discount_value', v.discount_value,
+    'discount_bdt', off
+  );
+end;
+$$;
+
+revoke all on function validate_coupon(text, integer) from public;
+grant execute on function validate_coupon(text, integer) to anon, authenticated;
+
+-- ---------- Usage counting ---------------------------------------------
+-- Counted from the order itself rather than trusting the browser to report
+-- a redemption, so the tally can't drift or be inflated by a stray call.
+create or replace function bump_coupon_usage()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.coupon_code is not null and trim(new.coupon_code) <> '' then
+    update coupons
+       set used_count = used_count + 1
+     where code = upper(trim(new.coupon_code));
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_bump_coupon on orders;
+create trigger orders_bump_coupon
+  after insert on orders
+  for each row execute function bump_coupon_usage();

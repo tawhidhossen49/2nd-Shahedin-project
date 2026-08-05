@@ -18,7 +18,32 @@
     return new URLSearchParams(window.location.search).get(name);
   }
 
-  let item = null; // { kind, dbId, slug, title, price, qty }
+  const BN = "০১২৩৪৫৬৭৮৯";
+  const bn = (n) => String(n).replace(/[0-9]/g, (d) => BN[+d]);
+  const taka = (n) => "৳" + bn(Number(n || 0).toLocaleString("en-US"));
+
+  let item = null;   // { kind, dbId, slug, title, price, qty }
+  let coupon = null; // { code, discount_bdt } once a code has been validated
+
+  const COUPON_ERRORS = {
+    empty: "একটি কুপন কোড লিখুন।",
+    not_found: "এই কুপন কোডটি পাওয়া যায়নি।",
+    inactive: "এই কুপনটি আর সক্রিয় নেই।",
+    expired: "এই কুপনের মেয়াদ শেষ হয়ে গেছে।",
+    used_up: "এই কুপনটি সর্বোচ্চ সংখ্যকবার ব্যবহার হয়ে গেছে।",
+  };
+
+  function subtotal() {
+    return item ? item.price * item.qty : 0;
+  }
+
+  function discount() {
+    return coupon ? Math.min(coupon.discount_bdt, subtotal()) : 0;
+  }
+
+  function total() {
+    return Math.max(0, subtotal() - discount());
+  }
 
   function findItem(data) {
     const courseSlug = qs("course");
@@ -47,17 +72,25 @@
       return;
     }
 
-    const total = item.price * item.qty;
+    const sub = subtotal();
+    const off = discount();
+    const due = total();
     mount.innerHTML = `
       <div class="order-summary">
         <div class="order-summary-row">
           <div>
             <div class="osr-title">${escapeHtml(item.title)}</div>
-            <div class="osr-sub">${item.kind === "course" ? "কোর্স" : `প্রোডাক্ট${item.qty > 1 ? ` · পরিমাণ ${item.qty}` : ""}`}</div>
+            <div class="osr-sub">${item.kind === "course" ? "কোর্স" : `প্রোডাক্ট${item.qty > 1 ? ` · পরিমাণ ${bn(item.qty)}` : ""}`}</div>
           </div>
-          <div>${total === 0 ? "ফ্রি" : "৳" + total}</div>
+          <div>${sub === 0 ? "ফ্রি" : taka(sub)}</div>
         </div>
-        <div class="order-summary-row total"><span>সর্বমোট</span><span>${total === 0 ? "৳০" : "৳" + total}</span></div>
+        ${off > 0
+          ? `<div class="order-summary-row discount">
+               <div><div class="osr-title">ছাড়</div><div class="osr-sub">কুপন ${escapeHtml(coupon.code)}</div></div>
+               <div>−${taka(off)}</div>
+             </div>`
+          : ""}
+        <div class="order-summary-row total"><span>সর্বমোট</span><span>${taka(due)}</span></div>
       </div>`;
 
     if (!item.dbId) {
@@ -76,6 +109,73 @@
     if (form.phone && !form.phone.value) form.phone.value = window.ShahedinAuth.formatPhone(user.phone);
   }
 
+  /* ---------- Coupons ----------
+     The `coupons` table has no public read policy on purpose — a visitor must
+     not be able to list every code you have issued. validate_coupon() is a
+     SECURITY DEFINER function that answers about one code at a time and
+     returns the discount it would give, so the browser never sees the table.
+     The discount is recomputed server-side from the order row's own subtotal
+     when the order is written, so a tampered client can't invent a price. */
+  function setCouponStatus(text, kind) {
+    const el = document.getElementById("couponStatus");
+    if (!el) return;
+    el.textContent = text || "";
+    el.hidden = !text;
+    el.classList.toggle("is-error", kind === "error");
+    el.classList.toggle("is-ok", kind === "ok");
+  }
+
+  async function applyCoupon() {
+    const input = document.getElementById("coCoupon");
+    const btn = document.getElementById("couponApplyBtn");
+    if (!input || !item) return;
+
+    const code = input.value.trim().toUpperCase();
+    if (!code) {
+      coupon = null;
+      renderSummary();
+      setCouponStatus(COUPON_ERRORS.empty, "error");
+      return;
+    }
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "দেখা হচ্ছে…";
+    try {
+      const c = window.ShahedinAuth.client();
+      const { data, error } = await c.rpc("validate_coupon", { p_code: code, p_subtotal: subtotal() });
+      if (error) throw error;
+
+      if (!data || !data.valid) {
+        coupon = null;
+        renderSummary();
+        const reason = data && data.reason;
+        setCouponStatus(
+          reason === "min_order"
+            ? `এই কুপনটি ব্যবহার করতে সর্বনিম্ন ${taka(data.min_order_bdt)} মূল্যের অর্ডার প্রয়োজন।`
+            : COUPON_ERRORS[reason] || "কুপনটি প্রয়োগ করা যায়নি।",
+          "error"
+        );
+        return;
+      }
+
+      coupon = { code: data.code, discount_bdt: Number(data.discount_bdt) || 0 };
+      input.value = data.code;
+      renderSummary();
+      setCouponStatus(`${taka(discount())} ছাড় প্রয়োগ করা হয়েছে।`, "ok");
+    } catch (err) {
+      coupon = null;
+      renderSummary();
+      // An older database that hasn't run the latest schema.sql has no
+      // validate_coupon function; say so rather than blaming the code.
+      setCouponStatus("কুপন যাচাই করা যায়নি, একটু পরে আবার চেষ্টা করুন।", "error");
+      console.warn("Shahedin checkout: coupon validation failed.", err);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     if (!item || !item.dbId) return;
@@ -90,18 +190,50 @@
 
       const c = window.ShahedinAuth.client();
       const form = document.getElementById("checkoutForm");
-      const total = item.price * item.qty;
+      const field = (name) => {
+        const el = form.querySelector(`[name="${name}"]`);
+        return el ? el.value.trim() : "";
+      };
 
-      const { error: orderErr } = await c.from("orders").insert({
+      /* The buyer's details used to be collected and then dropped on the
+         floor — only the item, quantity and amount were saved, so a physical
+         order reached the admin with no name, phone or address on it. They
+         are part of the order row now, and visible in Admin → Orders. */
+      const base = {
         user_id: user.id,
         kind: item.kind,
         item_id: item.dbId,
         item_title: item.title,
         qty: item.qty,
-        amount_bdt: total,
+        amount_bdt: total(),
         payment_method: form.payment_method.value,
         status: "completed",
+      };
+      const withDetails = Object.assign({}, base, {
+        subtotal_bdt: subtotal(),
+        discount_bdt: discount(),
+        coupon_code: coupon ? coupon.code : null,
+        buyer_name: field("name") || null,
+        buyer_phone: field("phone") || null,
+        buyer_email: field("email") || null,
+        shipping_address: field("address") || null,
       });
+
+      let { error: orderErr } = await c.from("orders").insert(withDetails);
+
+      /* If section 17 of schema.sql hasn't been run yet those columns don't
+         exist, and the whole order would fail. Better to save the sale and
+         lose the extra detail than to lose the customer's purchase — but say
+         so loudly in the console so it gets fixed. */
+      if (orderErr && /column .* does not exist|could not find/i.test(orderErr.message || "")) {
+        console.warn(
+          "Shahedin checkout: the orders table is missing the buyer-detail columns, so this order was saved " +
+          "without the buyer's name, phone, email, address or coupon. Run section 17 of schema.sql in the " +
+          "Supabase SQL editor to fix this.",
+          orderErr
+        );
+        ({ error: orderErr } = await c.from("orders").insert(base));
+      }
       if (orderErr) throw orderErr;
 
       if (item.kind === "course") {
@@ -124,5 +256,28 @@
     prefillFromUser();
     const form = document.getElementById("checkoutForm");
     if (form) form.addEventListener("submit", handleSubmit);
+
+    const couponBtn = document.getElementById("couponApplyBtn");
+    if (couponBtn) couponBtn.addEventListener("click", applyCoupon);
+    const couponInput = document.getElementById("coCoupon");
+    if (couponInput) {
+      // Enter inside the coupon box applies the code; it must not submit the
+      // whole order, which is what a bare Enter in a form field would do.
+      couponInput.addEventListener("keydown", (ev) => {
+        if (ev.key !== "Enter") return;
+        ev.preventDefault();
+        applyCoupon();
+      });
+      // Editing the code after applying invalidates it until re-applied,
+      // so the summary can never show a discount the input no longer matches.
+      couponInput.addEventListener("input", () => {
+        if (!coupon) return;
+        if (couponInput.value.trim().toUpperCase() !== coupon.code) {
+          coupon = null;
+          renderSummary();
+          setCouponStatus("কোড পরিবর্তন করা হয়েছে — আবার “প্রয়োগ করুন” চাপুন।", "error");
+        }
+      });
+    }
   });
 })();

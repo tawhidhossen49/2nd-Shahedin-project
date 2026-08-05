@@ -18,6 +18,8 @@ window.Admin = (function () {
     { href: "submissions.html", label: "Contact Messages", icon: "M4 4h16v16H4zM4 6l8 6 8-6" },
     { href: "students.html", label: "Students", icon: "M12 2 1 7l11 5 9-4.1V17h2V7zM5 13.2V17c0 2 3.1 4 7 4s7-2 7-4v-3.8l-7 3.2z" },
     { href: "products.html", label: "Store Products", icon: "M6 2 3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7l-3-5H6zM3 7h18M16 11a4 4 0 0 1-8 0" },
+    { href: "orders.html", label: "Orders", icon: "M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" },
+    { href: "coupons.html", label: "Coupons", icon: "M20 12a2 2 0 0 1 2-2V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v3a2 2 0 0 1 0 4v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a2 2 0 0 1-2-2zM13 7v2M13 15v2" },
     { href: "analytics.html", label: "Analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
     { href: "settings.html", label: "Settings", icon: "M10.3 2.3h3.4l.6 2.4a7.9 7.9 0 0 1 2 1.2l2.4-.8 1.7 3-1.9 1.6a8 8 0 0 1 0 2.3l1.9 1.6-1.7 3-2.4-.8a7.9 7.9 0 0 1-2 1.2l-.6 2.4h-3.4l-.6-2.4a7.9 7.9 0 0 1-2-1.2l-2.4.8-1.7-3 1.9-1.6a8 8 0 0 1 0-2.3L1.7 8.1l1.7-3 2.4.8a7.9 7.9 0 0 1 2-1.2z" },
   ];
@@ -123,14 +125,35 @@ window.Admin = (function () {
   }
 
   /* ---------- Helpers ---------- */
+  /* \w is ASCII-only in JavaScript, so the old version deleted every Bangla
+     character and handed back "" for a Bangla title — which then failed the
+     required check on a field labelled "auto-filled, only change if you know
+     what it does". \p{L}\p{N} with the /u flag keeps letters and digits from
+     any script, so "রাজনীতি ১০১" becomes "রাজনীতি-১০১". Browsers percent-encode
+     that in the URL and display it back as Bangla, and every id is already
+     passed through encodeURIComponent on the public side.
+
+     \p{M} matters as much as \p{L} here: Bangla vowel signs (া ী ে, the
+     matras) are combining MARKS, not letters, so keeping only \p{L}\p{N}
+     silently gutted every word — "রাজনীতি" came out as "রজনত". */
   function slugify(text) {
     return (text || "")
       .toString()
       .toLowerCase()
       .trim()
-      .replace(/[^\w\s-]/g, "")
+      .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, "")
       .replace(/[\s_-]+/g, "-")
       .replace(/^-+|-+$/g, "");
+  }
+
+  // Never leave a required slug empty: a name of pure punctuation/emoji still
+  // has to produce something saveable.
+  function slugifyOrFallback(prefix, ...candidates) {
+    for (const candidate of candidates) {
+      const s = slugify(candidate);
+      if (s) return s;
+    }
+    return `${prefix}-${Date.now().toString(36)}`;
   }
 
   /* Uploads anything to the public "media" bucket and returns its public URL.
@@ -167,5 +190,5 @@ window.Admin = (function () {
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  return { configured, client, requireAdmin, renderShell, toast, slugify, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured };
+  return { configured, client, requireAdmin, renderShell, toast, slugify, slugifyOrFallback, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured };
 })();

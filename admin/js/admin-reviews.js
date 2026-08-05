@@ -50,7 +50,7 @@
         <tbody>
           ${filtered
             .map((r) => {
-              const courseTitle = (r.courses && (r.courses.title_en || r.courses.title_bn)) || "(deleted course)";
+              const courseTitle = (r.courses && (r.courses.title_bn || r.courses.title_en)) || "(deleted course)";
               const date = new Date(r.created_at).toLocaleDateString();
               return `<tr data-id="${r.id}">
                 <td>${Admin.escapeHtml(courseTitle)}</td>

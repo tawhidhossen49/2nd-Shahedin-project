@@ -9,26 +9,33 @@
 
   const c = Admin.client();
 
-  const [coursesRes, productsRes, viewsRes, viewsAllRes, logRes, messagesRes] = await Promise.all([
-    c.from("courses").select("id,is_published", { count: "exact" }),
-    c.from("products").select("id,is_published", { count: "exact" }),
-    c.from("page_views").select("id").gte("viewed_at", new Date(Date.now() - 30 * 86400000).toISOString()),
-    c.from("page_views").select("id"),
+  /* Counting rows by fetching them and reading .length is why "Page views"
+     froze at exactly 1000: Supabase/PostgREST caps any select at 1000 rows,
+     so the 1001st view onwards was invisible and both the 30-day and all-time
+     figures pinned there forever. `head: true` with `count: "exact"` asks
+     Postgres to COUNT server-side and transfers no rows at all — accurate at
+     any size, and faster. Read res.count, never res.data.length. */
+  const [coursesRes, productsRes, viewsRes, viewsAllRes, logRes, messagesRes, unreadRes] = await Promise.all([
+    c.from("courses").select("id,is_published"),
+    c.from("products").select("id,is_published"),
+    c.from("page_views").select("*", { count: "exact", head: true }).gte("viewed_at", new Date(Date.now() - 30 * 86400000).toISOString()),
+    c.from("page_views").select("*", { count: "exact", head: true }),
     c.from("activity_log").select("*").order("created_at", { ascending: false }).limit(8),
     // Contact form messages. Wrapped in a catch so an older database that
     // hasn't run the latest schema.sql yet still shows the rest of the dashboard.
-    c.from("contact_submissions").select("id,is_read").then((r) => r, () => ({ data: [] })),
+    c.from("contact_submissions").select("*", { count: "exact", head: true }).then((r) => r, () => ({ count: 0 })),
+    c.from("contact_submissions").select("*", { count: "exact", head: true }).eq("is_read", false).then((r) => r, () => ({ count: 0 })),
   ]);
 
   const courses = coursesRes.data || [];
   const products = productsRes.data || [];
   const publishedCourses = courses.filter((x) => x.is_published).length;
   const publishedProducts = products.filter((x) => x.is_published).length;
-  const views30d = (viewsRes.data || []).length;
-  const viewsAll = (viewsAllRes.data || []).length;
+  const views30d = viewsRes.count || 0;
+  const viewsAll = viewsAllRes.count || 0;
   const activity = logRes.data || [];
-  const messages = (messagesRes && messagesRes.data) || [];
-  const unreadMessages = messages.filter((m) => !m.is_read).length;
+  const messageCount = (messagesRes && messagesRes.count) || 0;
+  const unreadMessages = (unreadRes && unreadRes.count) || 0;
 
   content.innerHTML = `
     <div class="stat-grid">
@@ -49,7 +56,7 @@
       </div>
       <div class="stat-card">
         <div class="label">Contact messages</div>
-        <div class="value">${messages.length}</div>
+        <div class="value">${messageCount}</div>
         <div class="sub">${unreadMessages ? `${unreadMessages} unread` : "all read"}</div>
       </div>
     </div>
@@ -87,7 +94,7 @@
     list.innerHTML = activity.map((a) => {
       const name = a.table_name === "courses" ? "course" : "product";
       const actionWord = { insert: "added a", update: "edited a", "delete": "deleted a" }[a.action] || a.action;
-      const label = (a.new_data && (a.new_data.title_en || a.new_data.name_en)) || (a.old_data && (a.old_data.title_en || a.old_data.name_en)) || "";
+      const label = (a.new_data && (a.new_data.title_bn || a.new_data.name_bn || a.new_data.title_en || a.new_data.name_en)) || (a.old_data && (a.old_data.title_bn || a.old_data.name_bn || a.old_data.title_en || a.old_data.name_en)) || "";
       return `<div class="activity-item">
         <span class="activity-dot"></span>
         <div>

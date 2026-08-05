@@ -128,7 +128,7 @@
             ${s.enrollments
               .map(
                 (e) => `<tr>
-                <td>${Admin.escapeHtml((e.courses && (e.courses.title_en || e.courses.title_bn)) || "(deleted course)")}</td>
+                <td>${Admin.escapeHtml((e.courses && (e.courses.title_bn || e.courses.title_en)) || "(deleted course)")}</td>
                 <td class="row-sub">${new Date(e.enrolled_at).toLocaleDateString()}</td>
                 <td>${e.completed ? '<span class="badge badge-live">Completed</span>' : '<span class="badge badge-draft">In progress</span>'}</td>
               </tr>`

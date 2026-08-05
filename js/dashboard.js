@@ -237,7 +237,7 @@
       <div class="dash-course-row">
         <div class="dthumb thumb thumb-tone-${course.tone || 1}${course.thumbnail_url ? " has-image" : ""}" style="${image}"></div>
         <div class="dinfo">
-          <h3>${escapeHtml(course.title_en || course.title_bn)}</h3>
+          <h3>${escapeHtml(course.title_bn || course.title_en)}</h3>
           <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%;"></div></div>
           <div class="small-note dash-progress-note">${p.pct}% সম্পন্ন${p.total ? ` · ${p.done}/${p.total} আইটেম` : ""}</div>
         </div>
@@ -269,7 +269,7 @@
       if (!course || !Array.isArray(course.content_blocks)) return;
       course.content_blocks.forEach((b) => {
         if (b.type === "resource" || b.type === "pdf") {
-          items.push({ block: b, courseTitle: course.title_en || course.title_bn, url: b.type === "pdf" ? b.pdf_url : b.url });
+          items.push({ block: b, courseTitle: course.title_bn || course.title_en, url: b.type === "pdf" ? b.pdf_url : b.url });
         }
       });
     });
@@ -310,7 +310,7 @@
       <div class="res-row">
         <div class="rleft">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="6"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg>
-          <span>${escapeHtml(x.c.title_en || x.c.title_bn)} — ${x.p.pct}% সম্পন্ন</span>
+          <span>${escapeHtml(x.c.title_bn || x.c.title_en)} — ${x.p.pct}% সম্পন্ন</span>
         </div>
         ${x.p.total > 0 && x.p.done >= x.p.total
           ? `<button type="button" class="btn btn-primary btn-sm" data-view-cert="${x.c.id}">সার্টিফিকেট দেখুন</button>`
@@ -341,7 +341,7 @@
           <p class="cert-line">এই মর্মে প্রত্যয়ন করা হচ্ছে যে</p>
           <h2 class="cert-name">${escapeHtml(name)}</h2>
           <p class="cert-line">সফলভাবে সম্পন্ন করেছেন</p>
-          <h3 class="cert-course">${escapeHtml(course.title_en || course.title_bn)}</h3>
+          <h3 class="cert-course">${escapeHtml(course.title_bn || course.title_en)}</h3>
           <p class="cert-date">${date}</p>
         </div>
         <div class="dash-modal-actions">

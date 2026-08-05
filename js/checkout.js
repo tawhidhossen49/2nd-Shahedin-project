@@ -52,23 +52,49 @@
 
     if (courseSlug) {
       const c = (data.courses || []).find((x) => x.id === courseSlug);
-      if (c) return { kind: "course", dbId: c.dbId || null, slug: c.id, title: c.title, price: c.free ? 0 : c.price, qty: 1 };
+      if (c) return { kind: "course", dbId: c.dbId || null, slug: c.id, title: c.title, price: c.free ? 0 : c.price, qty: 1, image: c.image || null, type: "digital" };
     }
     if (productSlug) {
       const p = (data.products || []).find((x) => x.id === productSlug);
-      if (p) return { kind: "product", dbId: p.dbId || null, slug: p.id, title: p.title, price: p.price, qty };
+      if (p) return { kind: "product", dbId: p.dbId || null, slug: p.id, title: p.title, price: p.price, qty, image: p.image || null, type: p.type || "digital" };
     }
     return null;
   }
 
+  /* The delivery step only exists for something that physically ships.
+     `required` is added and removed with it: a hidden required field blocks
+     submission with a validation bubble the buyer cannot see or reach. */
+  function syncDeliveryStep() {
+    const group = document.querySelector("[data-delivery-group]");
+    const address = document.getElementById("coAddress");
+    const paymentStep = document.querySelector("[data-payment-step]");
+    if (!group || !address) return;
+
+    const physical = !!item && item.type === "physical";
+    group.hidden = !physical;
+    if (physical) address.setAttribute("required", "");
+    else address.removeAttribute("required");
+    // Payment is step 2 for a digital order, step 3 once delivery appears.
+    if (paymentStep) paymentStep.textContent = physical ? "৩" : "২";
+  }
+
+  // Marks the page as un-purchasable, hiding the form, the coupon box and the
+  // submit button together so no orphan control is left pointing at nothing.
+  function setUnavailable(on) {
+    const layout = document.querySelector(".checkout-layout");
+    if (layout) layout.classList.toggle("is-unavailable", on);
+  }
+
+  const PLACEHOLDER_ICON =
+    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="m21 15-5-5L5 21"/></svg>';
+
   function renderSummary() {
     const mount = document.querySelector("[data-mount='order-summary']");
-    const form = document.getElementById("checkoutForm");
     if (!mount) return;
 
     if (!item) {
       mount.innerHTML = `<div class="empty-state"><p>কোনো আইটেম নির্বাচন করা হয়নি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন</a> অথবা <a class="text-link" href="store.html">স্টোর দেখুন</a>।</p></div>`;
-      if (form) form.style.display = "none";
+      setUnavailable(true);
       return;
     }
 
@@ -77,11 +103,20 @@
     const due = total();
     mount.innerHTML = `
       <div class="order-summary">
-        <div class="order-summary-row">
-          <div>
+        <div class="osr-item">
+          <div class="osr-thumb">${
+            item.image
+              ? `<img src="${escapeHtml(item.image)}" alt="" decoding="async">`
+              : PLACEHOLDER_ICON
+          }</div>
+          <div class="osr-item-body">
             <div class="osr-title">${escapeHtml(item.title)}</div>
             <div class="osr-sub">${item.kind === "course" ? "কোর্স" : `প্রোডাক্ট${item.qty > 1 ? ` · পরিমাণ ${bn(item.qty)}` : ""}`}</div>
           </div>
+          <div class="osr-item-price">${sub === 0 ? "ফ্রি" : taka(sub)}</div>
+        </div>
+        <div class="order-summary-row">
+          <div><div class="osr-title">সাবটোটাল</div></div>
           <div>${sub === 0 ? "ফ্রি" : taka(sub)}</div>
         </div>
         ${off > 0
@@ -95,8 +130,10 @@
 
     if (!item.dbId) {
       mount.innerHTML += `<div class="notice">এই আইটেমটি Supabase-এর সাথে সংযুক্ত নয় (ডেমো ডেটা), তাই অর্ডার সম্পন্ন করা যাবে না।</div>`;
-      if (form) form.style.display = "none";
+      setUnavailable(true);
+      return;
     }
+    setUnavailable(false);
   }
 
   async function prefillFromUser() {
@@ -253,6 +290,7 @@
   document.addEventListener("sitedata-ready", () => {
     item = findItem(window.SITE_DATA || {});
     renderSummary();
+    syncDeliveryStep();
     prefillFromUser();
     const form = document.getElementById("checkoutForm");
     if (form) form.addEventListener("submit", handleSubmit);

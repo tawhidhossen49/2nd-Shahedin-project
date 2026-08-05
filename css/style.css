@@ -1341,18 +1341,116 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .gallery-main img{inline-size:100%; block-size:100%; object-fit:cover;}
 .gallery-thumbs[hidden]{display:none;}
 
-/* Checkout */
-.checkout-page{padding-block:calc(var(--nav-h) + clamp(44px,6vw,80px)) var(--section-lg);}
-.checkout-form fieldset{border:none; min-inline-size:0;}
-.checkout-form .two-col{gap:clamp(24px,3vw,48px);}
-.checkout-form .btn{margin-block-start:var(--space-6);}
-.field-label{display:block; font-size:var(--step--1); font-weight:600; margin-block-end:var(--space-2); color:var(--text-2);}
-.payment-locked{
-  display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;
-  padding:var(--space-4); border:1px solid var(--line); border-radius:var(--radius-s);
-  background:var(--surface-1);
+/* =========================================================================
+   CHECKOUT
+   -------------------------------------------------------------------------
+   Trust-first transactional layout. The page previously stacked a full-width
+   summary above a two-column form, which pushed the price out of view while
+   the buyer typed and left the submit button stranded at the bottom of a long
+   form, far from the number it was charging. Now: form left, sticky summary
+   rail right, submit directly under the total.
+
+   Radius system on this page: --radius-m for surfaces, --radius-s for
+   controls, --radius-pill for the step badges only. One accent
+   (--accent-fill / --accent-ink); --good is reserved for money coming off.
+   ========================================================================= */
+.checkout-page{padding-block:calc(var(--nav-h) + clamp(36px,5vw,64px)) var(--section-lg);}
+
+.checkout-head{margin-block-end:var(--space-8);}
+.checkout-head h1{margin:0; font-size:var(--step-4);}
+.checkout-back{
+  display:inline-flex; align-items:center; gap:var(--space-2);
+  font-size:var(--step--1); color:var(--text-3); font-family:var(--font-body);
+  margin-block-end:var(--space-4);
+  transition:color var(--dur-2) var(--ease-out);
 }
-.payment-locked .pay-icon{margin:0;}
+.checkout-back:hover{color:var(--text-1);}
+.checkout-back svg{transition:transform var(--dur-2) var(--ease-out);}
+.checkout-back:hover svg{transform:translateX(-3px);}
+
+.checkout-layout{
+  display:grid; grid-template-columns:minmax(0,1fr) 384px;
+  gap:clamp(28px,3.5vw,60px); align-items:start;
+}
+/* When the item can't be bought (no item in the URL, or demo data with no
+   database id) js/checkout.js sets this. Hiding the form alone would leave an
+   orphaned coupon box and a submit button with nothing to submit. */
+.checkout-layout.is-unavailable .checkout-main,
+.checkout-layout.is-unavailable .summary-actions,
+.checkout-layout.is-unavailable .checkout-trust{display:none;}
+
+/* ---- Form column: three grouped steps, not one undifferentiated stack ---- */
+.checkout-main{min-inline-size:0;}
+.co-group{
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1); padding:var(--space-6) clamp(var(--space-5),3vw,var(--space-7));
+  margin-block-end:var(--space-5);
+}
+.co-group[hidden]{display:none;}
+.co-group-head{display:flex; gap:var(--space-4); align-items:flex-start; margin-block-end:var(--space-6);}
+.co-step{
+  flex:0 0 auto; inline-size:30px; block-size:30px; border-radius:var(--radius-pill);
+  display:grid; place-items:center; font-family:var(--font-num); font-size:var(--step--1); font-weight:600;
+  background:var(--accent-dim); color:var(--accent-ink); border:1px solid var(--line-accent);
+}
+.co-group-head h2{margin:0; font-size:var(--step-1); font-family:var(--font-body); font-weight:600;}
+.co-group-head p{margin:var(--space-1) 0 0; font-size:var(--step--1); color:var(--text-3);}
+
+.co-fields{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4) var(--space-5);}
+.co-field-wide{grid-column:1/-1;}
+.co-fields .field{margin-block-end:0;}
+.co-fields textarea{min-block-size:96px;}
+.field-optional{font-weight:400; color:var(--text-3); font-size:var(--step--2);}
+.field-help{margin:var(--space-2) 0 0; font-size:var(--step--2); color:var(--text-3);}
+
+/* ---- Payment method: a chosen method, not a floating tag ---- */
+.pay-method{
+  display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap;
+  padding:var(--space-4) var(--space-5); border-radius:var(--radius-s);
+  border:1px solid var(--line-strong); background:var(--surface-2);
+}
+.pay-method.is-selected{border-color:var(--line-accent); background:var(--accent-dim);}
+.pay-method-check{
+  flex:0 0 auto; inline-size:20px; block-size:20px; border-radius:var(--radius-pill);
+  display:grid; place-items:center; background:var(--accent-fill); color:var(--text-on-accent);
+}
+.pay-method .pay-icon{margin:0;}
+.pay-method-label{font-size:var(--step--1); color:var(--text-2); font-family:var(--font-body);}
+
+.co-notice{
+  display:flex; gap:var(--space-3); align-items:flex-start;
+  margin:var(--space-4) 0 0; padding:var(--space-4);
+  border-radius:var(--radius-s); background:var(--surface-2);
+  font-size:var(--step--2); line-height:1.65; color:var(--text-3);
+}
+.co-notice svg{flex:0 0 auto; margin-block-start:2px;}
+
+/* ---- Summary rail ---- */
+.checkout-rail{position:sticky; inset-block-start:calc(var(--nav-h) + 20px); min-inline-size:0;}
+.summary-card{
+  border:1px solid var(--line-strong); border-radius:var(--radius-m);
+  background:var(--surface-2); padding:var(--space-6);
+  box-shadow:var(--shadow-3);
+}
+.summary-title{
+  margin:0 0 var(--space-4); font-size:var(--step--1); font-family:var(--font-body);
+  font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:var(--text-3);
+}
+.summary-actions{margin-block-start:var(--space-5);}
+.summary-actions .coupon-field{margin-block-end:var(--space-5);}
+.summary-actions .btn-lg{inline-size:100%;}
+
+.checkout-trust{
+  list-style:none; margin:var(--space-6) 0 0; padding:var(--space-5) 0 0;
+  border-block-start:1px solid var(--line);
+  display:grid; gap:var(--space-4);
+}
+.checkout-trust li{display:flex; gap:var(--space-3); align-items:flex-start; color:var(--text-3);}
+.checkout-trust svg{flex:0 0 auto; margin-block-start:1px; color:var(--text-2);}
+.checkout-trust span{font-size:var(--step--2); line-height:1.55;}
+.checkout-trust b{display:block; font-weight:600; color:var(--text-2); margin-block-end:1px;}
+.checkout-trust a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px;}
+
 .gallery-thumbs{display:flex; gap:var(--space-2);}
 .gallery-thumbs .g-thumb{
   inline-size:70px; aspect-ratio:1/1; border-radius:var(--radius-s); overflow:hidden;
@@ -1362,23 +1460,65 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .gallery-thumbs .g-thumb:hover{opacity:.85; transform:translateY(-2px);}
 .gallery-thumbs .g-thumb.active{opacity:1; border-color:var(--accent-ink);}
 
-.order-summary{background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius-m); padding:var(--space-5) var(--space-6); margin-block-end:var(--space-7);}
-.order-summary-row{display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); padding-block:var(--space-3);}
-.order-summary-row.total{border-block-start:1px solid var(--line); margin-block-start:var(--space-2); padding-block-start:var(--space-4); font-weight:700; font-size:var(--step-1);}
-.order-summary .osr-title{font-weight:600; color:var(--text-1); font-family:var(--font-body);}
-.order-summary .osr-sub{font-size:var(--step--2); color:var(--text-3); font-family:var(--font-body);}
+/* The summary carries no chrome of its own: .summary-card already provides the
+   surface, and nesting a bordered card inside a bordered card is the classic
+   "card in a card" tell. */
+.order-summary{background:none; border:none; padding:0; margin:0;}
+
+/* The line item: thumbnail + name, so the buyer can see WHAT they are paying
+   for, not just read its title. */
+.osr-item{display:flex; gap:var(--space-4); align-items:flex-start; padding-block-end:var(--space-5);}
+.osr-thumb{
+  flex:0 0 auto; inline-size:60px; aspect-ratio:1/1; border-radius:var(--radius-s);
+  overflow:hidden; background:var(--surface-3); border:1px solid var(--line);
+  display:grid; place-items:center; color:var(--text-3);
+}
+.osr-thumb img{inline-size:100%; block-size:100%; object-fit:cover;}
+.osr-item-body{min-inline-size:0; flex:1;}
+.osr-item-price{font-family:var(--font-num); font-weight:600; color:var(--text-1); white-space:nowrap;}
+
+.order-summary-row{display:flex; justify-content:space-between; align-items:baseline; gap:var(--space-3); padding-block:var(--space-2);}
+.order-summary-row.total{
+  border-block-start:1px solid var(--line-strong); margin-block-start:var(--space-3);
+  padding-block-start:var(--space-4); font-weight:700; font-size:var(--step-2);
+  align-items:baseline;
+}
+.order-summary-row.total span:first-child{font-size:var(--step-0); font-weight:600; color:var(--text-2);}
+.order-summary .osr-title{font-weight:600; color:var(--text-1); font-family:var(--font-body); line-height:1.4;}
+.order-summary .osr-sub{font-size:var(--step--2); color:var(--text-3); font-family:var(--font-body); margin-block-start:var(--space-1);}
+.order-summary-row > div:last-child{font-family:var(--font-num); color:var(--text-2); white-space:nowrap;}
 /* A successfully applied coupon reads as money coming off, so it takes the
    positive/"good" colour rather than the accent used for prices. */
-.order-summary-row.discount{color:var(--good); padding-block:var(--space-2);}
-.order-summary-row.discount .osr-sub{color:inherit; opacity:.85;}
+.order-summary-row.discount{color:var(--good);}
+.order-summary-row.discount > div:last-child{color:inherit;}
+.order-summary-row.discount .osr-title{color:inherit; font-weight:500;}
+.order-summary-row.discount .osr-sub{color:inherit; opacity:.8;}
 
 /* Coupon input + its Apply button sit on one line; the button never shrinks
    below its label, the input takes the rest. */
 .coupon-row{display:flex; gap:var(--space-2); align-items:stretch;}
 .coupon-row input{flex:1 1 auto; min-inline-size:0;}
 .coupon-row .btn{flex:0 0 auto; white-space:nowrap;}
+.form-status{margin:var(--space-2) 0 0; font-size:var(--step--2); line-height:1.5;}
 .form-status.is-error{color:var(--accent-ink);}
 .form-status.is-ok{color:var(--good);}
+
+/* ---- Checkout responsive ----
+   The rail stops being a rail below 1000px: it moves above the form so the
+   buyer sees the price and the total before filling anything in, and the
+   sticky positioning is dropped (a sticky block in normal flow on a phone
+   just eats the viewport). */
+@media (max-width:1000px){
+  .checkout-layout{grid-template-columns:minmax(0,1fr);}
+  .checkout-rail{position:static; order:-1;}
+  .summary-card{box-shadow:var(--shadow-2);}
+}
+@media (max-width:560px){
+  .co-fields{grid-template-columns:1fr;}
+  .co-group{padding:var(--space-5) var(--space-4);}
+  .summary-card{padding:var(--space-5) var(--space-4);}
+  .checkout-head h1{font-size:var(--step-3);}
+}
 
 /* =========================================================================
    17. PORTFOLIO / CONTACT / DASHBOARD

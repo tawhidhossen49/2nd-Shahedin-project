@@ -166,6 +166,27 @@ img{max-width:100%; display:block;}
 .form-field input:focus, .form-field textarea:focus, .form-field select:focus{ outline:none; border-color:var(--accent-line); }
 .form-check{ display:flex; align-items:center; gap:9px; font-size:.87rem; }
 .form-check input{ width:16px; height:16px; accent-color:var(--accent-fill); }
+
+/* ---------- Field-level validation ----------
+   A failed save used to be one toast at the bottom of the screen naming a
+   database column, which said nothing about WHICH box on a 14-field form was
+   the problem. Every rule now marks its own field: red border on the input,
+   and the reason directly underneath it. */
+.form-field .req{ color:var(--accent-ink, #e4405f); font-weight:700; }
+.form-field input.is-invalid,
+.form-field textarea.is-invalid,
+.form-field select.is-invalid{
+  border-color:var(--accent-fill);
+  box-shadow:0 0 0 3px color-mix(in srgb, var(--accent-fill) 22%, transparent);
+}
+.form-field input.is-invalid:focus,
+.form-field textarea.is-invalid:focus,
+.form-field select.is-invalid:focus{ border-color:var(--accent-fill); }
+.field-error{
+  font-size:.76rem; line-height:1.4; color:var(--accent-ink, #e4405f);
+  margin:2px 0 0; display:flex; align-items:flex-start; gap:6px;
+}
+.field-error::before{ content:"!"; font-weight:700; flex:0 0 auto; }
 /* ---------- Section visibility switches ---------- */
 .visibility-list{ display:flex; flex-direction:column; gap:2px; }
 .visibility-row{

@@ -96,24 +96,22 @@
           <h2>${p ? "Edit product" : "Add a new product"}</h2>
           <button class="modal-close" id="closeModal">&times;</button>
         </div>
-        <form id="productForm">
+        <!-- novalidate: the browser's own "Please fill out this field" bubble
+             would fire before the submit handler and preempt the specific,
+             per-field messages below. All required checks run in saveProduct. -->
+        <form id="productForm" novalidate>
           <div class="form-grid">
-            <!-- Bangla is the required one, because it is the column the
-                 database refuses to accept as null AND the name visitors
-                 actually see. This pair used to be the other way round, so
-                 filling the form in the obvious order produced
-                 "null value in column name_bn violates not-null constraint". -->
             <div class="form-field">
-              <label>Name (Bangla) <span class="hint">shown on the site</span></label>
-              <input type="text" id="f_name_bn" value="${Admin.escapeHtml(p?.name_bn || "")}" required>
+              <label>Name (Bangla) <span class="req">mandatory</span> <span class="hint">· shown on the site</span></label>
+              <input type="text" id="f_name_bn" value="${Admin.escapeHtml(p?.name_bn || "")}">
             </div>
             <div class="form-field">
-              <label>Name (English) <span class="hint">optional</span></label>
+              <label>Name (English) <span class="req">mandatory</span></label>
               <input type="text" id="f_name_en" value="${Admin.escapeHtml(p?.name_en || "")}">
             </div>
             <div class="form-field full">
-              <label>Link on the site <span class="hint">auto-filled — only change if you know what it does</span></label>
-              <input type="text" id="f_slug" value="${Admin.escapeHtml(p?.slug || "")}" required>
+              <label>Link on the site <span class="req">mandatory</span> <span class="hint">· auto-filled — only change if you know what it does</span></label>
+              <input type="text" id="f_slug" value="${Admin.escapeHtml(p?.slug || "")}">
             </div>
             <div class="form-field full">
               <label>Description (English)</label>
@@ -203,8 +201,45 @@
     if (el) el.remove();
   }
 
+  /* Each rule names exactly one field. "Bangla name is missing" can only ever
+     appear because f_name_bn is blank — it is never used as a stand-in for
+     some other failure. */
+  const PRODUCT_RULES = [
+    { id: "f_name_bn", label: "Bangla name", message: "Bangla name is missing. This is the name shown to visitors on the site." },
+    { id: "f_name_en", label: "English name", message: "English name is missing." },
+    { id: "f_slug", label: "Link on the site", message: "Link on the site is missing. It is normally filled in for you from the name." },
+    {
+      id: "f_price",
+      label: "Price",
+      message: "Price must be a number — use 0 for a free product.",
+      test: (v) => v !== "" && Number.isFinite(Number(v)) && Number(v) >= 0,
+    },
+    {
+      id: "f_stock",
+      label: "Stock",
+      message: "Stock must be a whole number, or left blank for unlimited.",
+      test: (v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0),
+    },
+    {
+      id: "f_old_price",
+      label: "Original price",
+      message: "Original price must be higher than the price, or left blank.",
+      test: (v) => v === "" || Number(v) > Number(document.getElementById("f_price").value || 0),
+    },
+  ];
+
   async function saveProduct(e) {
     e.preventDefault();
+
+    // Validate BEFORE touching the button or uploading anything — the old
+    // order uploaded the image first, so a rejected save left an orphan file
+    // in storage every time.
+    const missing = Admin.validateFields(document.getElementById("productForm"), PRODUCT_RULES);
+    if (missing.length) {
+      Admin.toast(Admin.missingSummary(missing), true);
+      return;
+    }
+
     const btn = document.getElementById("saveProductBtn");
     btn.disabled = true;
     btn.textContent = "Saving…";
@@ -250,7 +285,28 @@
       closeModal();
       await loadProducts();
     } catch (err) {
-      Admin.toast("Couldn't save: " + (err.message || err), true);
+      /* Even a server rejection gets pinned to the field that caused it, so
+         the admin never has to translate a Postgres error into a form box.
+         23505 = unique violation (the slug is the only unique column here),
+         23502 = not-null violation, which names its own column. */
+      const byColumn = { name_bn: "f_name_bn", name_en: "f_name_en", slug: "f_slug", price_bdt: "f_price" };
+      let handled = false;
+
+      if (err.code === "23505") {
+        Admin.showFieldError(document.getElementById("f_slug"), "Another product already uses this link. Change it to something unique.");
+        Admin.toast("That link is already taken by another product.", true);
+        handled = true;
+      } else if (err.code === "23502") {
+        const column = (err.message || "").match(/column "([a-z_]+)"/);
+        const target = column && byColumn[column[1]];
+        if (target) {
+          Admin.showFieldError(document.getElementById(target), "This field can't be empty.");
+          Admin.toast("A required field was left empty.", true);
+          handled = true;
+        }
+      }
+      if (!handled) Admin.toast("Couldn't save: " + (err.message || err), true);
+
       btn.disabled = false;
       btn.textContent = editingId ? "Save changes" : "Create product";
     }

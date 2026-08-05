@@ -9,11 +9,12 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 > **Already set this up before?** Re-run `schema.sql` (Step 2) once more. The
 > latest version adds the `contact_submissions` table that the contact form
 > writes to, a few new Settings fields, and (section 17) the buyer-detail
-> columns on `orders` plus the `coupons` table. Re-running is safe — it never
-> duplicates data and never overwrites anything you've already typed into the
-> admin panel. Until you do, the contact form won't be able to save messages,
-> the coupon box on checkout won't work, and orders will save without the
-> buyer's name, phone and delivery address.
+> columns on `orders` plus the `coupons` table, and (section 18) coupon
+> scoping so a code can be limited to courses or to store products. Re-running
+> is safe — it never duplicates data and never overwrites anything you've
+> already typed into the admin panel. Until you do, the contact form won't be
+> able to save messages, the coupon box on checkout won't work, and orders
+> will save without the buyer's name, phone and delivery address.
 
 ---
 
@@ -98,11 +99,19 @@ and Step 3 (create your login).
   and store purchase, newest first, with the name, phone, email and delivery
   address the buyer typed at checkout. Filter to "To ship" to see just the
   physical orders waiting to go out, and export the list as CSV.
-- **Run a discount** → Admin panel → **Coupons**. Create a code (percent off
-  or a fixed taka amount), optionally with a minimum order value, an expiry
-  date and a maximum number of uses. Customers type it into the coupon box on
-  checkout. "Turn off" stops a code working immediately while keeping its
-  history; deleting it does not.
+- **Run a discount** → Admin panel → **Coupons**. Codes are grouped by what
+  they apply to, each with its own button:
+  - **Course coupons** work only when someone is buying a course.
+  - **Product coupons** work only in the store.
+  - **Site-wide coupons** work on both.
+
+  For each code you set percent off or a fixed taka amount, and optionally a
+  minimum order value, an expiry date and a maximum number of uses. Customers
+  type it into the coupon box on checkout, and a code used on the wrong kind
+  of item is refused with a message explaining which side it belongs to.
+  "Turn off" stops a code working immediately while keeping its history;
+  deleting it does not. Any coupon you created before scoping existed stays
+  site-wide, so nothing you have already issued changes behaviour.
 - **See how the site is doing** → Admin panel → Analytics.
 - **Read messages from the contact form** → Admin panel → **Contact Messages**.
   Everything anyone sends through the form on `contact.html` lands here

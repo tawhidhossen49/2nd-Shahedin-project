@@ -33,6 +33,13 @@
     used_up: "এই কুপনটি সর্বোচ্চ সংখ্যকবার ব্যবহার হয়ে গেছে।",
   };
 
+  // A code scoped to courses must not silently discount a mug, so the reason
+  // says which side it belongs to rather than just "invalid".
+  const SCOPE_ERRORS = {
+    course: "এই কুপনটি শুধু কোর্সের জন্য প্রযোজ্য, প্রোডাক্টে ব্যবহার করা যাবে না।",
+    product: "এই কুপনটি শুধু স্টোরের প্রোডাক্টের জন্য প্রযোজ্য, কোর্সে ব্যবহার করা যাবে না।",
+  };
+
   function subtotal() {
     return item ? item.price * item.qty : 0;
   }
@@ -180,19 +187,29 @@
     btn.textContent = "দেখা হচ্ছে…";
     try {
       const c = window.ShahedinAuth.client();
-      const { data, error } = await c.rpc("validate_coupon", { p_code: code, p_subtotal: subtotal() });
+      // p_kind scopes the code: a "course" coupon is rejected on a product
+      // order and vice versa. The check happens in the database, not here, so
+      // an edited request can't sidestep it.
+      const { data, error } = await c.rpc("validate_coupon", {
+        p_code: code,
+        p_subtotal: subtotal(),
+        p_kind: item.kind,
+      });
       if (error) throw error;
 
       if (!data || !data.valid) {
         coupon = null;
         renderSummary();
         const reason = data && data.reason;
-        setCouponStatus(
-          reason === "min_order"
-            ? `এই কুপনটি ব্যবহার করতে সর্বনিম্ন ${taka(data.min_order_bdt)} মূল্যের অর্ডার প্রয়োজন।`
-            : COUPON_ERRORS[reason] || "কুপনটি প্রয়োগ করা যায়নি।",
-          "error"
-        );
+        let message;
+        if (reason === "min_order") {
+          message = `এই কুপনটি ব্যবহার করতে সর্বনিম্ন ${taka(data.min_order_bdt)} মূল্যের অর্ডার প্রয়োজন।`;
+        } else if (reason === "wrong_scope") {
+          message = SCOPE_ERRORS[data.applies_to] || "এই কুপনটি এই অর্ডারে প্রযোজ্য নয়।";
+        } else {
+          message = COUPON_ERRORS[reason] || "কুপনটি প্রয়োগ করা যায়নি।";
+        }
+        setCouponStatus(message, "error");
         return;
       }
 
@@ -203,10 +220,14 @@
     } catch (err) {
       coupon = null;
       renderSummary();
-      // An older database that hasn't run the latest schema.sql has no
-      // validate_coupon function; say so rather than blaming the code.
       setCouponStatus("কুপন যাচাই করা যায়নি, একটু পরে আবার চেষ্টা করুন।", "error");
-      console.warn("Shahedin checkout: coupon validation failed.", err);
+      // A database still on the 2-argument validate_coupon rejects the p_kind
+      // argument outright. Name the fix rather than leaving a vague failure.
+      console.warn(
+        "Shahedin checkout: coupon validation failed. If this says the function does not exist, " +
+        "run section 18 of schema.sql in the Supabase SQL editor to add coupon scoping.",
+        err
+      );
     } finally {
       btn.disabled = false;
       btn.textContent = original;

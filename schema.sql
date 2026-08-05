@@ -1290,3 +1290,77 @@ drop trigger if exists orders_bump_coupon on orders;
 create trigger orders_bump_coupon
   after insert on orders
   for each row execute function bump_coupon_usage();
+
+
+-- =========================================================================
+-- 18. COUPON SCOPE (course-only / product-only / site-wide)
+--     Safe to re-run.
+--
+--     Coupons were global: a code meant for a course sale also discounted
+--     every book and mug in the store. `applies_to` scopes each code, and
+--     validate_coupon() now refuses a code used on the wrong kind of item.
+-- =========================================================================
+alter table coupons add column if not exists applies_to text not null default 'all';
+
+-- Rebuilt rather than "add if not exists" so re-running picks up any change
+-- to the allowed values.
+alter table coupons drop constraint if exists coupons_applies_to_check;
+alter table coupons add constraint coupons_applies_to_check
+  check (applies_to in ('all', 'course', 'product'));
+
+-- Existing codes stay site-wide. Anything already issued keeps working
+-- exactly as it did before this migration; scoping is opt-in per code.
+
+-- The signature gains p_kind, so the old 2-argument version is dropped first
+-- (CREATE OR REPLACE cannot change an argument list, it would just add an
+-- overload and leave the unscoped version callable).
+drop function if exists validate_coupon(text, integer);
+
+create or replace function validate_coupon(p_code text, p_subtotal integer, p_kind text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v   coupons%rowtype;
+  off integer;
+begin
+  if coalesce(trim(p_code), '') = '' then
+    return jsonb_build_object('valid', false, 'reason', 'empty');
+  end if;
+
+  select * into v from coupons where code = upper(trim(p_code));
+
+  if not found                                          then return jsonb_build_object('valid', false, 'reason', 'not_found');   end if;
+  if not v.is_active                                    then return jsonb_build_object('valid', false, 'reason', 'inactive');    end if;
+  if v.expires_at is not null and v.expires_at < now()  then return jsonb_build_object('valid', false, 'reason', 'expired');     end if;
+  if v.max_uses is not null and v.used_count >= v.max_uses
+                                                        then return jsonb_build_object('valid', false, 'reason', 'used_up');     end if;
+
+  -- Scope check. p_kind null means the caller didn't say what is being bought,
+  -- in which case only a site-wide code is accepted -- never guess in the
+  -- customer's favour.
+  if v.applies_to <> 'all' and v.applies_to is distinct from p_kind then
+    return jsonb_build_object('valid', false, 'reason', 'wrong_scope', 'applies_to', v.applies_to);
+  end if;
+
+  if coalesce(p_subtotal, 0) < v.min_order_bdt          then return jsonb_build_object('valid', false, 'reason', 'min_order',
+                                                                                       'min_order_bdt', v.min_order_bdt);        end if;
+
+  off := case
+           when v.discount_type = 'percent' then floor(coalesce(p_subtotal, 0) * least(v.discount_value, 100) / 100.0)
+           else v.discount_value
+         end;
+  off := greatest(0, least(off, coalesce(p_subtotal, 0)));
+
+  return jsonb_build_object(
+    'valid', true, 'code', v.code, 'applies_to', v.applies_to,
+    'discount_type', v.discount_type, 'discount_value', v.discount_value,
+    'discount_bdt', off
+  );
+end;
+$$;
+
+revoke all on function validate_coupon(text, integer, text) from public;
+grant execute on function validate_coupon(text, integer, text) to anon, authenticated;

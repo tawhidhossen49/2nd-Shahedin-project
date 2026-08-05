@@ -31,8 +31,6 @@
   const c = Admin.client();
   let coupons = [];
 
-  await load();
-
   async function load() {
     const { data, error } = await c.from("coupons").select("*").order("created_at", { ascending: false });
     if (error) {
@@ -54,35 +52,73 @@
     return { label: "Active", cls: "badge-live" };
   }
 
+  /* Coupons are grouped by what they apply to rather than listed as one flat
+     table, so a course promotion and a store promotion are never confused for
+     each other. Each group has its own "add" button that pre-sets the scope,
+     which is the only way an admin reliably gets the scope right. */
+  const SCOPES = [
+    {
+      id: "course",
+      title: "Course coupons",
+      blurb: "Only work when the customer is buying a course. Ignored in the store.",
+      add: "+ Add course coupon",
+      empty: 'No course coupons yet. Click "+ Add course coupon" to create one.',
+    },
+    {
+      id: "product",
+      title: "Product coupons",
+      blurb: "Only work on store products. Ignored on course checkouts.",
+      add: "+ Add product coupon",
+      empty: 'No product coupons yet. Click "+ Add product coupon" to create one.',
+    },
+    {
+      id: "all",
+      title: "Site-wide coupons",
+      blurb: "Work on both courses and store products.",
+      add: "+ Add site-wide coupon",
+      empty: "No site-wide coupons. Use these for something like an Eid sale across everything.",
+    },
+  ];
+
+  const scopeOf = (v) => (SCOPES.some((s) => s.id === v.applies_to) ? v.applies_to : "all");
+
   function render() {
-    content.innerHTML = `
+    content.innerHTML = SCOPES.map(
+      (s) => `
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h2>Discount codes</h2>
-            <p>Customers type these into the coupon box on checkout. Codes are not case-sensitive.</p>
+            <h2>${s.title}</h2>
+            <p>${s.blurb}</p>
           </div>
-          <button class="btn btn-primary" id="addBtn">+ Add coupon</button>
+          <button class="btn btn-primary" data-add-scope="${s.id}">${s.add}</button>
         </div>
-        <div id="tableWrap"></div>
-      </div>`;
+        <div data-scope-table="${s.id}"></div>
+      </div>`
+    ).join("") +
+      `<p class="hint" style="margin-top:4px;">Codes are not case-sensitive. Customers type them into the coupon box on checkout.</p>`;
 
-    document.getElementById("addBtn").addEventListener("click", () => openModal(null));
+    content.querySelectorAll("[data-add-scope]").forEach((b) =>
+      b.addEventListener("click", () => openModal(null, b.dataset.addScope))
+    );
 
-    const wrap = document.getElementById("tableWrap");
-    if (!coupons.length) {
-      wrap.innerHTML = `<div class="empty-state">No coupons yet. Click "+ Add coupon" to create your first discount code.</div>`;
-      return;
-    }
-    wrap.innerHTML = `
-      <table class="admin-table">
-        <thead><tr><th>Code</th><th>Discount</th><th>Conditions</th><th>Used</th><th>Status</th><th></th></tr></thead>
-        <tbody>${coupons.map(rowHtml).join("")}</tbody>
-      </table>`;
+    SCOPES.forEach((s) => {
+      const wrap = content.querySelector(`[data-scope-table="${s.id}"]`);
+      const rows = coupons.filter((v) => scopeOf(v) === s.id);
+      if (!rows.length) {
+        wrap.innerHTML = `<div class="empty-state">${s.empty}</div>`;
+        return;
+      }
+      wrap.innerHTML = `
+        <table class="admin-table">
+          <thead><tr><th>Code</th><th>Discount</th><th>Conditions</th><th>Used</th><th>Status</th><th></th></tr></thead>
+          <tbody>${rows.map(rowHtml).join("")}</tbody>
+        </table>`;
+    });
 
-    wrap.querySelectorAll(".edit-btn").forEach((b) => b.addEventListener("click", () => openModal(b.dataset.code)));
-    wrap.querySelectorAll(".del-btn").forEach((b) => b.addEventListener("click", () => remove(b.dataset.code)));
-    wrap.querySelectorAll(".toggle-btn").forEach((b) => b.addEventListener("click", () => toggle(b.dataset.code)));
+    content.querySelectorAll(".edit-btn").forEach((b) => b.addEventListener("click", () => openModal(b.dataset.code)));
+    content.querySelectorAll(".del-btn").forEach((b) => b.addEventListener("click", () => remove(b.dataset.code)));
+    content.querySelectorAll(".toggle-btn").forEach((b) => b.addEventListener("click", () => toggle(b.dataset.code)));
   }
 
   function rowHtml(v) {
@@ -134,14 +170,17 @@
     await load();
   }
 
-  function openModal(code) {
+  function openModal(code, presetScope) {
     const v = code ? coupons.find((x) => x.code === code) : null;
+    const scope = v ? scopeOf(v) : presetScope || "all";
+    const scopeTitle = SCOPES.find((s) => s.id === scope).title.replace(/ coupons$/, "");
+
     const backdrop = document.createElement("div");
     backdrop.className = "modal-backdrop";
     backdrop.innerHTML = `
       <div class="modal" style="max-width:560px;">
         <div class="modal-head">
-          <h2>${v ? "Edit coupon" : "Add a coupon"}</h2>
+          <h2>${v ? "Edit coupon" : `New ${scopeTitle.toLowerCase()} coupon`}</h2>
           <button class="modal-close" id="closeModal">&times;</button>
         </div>
         <form id="couponForm">
@@ -150,6 +189,14 @@
               <label for="f_code">Code <span class="hint">what the customer types</span></label>
               <input type="text" id="f_code" value="${Admin.escapeHtml(v?.code || "")}" ${v ? "readonly style=\"opacity:.7;cursor:default;\"" : ""} required
                      placeholder="EID25" autocapitalize="characters" spellcheck="false">
+            </div>
+            <div class="form-field">
+              <label for="f_scope">Applies to</label>
+              <select id="f_scope">
+                <option value="course"  ${scope === "course" ? "selected" : ""}>Courses only</option>
+                <option value="product" ${scope === "product" ? "selected" : ""}>Store products only</option>
+                <option value="all"     ${scope === "all" ? "selected" : ""}>Everything (courses and products)</option>
+              </select>
             </div>
             <div class="form-field">
               <label for="f_type">Discount type</label>
@@ -218,6 +265,7 @@
       const expRaw = backdrop.querySelector("#f_expires").value;
       const payload = {
         code: codeVal,
+        applies_to: backdrop.querySelector("#f_scope").value,
         discount_type: typeEl.value,
         discount_value: Math.max(1, parseInt(valueEl.value || "1", 10)),
         min_order_bdt: Math.max(0, parseInt(backdrop.querySelector("#f_min").value || "0", 10)),
@@ -249,4 +297,12 @@
       await load();
     });
   }
+
+  /* Kick off LAST, after every declaration above has executed.
+     `function` declarations hoist, but `const` does not: it sits in the
+     temporal dead zone until its line runs. load() calls render(), and
+     render() reads the SCOPES const, so starting the fetch higher up threw
+     "Cannot access 'SCOPES' before initialization", rejected this async IIFE,
+     and left the page showing "Loading coupons..." forever. */
+  await load();
 })();

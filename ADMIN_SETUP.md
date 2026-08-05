@@ -10,7 +10,8 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 > latest version adds the `contact_submissions` table that the contact form
 > writes to, a few new Settings fields, and (section 17) the buyer-detail
 > columns on `orders` plus the `coupons` table, and (section 18) coupon
-> scoping so a code can be limited to courses or to store products. Re-running
+> scoping so a code can be limited to courses or to store products, and
+> (section 19) digital product delivery plus the `products_safe` view. Re-running
 > is safe — it never duplicates data and never overwrites anything you've
 > already typed into the admin panel. Until you do, the contact form won't be
 > able to save messages, the coupon box on checkout won't work, and orders
@@ -95,6 +96,18 @@ and Step 3 (create your login).
 - **Unpublish something without deleting it** → uncheck "Published" when
   editing it. It stays saved but disappears from the site.
 - **Reorder items** → change the "Order" number (lower numbers show first).
+- **Deliver a digital product** → when adding or editing a product, set Type to
+  "Digital download" and then choose what the buyer receives:
+  - **Upload a file** (PDF, image, zip) stored in your Supabase media bucket, or
+  - **An external link** (Google Drive, Notion, a private video). Make sure it is
+    shared as "anyone with the link can view".
+
+  You can also set the button text and a short note shown only after purchase.
+  The moment an order completes, the buyer sees it under **রিসোর্স** and on their
+  **অর্ডার** row in the dashboard. The download link is readable *only* by
+  someone who has actually bought that product, so it is safe to point at a real
+  file. Leave delivery set to "Nothing automatic" for anything you fulfil by
+  hand, and the product page will say so instead of promising a download.
 - **See who bought what** → Admin panel → **Orders**. Every course enrolment
   and store purchase, newest first, with the name, phone, email and delivery
   address the buyer typed at checkout. Filter to "To ship" to see just the

@@ -69,6 +69,20 @@
     return String(str).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
   }
 
+  /* What the buyer is told they will get. This has to track what the product
+     is actually configured to deliver: promising an instant download for an
+     item with nothing attached is exactly the kind of lie this page used to
+     tell (it once promised an emailed link, which nothing in the codebase
+     could ever send). deliveryType is public on products_safe; the URL itself
+     is not, and is never needed here. */
+  function deliveryNoteHTML(p) {
+    const note = (text) => `<p class="small-note" style="margin-top:10px;">${text}</p>`;
+    if (p.type === "physical") return note("সারা বাংলাদেশে ৩–৫ কার্যদিবসে ডেলিভারি।");
+    if (p.deliveryType === "file") return note("কেনার সাথে সাথেই আপনার ড্যাশবোর্ড থেকে ফাইলটি ডাউনলোড করতে পারবেন।");
+    if (p.deliveryType === "link") return note("কেনার সাথে সাথেই আপনার ড্যাশবোর্ড থেকে অ্যাক্সেস লিংক পাবেন।");
+    return note("অর্ডার সম্পন্ন হলে এটি আপনার ড্যাশবোর্ডের “অর্ডার” তালিকায় যুক্ত হবে, এবং আমরা আপনার সাথে যোগাযোগ করব।");
+  }
+
   /* ---------- Bangla presentation helpers ----------
      The site is Bangla-only, but course rows carry English-ish values from
      the database (`general`, `6 weeks`, `4.8`). These convert them for
@@ -723,14 +737,7 @@
          <h1>${escapeHtml(p.title)}</h1>
          <div class="price" style="margin:14px 0;">${p.oldPrice ? `<span class="old">৳${bnNum(Number(p.oldPrice))}</span>` : ""}৳${bnNum(Number(p.price))}</div>
          <p>${escapeHtml(p.desc)}</p>
-         ${p.type === "physical"
-           ? '<p class="small-note" style="margin-top:10px;">সারা বাংলাদেশে ৩–৫ কার্যদিবসে ডেলিভারি।</p>'
-           /* This used to promise a download link emailed "সাথে সাথে" after
-              checkout. Nothing can send it: accounts are created with a phone
-              number only, the email box at checkout is optional, and no email
-              is sent anywhere in the codebase. It now describes what the site
-              genuinely does — record the order where the buyer can see it. */
-           : '<p class="small-note" style="margin-top:10px;">অর্ডার সম্পন্ন হলে এটি আপনার ড্যাশবোর্ডের “অর্ডার” তালিকায় যুক্ত হবে, এবং ডাউনলোড লিংক পাঠাতে আমরা আপনার সাথে যোগাযোগ করব।</p>'}`
+         ${deliveryNoteHTML(p)}`
       );
       const buyMount = document.querySelector("[data-mount='product-buy']");
       if (buyMount) {

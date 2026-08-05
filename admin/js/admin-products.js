@@ -141,6 +141,51 @@
               <label>Stock <span class="hint">leave blank = unlimited</span></label>
               <input type="number" id="f_stock" min="0" value="${p?.stock ?? ""}">
             </div>
+
+            <!-- Digital delivery. Hidden entirely for a physical product,
+                 because a shipped item has nothing to download. What goes in
+                 here is what the buyer gets in their dashboard the moment the
+                 order completes. -->
+            <div class="form-field full" id="deliveryBlock" style="border-top:1px solid var(--line); padding-top:16px; margin-top:4px;">
+              <label for="f_delivery_type">What the buyer receives
+                <span class="hint">delivered instantly in their dashboard after purchase</span>
+              </label>
+              <select id="f_delivery_type">
+                <option value="none"  ${(p?.delivery_type || "none") === "none" ? "selected" : ""}>Nothing automatic (you send it yourself)</option>
+                <option value="file"  ${p?.delivery_type === "file" ? "selected" : ""}>Upload a file (PDF, image, zip)</option>
+                <option value="link"  ${p?.delivery_type === "link" ? "selected" : ""}>An external link (Drive, Notion, private video)</option>
+              </select>
+            </div>
+
+            <div class="form-field full" data-delivery-field="file">
+              <label for="f_delivery_file">Product file
+                ${p?.delivery_url && p?.delivery_type === "file"
+                  ? `<span class="hint">a file is already uploaded — choose a new one only to replace it</span>`
+                  : ""}
+              </label>
+              <input type="file" id="f_delivery_file" accept=".pdf,.zip,.epub,image/*,application/pdf,application/zip">
+              ${p?.delivery_url && p?.delivery_type === "file"
+                ? `<p class="hint" style="margin-top:8px;">Currently: <a href="${Admin.escapeHtml(p.delivery_url)}" target="_blank" rel="noopener">open the uploaded file</a></p>`
+                : ""}
+            </div>
+
+            <div class="form-field full" data-delivery-field="link">
+              <label for="f_delivery_link">Link <span class="hint">make sure it is set to "anyone with the link can view"</span></label>
+              <input type="url" id="f_delivery_link" placeholder="https://..."
+                     value="${Admin.escapeHtml(p?.delivery_type === "link" ? (p?.delivery_url || "") : "")}">
+            </div>
+
+            <div class="form-field" data-delivery-field="file link">
+              <label for="f_delivery_label">Button text <span class="hint">optional</span></label>
+              <input type="text" id="f_delivery_label" placeholder="PDF ডাউনলোড করুন"
+                     value="${Admin.escapeHtml(p?.delivery_label || "")}">
+            </div>
+
+            <div class="form-field" data-delivery-field="file link">
+              <label for="f_delivery_note">Note for the buyer <span class="hint">optional, shown only after purchase</span></label>
+              <input type="text" id="f_delivery_note" placeholder="যেকোনো সমস্যায় আমাদের জানান।"
+                     value="${Admin.escapeHtml(p?.delivery_note || "")}">
+            </div>
             <div class="form-field">
               <label>Order on the site</label>
               <input type="number" id="f_sort" value="${p?.sort_order ?? 0}">
@@ -185,6 +230,23 @@
     }
     document.getElementById("f_name_en").addEventListener("input", autoSlug);
     document.getElementById("f_name_bn").addEventListener("input", autoSlug);
+
+    /* Only show delivery options that apply. A physical product loses the
+       whole block; picking "nothing automatic" hides the file/link inputs so
+       the form never asks for something it will not use. */
+    const typeEl = document.getElementById("f_type");
+    const deliveryTypeEl = document.getElementById("f_delivery_type");
+    function syncDelivery() {
+      const isDigital = typeEl.value === "digital";
+      const mode = isDigital ? deliveryTypeEl.value : "none";
+      document.getElementById("deliveryBlock").hidden = !isDigital;
+      backdrop.querySelectorAll("[data-delivery-field]").forEach((el) => {
+        el.hidden = !isDigital || !el.dataset.deliveryField.split(" ").includes(mode);
+      });
+    }
+    typeEl.addEventListener("change", syncDelivery);
+    deliveryTypeEl.addEventListener("change", syncDelivery);
+    syncDelivery();
 
     document.getElementById("tonePicker").addEventListener("click", (e) => {
       const btn = e.target.closest("button");
@@ -240,15 +302,45 @@
       return;
     }
 
+    /* Delivery is validated separately because whether it is required depends
+       on two other fields. Saving "file" with no file, or "link" with no URL,
+       would leave buyers paying for a product that delivers nothing. */
+    const existing = editingId ? products.find((x) => x.id === editingId) : null;
+    const isDigital = document.getElementById("f_type").value === "digital";
+    const deliveryType = isDigital ? document.getElementById("f_delivery_type").value : "none";
+    const linkVal = document.getElementById("f_delivery_link").value.trim();
+    const newFile = document.getElementById("f_delivery_file").files[0];
+    const keptFile = existing && existing.delivery_type === "file" ? existing.delivery_url : null;
+
+    if (deliveryType === "file" && !newFile && !keptFile) {
+      Admin.showFieldError(document.getElementById("f_delivery_file"), "Choose the file buyers will download, or set delivery to “Nothing automatic”.");
+      Admin.toast("Product file is missing.", true);
+      return;
+    }
+    if (deliveryType === "link" && !/^https?:\/\/\S+$/i.test(linkVal)) {
+      Admin.showFieldError(document.getElementById("f_delivery_link"), "Enter the full link, starting with https://");
+      Admin.toast("Delivery link is missing or incomplete.", true);
+      return;
+    }
+
     const btn = document.getElementById("saveProductBtn");
     btn.disabled = true;
     btn.textContent = "Saving…";
 
     try {
-      let image_url = editingId ? products.find((x) => x.id === editingId)?.image_url || null : null;
+      let image_url = existing ? existing.image_url || null : null;
       const fileInput = document.getElementById("f_image");
       if (fileInput.files[0]) {
         image_url = await Admin.uploadImage(fileInput.files[0], "products");
+      }
+
+      // Uploaded to its own folder, and each upload gets a fresh timestamped
+      // path, so replacing a file never serves a stale cached copy.
+      let delivery_url = null;
+      if (deliveryType === "file") {
+        delivery_url = newFile ? await Admin.uploadFile(newFile, "product-files") : keptFile;
+      } else if (deliveryType === "link") {
+        delivery_url = linkVal;
       }
 
       const selectedTone = document.querySelector("#tonePicker button.selected");
@@ -264,6 +356,10 @@
         description_en: document.getElementById("f_desc_en").value.trim(),
         category: document.getElementById("f_category").value.trim() || "digital",
         type: document.getElementById("f_type").value,
+        delivery_type: deliveryType,
+        delivery_url,
+        delivery_label: deliveryType === "none" ? null : document.getElementById("f_delivery_label").value.trim() || null,
+        delivery_note: deliveryType === "none" ? null : document.getElementById("f_delivery_note").value.trim() || null,
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
         old_price_bdt: oldPriceVal ? parseInt(oldPriceVal, 10) : null,
         stock: stockVal === "" ? null : parseInt(stockVal, 10),

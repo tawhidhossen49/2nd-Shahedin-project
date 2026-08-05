@@ -25,7 +25,7 @@
   const app = document.getElementById("dashApp");
   if (!app) return;
 
-  let state = { user: null, enrollments: [], courses: [], orders: [] };
+  let state = { user: null, enrollments: [], courses: [], orders: [], products: [] };
 
   async function init() {
     if (!window.ShahedinAuth || !window.ShahedinAuth.configured()) {
@@ -91,6 +91,38 @@
     } else {
       state.courses = [];
     }
+
+    /* Digital products this student has bought. products_safe returns
+       delivery_url only to someone with a completed order for that product,
+       so simply asking for it here is the whole access check. */
+    const productIds = [...new Set(state.orders.filter((o) => o.kind === "product").map((o) => o.item_id))];
+    if (productIds.length) {
+      const { data: products, error } = await c.from("products_safe").select("*").in("id", productIds);
+      if (error) console.warn("Shahedin dashboard: couldn't load purchased products.", error);
+      state.products = products || [];
+    } else {
+      state.products = [];
+    }
+  }
+
+  function productFor(order) {
+    return state.products.find((p) => p.id === order.item_id);
+  }
+
+  /* Everything the student has bought that actually has something to download.
+     Deduplicated by product, because buying the same PDF twice should not
+     produce two identical download rows. */
+  function purchasedDownloads() {
+    const seen = new Set();
+    const out = [];
+    state.orders.forEach((o) => {
+      if (o.kind !== "product" || o.status !== "completed") return;
+      const p = productFor(o);
+      if (!p || !p.delivery_url || seen.has(p.id)) return;
+      seen.add(p.id);
+      out.push({ product: p, order: o });
+    });
+    return out;
   }
 
   function courseFor(enrollment) {
@@ -260,9 +292,43 @@
       known.map((x) => courseRowHTML(x.c, x.p)).join("") + (missing ? unavailableHTML(missing) : "");
   }
 
+  /* One row per downloadable thing. `download` is set for uploaded files so
+     the browser saves them instead of navigating away; it is ignored on a
+     cross-origin URL, where target="_blank" keeps the dashboard open. */
+  function downloadRowHTML(opts) {
+    return `
+      <div class="res-row res-row-buy">
+        <div class="rleft">
+          <span class="res-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16"/></svg>
+          </span>
+          <span>
+            ${escapeHtml(opts.title)}
+            <span class="small-note">${escapeHtml(opts.sub)}</span>
+            ${opts.note ? `<span class="small-note res-note">${escapeHtml(opts.note)}</span>` : ""}
+          </span>
+        </div>
+        <a href="${escapeHtml(opts.url)}" target="_blank" rel="noopener" ${opts.isFile ? "download" : ""}
+           class="btn btn-primary btn-sm">${escapeHtml(opts.label)}</a>
+      </div>`;
+  }
+
+  function purchasedDownloadHTML(entry) {
+    const p = entry.product;
+    return downloadRowHTML({
+      title: p.name_bn || p.name_en,
+      sub: "কেনা প্রোডাক্ট",
+      note: p.delivery_note || "",
+      url: p.delivery_url,
+      label: p.delivery_label || (p.delivery_type === "link" ? "খুলুন" : "ডাউনলোড করুন"),
+      isFile: p.delivery_type === "file",
+    });
+  }
+
   function renderResources(main) {
     main.innerHTML = `<h1 class="dash-page-title">রিসোর্স</h1><div id="resList"></div>`;
     const wrap = document.getElementById("resList");
+    const bought = purchasedDownloads();
     const items = [];
     state.enrollments.forEach((e) => {
       const course = courseFor(e);
@@ -274,22 +340,33 @@
       });
     });
 
-    if (!items.length) {
-      wrap.innerHTML = `<div class="empty-state"><p>আপনার ভর্তি হওয়া কোর্সে এখনো কোনো রিসোর্স বা PDF যোগ করা হয়নি।</p></div>`;
+    if (!items.length && !bought.length) {
+      wrap.innerHTML = `<div class="empty-state"><p>এখানে আপনার কেনা ডিজিটাল প্রোডাক্ট এবং ভর্তি হওয়া কোর্সের রিসোর্স দেখা যাবে।</p></div>`;
       return;
     }
-    wrap.innerHTML = items
-      .map(
-        (it) => `
+
+    // Bought products first: someone who just paid is looking for that file,
+    // not for a reading list from a course they enrolled in weeks ago.
+    wrap.innerHTML =
+      (bought.length
+        ? `<h2 class="dash-section-title">আপনার কেনা প্রোডাক্ট</h2>${bought.map(purchasedDownloadHTML).join("")}`
+        : "") +
+      (items.length
+        ? `${bought.length ? `<h2 class="dash-section-title">কোর্সের রিসোর্স</h2>` : ""}${items
+            .map(
+              (it) => `
       <div class="res-row">
         <div class="rleft">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-          <span>${escapeHtml(it.block.title)} <span class="small-note">— ${escapeHtml(it.courseTitle)}</span></span>
+          <span class="res-icon" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          </span>
+          <span>${escapeHtml(it.block.title)} <span class="small-note">${escapeHtml(it.courseTitle)}</span></span>
         </div>
         ${it.url ? `<a href="${escapeHtml(it.url)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">দেখুন</a>` : `<span class="small-note">লিংক নেই</span>`}
       </div>`
-      )
-      .join("");
+            )
+            .join("")}`
+        : "");
   }
 
   function renderCertificates(main) {
@@ -327,30 +404,89 @@
     });
   }
 
+  /* A certificate number that is stable for a given student and course. Derived
+     from the enrolment's own uuid rather than generated, so reopening or
+     reprinting the certificate always shows the same number and it can be
+     matched back to a real row if someone ever asks you to verify it. */
+  function certificateId(enrollment, course) {
+    const src = String((enrollment && enrollment.id) || course.id || "").replace(/[^a-fA-F0-9]/g, "");
+    const block = (i) => (src.slice(i, i + 4) || "0000").toUpperCase().padStart(4, "0");
+    return `SHD-${block(0)}-${block(4)}`;
+  }
+
   function showCertificate(course) {
     const name = window.ShahedinAuth.displayName(state.user);
-    const date = new Date().toLocaleDateString("bn-BD", { year: "numeric", month: "long", day: "numeric" });
+    const enrollment = state.enrollments.find((e) => e.course_id === course.id);
+    /* The date the course was actually finished, not today. This used to be
+       `new Date()`, so the same certificate showed a different date every time
+       it was opened, which makes it worthless as a record. */
+    const when = (enrollment && (enrollment.completed_at || enrollment.enrolled_at)) || null;
+    const date = (when ? new Date(when) : new Date()).toLocaleDateString("bn-BD", { year: "numeric", month: "long", day: "numeric" });
+    const title = course.title_bn || course.title_en;
+    const certNo = certificateId(enrollment, course);
+
     const backdrop = document.createElement("div");
-    backdrop.className = "modal-backdrop";
+    backdrop.className = "modal-backdrop cert-backdrop";
     backdrop.innerHTML = `
-      <div class="modal modal-wide">
-        <button type="button" class="modal-close" id="certClose">&times;</button>
-        <div class="certificate">
-          <div class="cert-brand"><span class="dot"></span>Shahedin</div>
-          <p class="cert-label">সম্পন্নতার সার্টিফিকেট</p>
-          <p class="cert-line">এই মর্মে প্রত্যয়ন করা হচ্ছে যে</p>
-          <h2 class="cert-name">${escapeHtml(name)}</h2>
-          <p class="cert-line">সফলভাবে সম্পন্ন করেছেন</p>
-          <h3 class="cert-course">${escapeHtml(course.title_bn || course.title_en)}</h3>
-          <p class="cert-date">${date}</p>
+      <div class="modal modal-wide cert-modal">
+        <button type="button" class="modal-close" id="certClose" aria-label="বন্ধ করুন">&times;</button>
+
+        <div class="certificate" role="img"
+             aria-label="${escapeHtml(name)}-এর নামে ${escapeHtml(title)} কোর্স সম্পন্নতার সার্টিফিকেট, ${escapeHtml(date)}">
+          <div class="cert-frame">
+            <span class="cert-corner tl" aria-hidden="true"></span>
+            <span class="cert-corner tr" aria-hidden="true"></span>
+            <span class="cert-corner bl" aria-hidden="true"></span>
+            <span class="cert-corner br" aria-hidden="true"></span>
+
+            <header class="cert-head">
+              <span class="cert-monogram" aria-hidden="true">S</span>
+              <span class="cert-wordmark">SHAHEDIN</span>
+            </header>
+
+            <p class="cert-label">সম্পন্নতার সার্টিফিকেট</p>
+            <span class="cert-rule" aria-hidden="true"></span>
+
+            <p class="cert-line">এই মর্মে প্রত্যয়ন করা হচ্ছে যে</p>
+            <h2 class="cert-name">${escapeHtml(name)}</h2>
+            <p class="cert-line">নিম্নলিখিত কোর্সটি সফলভাবে সম্পন্ন করেছেন</p>
+            <h3 class="cert-course">${escapeHtml(title)}</h3>
+
+            <div class="cert-foot">
+              <div class="cert-sign">
+                <span class="cert-sign-line" aria-hidden="true"></span>
+                <b>শাহেদীন</b>
+                <small>ইন্সট্রাক্টর</small>
+              </div>
+
+              <div class="cert-seal" aria-hidden="true">
+                <span class="cert-seal-ring"></span>
+                <span class="cert-seal-mark">S</span>
+                <span class="cert-seal-text">সম্পন্ন</span>
+              </div>
+
+              <div class="cert-sign">
+                <span class="cert-sign-line" aria-hidden="true"></span>
+                <b>${escapeHtml(date)}</b>
+                <small>সম্পন্নের তারিখ</small>
+              </div>
+            </div>
+
+            <p class="cert-id">সার্টিফিকেট নং <span>${escapeHtml(certNo)}</span></p>
+          </div>
         </div>
+
         <div class="dash-modal-actions">
-          <button type="button" class="btn btn-primary btn-block" id="certPrint">প্রিন্ট / সেভ করুন</button>
+          <button type="button" class="btn btn-primary btn-block" id="certPrint">প্রিন্ট / PDF সেভ করুন</button>
         </div>
       </div>`;
+
     document.body.appendChild(backdrop);
-    backdrop.querySelector("#certClose").addEventListener("click", () => backdrop.remove());
-    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
+    const close = () => { backdrop.remove(); document.removeEventListener("keydown", onKey); };
+    function onKey(e) { if (e.key === "Escape") close(); }
+    document.addEventListener("keydown", onKey);
+    backdrop.querySelector("#certClose").addEventListener("click", close);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) close(); });
     backdrop.querySelector("#certPrint").addEventListener("click", () => window.print());
   }
 
@@ -361,9 +497,24 @@
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো অর্ডার নেই। <a class="text-link" href="store.html">স্টোর দেখুন →</a></p></div>`;
       return;
     }
+    /* The buyer lands on this tab straight after paying, so whatever they just
+       bought has to be reachable from here. Digital products get their real
+       download; anything else says honestly what is happening instead of
+       showing a dead button. */
+    function actionCell(o) {
+      if (o.kind === "course") return `<a class="text-link" href="#courses">দেখুন</a>`;
+      const p = productFor(o);
+      if (p && p.delivery_url && o.status === "completed") {
+        const label = p.delivery_label || (p.delivery_type === "link" ? "খুলুন" : "ডাউনলোড");
+        return `<a href="${escapeHtml(p.delivery_url)}" target="_blank" rel="noopener"${p.delivery_type === "file" ? " download" : ""} class="btn btn-primary btn-sm">${escapeHtml(label)}</a>`;
+      }
+      if (p && p.type === "physical") return `<span class="small-note">ডেলিভারিতে</span>`;
+      return `<span class="small-note">শীঘ্রই পাঠানো হবে</span>`;
+    }
+
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>আইটেম</th><th>ধরন</th><th>পরিমাণ</th><th>মূল্য</th><th>তারিখ</th><th>অবস্থা</th></tr></thead>
+        <thead><tr><th>আইটেম</th><th>ধরন</th><th>পরিমাণ</th><th>মূল্য</th><th>তারিখ</th><th>অবস্থা</th><th></th></tr></thead>
         <tbody>
           ${state.orders
             .map(
@@ -375,6 +526,7 @@
               <td>${o.amount_bdt === 0 ? "ফ্রি" : "৳" + o.amount_bdt}</td>
               <td>${new Date(o.created_at).toLocaleDateString("bn-BD")}</td>
               <td><span class="badge badge-live">${o.status === "completed" ? "সম্পন্ন" : o.status === "pending" ? "অপেক্ষমাণ" : "বাতিল"}</span></td>
+              <td>${actionCell(o)}</td>
             </tr>`
             )
             .join("")}

@@ -1364,3 +1364,73 @@ $$;
 
 revoke all on function validate_coupon(text, integer, text) from public;
 grant execute on function validate_coupon(text, integer, text) to anon, authenticated;
+
+
+-- =========================================================================
+-- 19. DIGITAL PRODUCT DELIVERY
+--     Safe to re-run.
+--
+--     Buying a digital product used to give the buyer nothing: the order was
+--     recorded and that was the end of it. These columns hold what the buyer
+--     actually receives, and products_safe makes sure only a buyer can read it.
+--
+--     THE POINT OF THE VIEW: the `products` table is world-readable
+--     ("anyone can read published products" ... using is_published = true), so
+--     a delivery_url sitting in a plain column would be downloadable by anyone
+--     who opened the network tab, without paying. products_safe hands the URL
+--     back ONLY to an admin or to someone with a completed order for that exact
+--     product. Same pattern as courses_safe in section 13.
+-- =========================================================================
+
+-- 'none' = nothing to deliver (physical goods, or a digital item you fulfil
+-- by hand). 'file' = something uploaded to the media bucket. 'link' = an
+-- external URL (Google Drive, Notion, a private YouTube link, etc).
+alter table products add column if not exists delivery_type text not null default 'none';
+alter table products drop constraint if exists products_delivery_type_check;
+alter table products add constraint products_delivery_type_check
+  check (delivery_type in ('none', 'file', 'link'));
+
+alter table products add column if not exists delivery_url   text;
+alter table products add column if not exists delivery_label text;  -- button text, e.g. "PDF ডাউনলোড করুন"
+alter table products add column if not exists delivery_note  text;  -- instructions shown after purchase only
+
+-- -------------------------------------------------------------------------
+-- products_safe: the public read path for the store.
+-- delivery_type and delivery_label stay visible to everyone so the product
+-- page can honestly say what you get before you buy. delivery_url and
+-- delivery_note are stripped unless you have paid.
+-- -------------------------------------------------------------------------
+drop view if exists products_safe;
+create view products_safe as
+select
+  p.id, p.slug, p.name_bn, p.name_en, p.description_bn, p.description_en,
+  p.category, p.price_bdt, p.old_price_bdt, p.stock, p.image_url,
+  p.is_published, p.sort_order, p.created_at, p.updated_at,
+  p.tone, p.type, p.extra,
+  p.delivery_type, p.delivery_label,
+  case when p.type = 'digital' and (
+         auth.uid() in (select id from admins)
+         or (auth.uid() is not null and exists (
+              select 1 from orders o
+               where o.user_id = auth.uid()
+                 and o.kind    = 'product'
+                 and o.item_id = p.id
+                 and o.status  = 'completed'
+            ))
+       )
+       then p.delivery_url end as delivery_url,
+  case when p.type = 'digital' and (
+         auth.uid() in (select id from admins)
+         or (auth.uid() is not null and exists (
+              select 1 from orders o
+               where o.user_id = auth.uid()
+                 and o.kind    = 'product'
+                 and o.item_id = p.id
+                 and o.status  = 'completed'
+            ))
+       )
+       then p.delivery_note end as delivery_note
+from products p
+where p.is_published = true or auth.uid() in (select id from admins);
+
+grant select on products_safe to anon, authenticated;

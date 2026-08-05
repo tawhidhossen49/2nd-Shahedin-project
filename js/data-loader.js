@@ -67,6 +67,13 @@
       desc: row.description_bn || row.description_en || "",
       image: row.image_url || null,
       stock: row.stock,
+      /* What a buyer receives. delivery_type/label are public so the product
+         page can say what you get; delivery_url arrives as null from
+         products_safe unless this visitor has actually bought it. */
+      deliveryType: row.delivery_type || "none",
+      deliveryLabel: row.delivery_label || "",
+      deliveryUrl: row.delivery_url || null,
+      deliveryNote: row.delivery_note || "",
     };
   }
 
@@ -79,23 +86,35 @@
 
       const [coursesRes, productsRes] = await Promise.all([
         client.from("courses_safe").select("*").order("sort_order", { ascending: true }),
-        client.from("products").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
+        // products_safe, not products: the raw table would hand every visitor
+        // the digital delivery URL whether or not they paid for it.
+        client.from("products_safe").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
       ]);
 
-      if (coursesRes.error || productsRes.error) {
-        console.warn("Shahedin: Supabase fetch failed, using sample data.", coursesRes.error || productsRes.error);
-        return false;
+      /* Handled independently on purpose. These used to share one failure
+         check, so a problem with the products query threw the courses away
+         too and the whole site dropped to the English sample data. A missing
+         products_safe view should cost you the store, not the catalogue. */
+      if (coursesRes.error) {
+        console.warn("Shahedin: couldn't load courses, using sample data.", coursesRes.error);
+      }
+      if (productsRes.error) {
+        console.warn(
+          "Shahedin: couldn't load products, using sample data. If this says products_safe " +
+          "does not exist, run section 19 of schema.sql in the Supabase SQL editor.",
+          productsRes.error
+        );
       }
 
-      const courses = (coursesRes.data || []).map(mapCourse);
-      const products = (productsRes.data || []).map(mapProduct);
+      const courses = coursesRes.error ? [] : (coursesRes.data || []).map(mapCourse);
+      const products = productsRes.error ? [] : (productsRes.data || []).map(mapProduct);
 
       // Only replace the sample data if Supabase actually returned rows —
       // an empty database shouldn't blank out the demo content.
       window.SITE_DATA = window.SITE_DATA || {};
       if (courses.length) window.SITE_DATA.courses = courses;
       if (products.length) window.SITE_DATA.products = products;
-      return true;
+      return !(coursesRes.error && productsRes.error);
     } catch (err) {
       console.warn("Shahedin: Supabase fetch threw an error, using sample data.", err);
       return false;

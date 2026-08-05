@@ -31,8 +31,6 @@
   const c = Admin.client();
   let coupons = [];
 
-  await load();
-
   async function load() {
     const { data, error } = await c.from("coupons").select("*").order("created_at", { ascending: false });
     if (error) {
@@ -299,4 +297,12 @@
       await load();
     });
   }
+
+  /* Kick off LAST, after every declaration above has executed.
+     `function` declarations hoist, but `const` does not: it sits in the
+     temporal dead zone until its line runs. load() calls render(), and
+     render() reads the SCOPES const, so starting the fetch higher up threw
+     "Cannot access 'SCOPES' before initialization", rejected this async IIFE,
+     and left the page showing "Loading coupons..." forever. */
+  await load();
 })();

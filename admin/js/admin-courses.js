@@ -59,7 +59,7 @@
                 <div class="row-title-cell">
                   <div class="row-thumb" style="${course.thumbnail_url ? `background-image:url('${course.thumbnail_url}')` : ""}"></div>
                   <div>
-                    <div class="row-title">${Admin.escapeHtml(course.title_en || course.title_bn)}</div>
+                    <div class="row-title">${Admin.escapeHtml(course.title_bn || course.title_en)}</div>
                     <div class="row-sub">${Admin.escapeHtml(course.category)} · /${Admin.escapeHtml(course.slug)}</div>
                   </div>
                 </div>
@@ -83,7 +83,7 @@
 
   async function deleteCourse(id) {
     const course = courses.find((x) => x.id === id);
-    if (!confirm(`Delete "${course.title_en || course.title_bn}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${course.title_bn || course.title_en}"? This can't be undone.`)) return;
     const { error } = await c.from("courses").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Course deleted.");
@@ -105,16 +105,19 @@
         </div>
         <form id="courseForm">
           <div class="form-grid">
+            <!-- Bangla first and required: it is the NOT NULL column in the
+                 database and the title visitors actually read. Reversed until
+                 now, which made every save fail with a not-null error. -->
             <div class="form-field">
-              <label>Title (English)</label>
-              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}" required>
+              <label>Title (Bangla) <span class="hint">shown on the site</span></label>
+              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}" required>
             </div>
             <div class="form-field">
-              <label>Title (Bangla) <span class="hint">optional</span></label>
-              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
+              <label>Title (English) <span class="hint">optional</span></label>
+              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}">
             </div>
             <div class="form-field full">
-              <label>Link on the site <span class="hint">auto-filled from the English title — only change this if you know what it does</span></label>
+              <label>Link on the site <span class="hint">auto-filled from the title — only change this if you know what it does</span></label>
               <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}" required>
             </div>
             <div class="form-field full">
@@ -220,10 +223,18 @@
     document.getElementById("cancelModal").addEventListener("click", closeModal);
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
-    // auto-slug from title, only while creating a new course
-    document.getElementById("f_title_en").addEventListener("input", (e) => {
-      if (!course) document.getElementById("f_slug").value = Admin.slugify(e.target.value);
-    });
+    // Auto-slug from whichever title is filled in, only while creating.
+    // Prefers English for a cleaner URL, falls back to the Bangla title.
+    function autoSlug() {
+      if (course) return;
+      document.getElementById("f_slug").value = Admin.slugifyOrFallback(
+        "course",
+        document.getElementById("f_title_en").value,
+        document.getElementById("f_title_bn").value
+      );
+    }
+    document.getElementById("f_title_en").addEventListener("input", autoSlug);
+    document.getElementById("f_title_bn").addEventListener("input", autoSlug);
 
     document.getElementById("tonePicker").addEventListener("click", (e) => {
       const btn = e.target.closest("button");
@@ -464,9 +475,10 @@
       const selectedTone = document.querySelector("#tonePicker button.selected");
 
       const payload = {
-        title_en: document.getElementById("f_title_en").value.trim(),
-        title_bn: document.getElementById("f_title_bn").value.trim() || null,
-        slug: Admin.slugify(document.getElementById("f_slug").value),
+        // title_bn is NOT NULL in the database — never send an explicit null.
+        title_bn: document.getElementById("f_title_bn").value.trim(),
+        title_en: document.getElementById("f_title_en").value.trim() || null,
+        slug: Admin.slugifyOrFallback("course", document.getElementById("f_slug").value),
         description_en: document.getElementById("f_desc_en").value.trim(),
         category: document.getElementById("f_category").value.trim() || "general",
         duration_en: document.getElementById("f_duration").value.trim(),

@@ -49,6 +49,26 @@
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
+  /* Search used to match against the card's visible title only — and since
+     titles render in one language, searching in the other found nothing, and
+     a word from the description found nothing either. Every card now carries
+     a data-search index holding both language variants, the description and
+     the category (raw + Bangla label). Bangla digits are folded to Latin so
+     "৫" and "5" are the same query; js/main.js folds the typed term the same
+     way before comparing. */
+  function searchIndex(item) {
+    return foldDigits(
+      [item.title, item.title_bn, item.title_en, item.desc, item.category, categoryLabel(item.category)]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+    );
+  }
+
+  function foldDigits(str) {
+    return String(str).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
+  }
+
   /* ---------- Bangla presentation helpers ----------
      The site is Bangla-only, but course rows carry English-ish values from
      the database (`general`, `6 weeks`, `4.8`). These convert them for
@@ -438,7 +458,7 @@
     const title = escapeHtml(c.title);
     const duration = durationBn(c.duration);
     return `
-    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}">
+    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(c))}">
       <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
         ${thumbArt(c, c.title)}
         <div class="thumb-overlay"></div>
@@ -463,7 +483,7 @@
   function productCard(p) {
     const title = escapeHtml(p.title);
     return `
-    <a href="product-detail.html?id=${encodeURIComponent(p.id)}" class="card" data-filterable data-type="${escapeHtml(p.type)}" data-category="${escapeHtml(p.category)}" data-title="${title}">
+    <a href="product-detail.html?id=${encodeURIComponent(p.id)}" class="card" data-filterable data-type="${escapeHtml(p.type)}" data-category="${escapeHtml(p.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(p))}">
       <div class="thumb thumb-tone-${escapeHtml(p.tone)}${p.image ? " has-image" : ""}">
         ${thumbArt(p, p.title)}
         <div class="thumb-overlay"></div>

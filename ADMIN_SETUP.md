@@ -8,9 +8,12 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 
 > **Already set this up before?** Re-run `schema.sql` (Step 2) once more. The
 > latest version adds the `contact_submissions` table that the contact form
-> writes to, and a few new Settings fields. Re-running is safe — it never
+> writes to, a few new Settings fields, and (section 17) the buyer-detail
+> columns on `orders` plus the `coupons` table. Re-running is safe — it never
 > duplicates data and never overwrites anything you've already typed into the
-> admin panel. Until you do, the contact form won't be able to save messages.
+> admin panel. Until you do, the contact form won't be able to save messages,
+> the coupon box on checkout won't work, and orders will save without the
+> buyer's name, phone and delivery address.
 
 ---
 
@@ -91,6 +94,15 @@ and Step 3 (create your login).
 - **Unpublish something without deleting it** → uncheck "Published" when
   editing it. It stays saved but disappears from the site.
 - **Reorder items** → change the "Order" number (lower numbers show first).
+- **See who bought what** → Admin panel → **Orders**. Every course enrolment
+  and store purchase, newest first, with the name, phone, email and delivery
+  address the buyer typed at checkout. Filter to "To ship" to see just the
+  physical orders waiting to go out, and export the list as CSV.
+- **Run a discount** → Admin panel → **Coupons**. Create a code (percent off
+  or a fixed taka amount), optionally with a minimum order value, an expiry
+  date and a maximum number of uses. Customers type it into the coupon box on
+  checkout. "Turn off" stops a code working immediately while keeping its
+  history; deleting it does not.
 - **See how the site is doing** → Admin panel → Analytics.
 - **Read messages from the contact form** → Admin panel → **Contact Messages**.
   Everything anyone sends through the form on `contact.html` lands here

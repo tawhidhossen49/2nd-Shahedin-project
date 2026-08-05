@@ -51,7 +51,7 @@
                 <div class="row-title-cell">
                   <div class="row-thumb" style="${p.image_url ? `background-image:url('${p.image_url}')` : ""}"></div>
                   <div>
-                    <div class="row-title">${Admin.escapeHtml(p.name_en || p.name_bn)}</div>
+                    <div class="row-title">${Admin.escapeHtml(p.name_bn || p.name_en)}</div>
                     <div class="row-sub">${Admin.escapeHtml(p.category)} · /${Admin.escapeHtml(p.slug)}</div>
                   </div>
                 </div>
@@ -76,7 +76,7 @@
 
   async function deleteProduct(id) {
     const p = products.find((x) => x.id === id);
-    if (!confirm(`Delete "${p.name_en || p.name_bn}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${p.name_bn || p.name_en}"? This can't be undone.`)) return;
     const { error } = await c.from("products").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Product deleted.");
@@ -98,13 +98,18 @@
         </div>
         <form id="productForm">
           <div class="form-grid">
+            <!-- Bangla is the required one, because it is the column the
+                 database refuses to accept as null AND the name visitors
+                 actually see. This pair used to be the other way round, so
+                 filling the form in the obvious order produced
+                 "null value in column name_bn violates not-null constraint". -->
             <div class="form-field">
-              <label>Name (English)</label>
-              <input type="text" id="f_name_en" value="${Admin.escapeHtml(p?.name_en || "")}" required>
+              <label>Name (Bangla) <span class="hint">shown on the site</span></label>
+              <input type="text" id="f_name_bn" value="${Admin.escapeHtml(p?.name_bn || "")}" required>
             </div>
             <div class="form-field">
-              <label>Name (Bangla) <span class="hint">optional</span></label>
-              <input type="text" id="f_name_bn" value="${Admin.escapeHtml(p?.name_bn || "")}">
+              <label>Name (English) <span class="hint">optional</span></label>
+              <input type="text" id="f_name_en" value="${Admin.escapeHtml(p?.name_en || "")}">
             </div>
             <div class="form-field full">
               <label>Link on the site <span class="hint">auto-filled — only change if you know what it does</span></label>
@@ -170,9 +175,18 @@
     document.getElementById("cancelModal").addEventListener("click", closeModal);
     backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
 
-    document.getElementById("f_name_en").addEventListener("input", (e) => {
-      if (!p) document.getElementById("f_slug").value = Admin.slugify(e.target.value);
-    });
+    // Auto-slug from whichever name is filled in, only while creating.
+    // Prefers English for a cleaner URL, falls back to the Bangla name.
+    function autoSlug() {
+      if (p) return;
+      document.getElementById("f_slug").value = Admin.slugifyOrFallback(
+        "product",
+        document.getElementById("f_name_en").value,
+        document.getElementById("f_name_bn").value
+      );
+    }
+    document.getElementById("f_name_en").addEventListener("input", autoSlug);
+    document.getElementById("f_name_bn").addEventListener("input", autoSlug);
 
     document.getElementById("tonePicker").addEventListener("click", (e) => {
       const btn = e.target.closest("button");
@@ -207,9 +221,11 @@
       const oldPriceVal = document.getElementById("f_old_price").value;
 
       const payload = {
-        name_en: document.getElementById("f_name_en").value.trim(),
-        name_bn: document.getElementById("f_name_bn").value.trim() || null,
-        slug: Admin.slugify(document.getElementById("f_slug").value),
+        // name_bn is NOT NULL in the database, so an empty box must never be
+        // turned into an explicit null here — that was the save error.
+        name_bn: document.getElementById("f_name_bn").value.trim(),
+        name_en: document.getElementById("f_name_en").value.trim() || null,
+        slug: Admin.slugifyOrFallback("product", document.getElementById("f_slug").value),
         description_en: document.getElementById("f_desc_en").value.trim(),
         category: document.getElementById("f_category").value.trim() || "digital",
         type: document.getElementById("f_type").value,

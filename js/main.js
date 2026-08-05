@@ -281,6 +281,11 @@
   });
   document.addEventListener("contentready", applyFilters);
 
+  // Bangla digits → Latin, so a search term and the index compare equal.
+  function foldDigits(str) {
+    return String(str).replace(/[০-৯]/g, (d) => "০১২৩৪৫৬৭৮৯".indexOf(d));
+  }
+
   function applyFilters() {
     const cards = document.querySelectorAll("[data-filterable]");
     if (!cards.length) return;
@@ -289,7 +294,8 @@
       const active = group.querySelector(".chip.active");
       activeFilters[group.dataset.filterGroup] = active ? active.dataset.filterValue : "all";
     });
-    const searchVal = (document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase();
+    // Folded the same way render.js folds the index, so typing "৫" finds "5".
+    const searchVal = foldDigits((document.querySelector("[data-search-input]")?.value || "").trim().toLowerCase());
 
     cards.forEach((card) => {
       let visible = true;
@@ -300,8 +306,11 @@
         }
       });
       if (searchVal) {
-        const title = (card.dataset.title || card.textContent || "").toLowerCase();
-        if (!title.includes(searchVal)) visible = false;
+        // render.js builds data-search from both language titles, the
+        // description and the category. data-title is the fallback for any
+        // card rendered before that existed.
+        const haystack = (card.dataset.search || card.dataset.title || card.textContent || "").toLowerCase();
+        if (!foldDigits(haystack).includes(searchVal)) visible = false;
       }
       card.style.display = visible ? "" : "none";
     });

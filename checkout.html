@@ -72,7 +72,14 @@
         </fieldset>
         <fieldset>
           <legend class="visually-hidden">পেমেন্ট</legend>
-          <div class="field"><label for="coCoupon">কুপন কোড</label><input type="text" id="coCoupon" placeholder="ঐচ্ছিক"></div>
+          <div class="field">
+            <label for="coCoupon">কুপন কোড</label>
+            <div class="coupon-row">
+              <input type="text" id="coCoupon" name="coupon_code" placeholder="ঐচ্ছিক" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn btn-ghost" id="couponApplyBtn">প্রয়োগ করুন</button>
+            </div>
+            <p class="form-status" id="couponStatus" role="status" hidden></p>
+          </div>
           <div class="field">
             <!-- Only one payment method exists, so this is stated rather than
                  offered — it used to be a readonly text input styled exactly

@@ -1367,6 +1367,18 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .order-summary-row.total{border-block-start:1px solid var(--line); margin-block-start:var(--space-2); padding-block-start:var(--space-4); font-weight:700; font-size:var(--step-1);}
 .order-summary .osr-title{font-weight:600; color:var(--text-1); font-family:var(--font-body);}
 .order-summary .osr-sub{font-size:var(--step--2); color:var(--text-3); font-family:var(--font-body);}
+/* A successfully applied coupon reads as money coming off, so it takes the
+   positive/"good" colour rather than the accent used for prices. */
+.order-summary-row.discount{color:var(--good); padding-block:var(--space-2);}
+.order-summary-row.discount .osr-sub{color:inherit; opacity:.85;}
+
+/* Coupon input + its Apply button sit on one line; the button never shrinks
+   below its label, the input takes the rest. */
+.coupon-row{display:flex; gap:var(--space-2); align-items:stretch;}
+.coupon-row input{flex:1 1 auto; min-inline-size:0;}
+.coupon-row .btn{flex:0 0 auto; white-space:nowrap;}
+.form-status.is-error{color:var(--accent-ink);}
+.form-status.is-ok{color:var(--good);}
 
 /* =========================================================================
    17. PORTFOLIO / CONTACT / DASHBOARD

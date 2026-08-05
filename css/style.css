@@ -1439,6 +1439,12 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .summary-actions{margin-block-start:var(--space-5);}
 .summary-actions .coupon-field{margin-block-end:var(--space-5);}
 .summary-actions .btn-lg{inline-size:100%;}
+.summary-terms{
+  margin:var(--space-4) 0 0; font-size:var(--step--2); line-height:1.6;
+  color:var(--text-3); text-align:center;
+}
+.summary-terms a{color:var(--text-2); text-decoration:underline; text-underline-offset:2px;}
+.summary-terms a:hover{color:var(--text-1);}
 
 .checkout-trust{
   list-style:none; margin:var(--space-6) 0 0; padding:var(--space-5) 0 0;
@@ -1450,6 +1456,53 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .checkout-trust span{font-size:var(--step--2); line-height:1.55;}
 .checkout-trust b{display:block; font-weight:600; color:var(--text-2); margin-block-end:1px;}
 .checkout-trust a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px;}
+
+/* =========================================================================
+   LEGAL PAGES (terms.html / privacy.html)
+   -------------------------------------------------------------------------
+   A policy is read, not skimmed, so this is a reading column: one measure,
+   generous leading, headings that separate without shouting. No cards.
+   ========================================================================= */
+.legal-page{padding-block:calc(var(--nav-h) + clamp(36px,5vw,64px)) var(--section-lg);}
+.legal-head{margin-block-end:var(--space-9);}
+.legal-head h1{margin:var(--space-4) 0 0; font-size:var(--step-4);}
+.legal-intro{margin:var(--space-4) 0 0; font-size:var(--step-1); color:var(--text-2); max-inline-size:56ch;}
+.legal-updated{
+  margin:var(--space-5) 0 0; font-size:var(--step--2); color:var(--text-3);
+  border-inline-start:2px solid var(--line-accent); padding-inline-start:var(--space-4);
+}
+.legal-updated[hidden]{display:none;}
+
+.legal-body{max-inline-size:68ch;}
+.legal-body h2{
+  font-size:var(--step-1); margin-block:var(--space-9) var(--space-4);
+  padding-block-end:var(--space-3); border-block-end:1px solid var(--line);
+}
+.legal-body h2:first-child{margin-block-start:0;}
+.legal-body h3{font-size:var(--step-0); margin-block:var(--space-6) var(--space-3); color:var(--text-1);}
+.legal-body p{margin-block:0 var(--space-4); color:var(--text-2); line-height:1.85;}
+.legal-body ul,.legal-body ol{margin:0 0 var(--space-5); padding-inline-start:var(--space-6); display:grid; gap:var(--space-3);}
+.legal-body li{color:var(--text-2); line-height:1.75;}
+.legal-body li::marker{color:var(--text-3);}
+.legal-body strong{color:var(--text-1); font-weight:600;}
+.legal-body a{color:var(--accent-ink); text-decoration:underline; text-underline-offset:2px;}
+.legal-foot{
+  margin-block-start:var(--space-10); padding-block-start:var(--space-6);
+  border-block-start:1px solid var(--line); font-size:var(--step--1); color:var(--text-3);
+  display:flex; gap:var(--space-3); flex-wrap:wrap; align-items:center;
+}
+.legal-foot a{color:var(--text-2);}
+.legal-foot a:hover{color:var(--text-1);}
+
+/* Admin preview pane reuses the public typography so what the admin sees is
+   what ships. Scoped to .legal-preview in admin/css is not possible (different
+   stylesheet), so the shared rules live here and admin.css sizes the box. */
+.legal-preview h2,.legal-preview h3,.legal-preview p,.legal-preview li{font-family:var(--font-body);}
+
+/* Legal links in the footer of every page. */
+.footer-legal{display:flex; gap:var(--space-4); flex-wrap:wrap;}
+.footer-legal a{font-size:var(--step--2); color:var(--text-3); transition:color var(--dur-2) var(--ease-out);}
+.footer-legal a:hover{color:var(--text-1);}
 
 /* Purchased-download rows in the dashboard's Resources tab. The bought items
    sit above course resources and carry the accent, because someone who just

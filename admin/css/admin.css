@@ -187,6 +187,22 @@ img{max-width:100%; display:block;}
   margin:2px 0 0; display:flex; align-items:flex-start; gap:6px;
 }
 .field-error::before{ content:"!"; font-weight:700; flex:0 0 auto; }
+
+/* ---------- Legal page preview (admin/legal.html) ----------
+   Rendered by the same function the public pages use, so this box only has to
+   provide the frame and readable sizing. */
+.legal-preview{
+  background:var(--surface-2); border:1px solid var(--line-strong); border-radius:var(--radius-s);
+  padding:20px 22px; max-block-size:460px; overflow-y:auto; color:var(--text-2); font-size:.9rem;
+}
+.legal-preview > :first-child{ margin-block-start:0; }
+.legal-preview h2{ font-size:1rem; margin:26px 0 10px; padding-block-end:8px; border-block-end:1px solid var(--line); color:var(--text-1); }
+.legal-preview h3{ font-size:.92rem; margin:18px 0 8px; color:var(--text-1); }
+.legal-preview p{ margin:0 0 12px; line-height:1.75; }
+.legal-preview ul,.legal-preview ol{ margin:0 0 14px; padding-inline-start:22px; display:grid; gap:8px; }
+.legal-preview li{ line-height:1.65; }
+.legal-preview strong{ color:var(--text-1); }
+.legal-preview a{ color:var(--accent-ink); text-decoration:underline; }
 /* ---------- Section visibility switches ---------- */
 .visibility-list{ display:flex; flex-direction:column; gap:2px; }
 .visibility-row{

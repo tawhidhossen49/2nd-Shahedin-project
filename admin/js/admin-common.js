@@ -21,6 +21,7 @@ window.Admin = (function () {
     { href: "orders.html", label: "Orders", icon: "M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" },
     { href: "coupons.html", label: "Coupons", icon: "M20 12a2 2 0 0 1 2-2V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v3a2 2 0 0 1 0 4v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a2 2 0 0 1-2-2zM13 7v2M13 15v2" },
     { href: "analytics.html", label: "Analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
+    { href: "legal.html", label: "Terms & Privacy", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5" },
     { href: "settings.html", label: "Settings", icon: "M10.3 2.3h3.4l.6 2.4a7.9 7.9 0 0 1 2 1.2l2.4-.8 1.7 3-1.9 1.6a8 8 0 0 1 0 2.3l1.9 1.6-1.7 3-2.4-.8a7.9 7.9 0 0 1-2 1.2l-.6 2.4h-3.4l-.6-2.4a7.9 7.9 0 0 1-2-1.2l-2.4.8-1.7-3 1.9-1.6a8 8 0 0 1 0-2.3L1.7 8.1l1.7-3 2.4.8a7.9 7.9 0 0 1 2-1.2z" },
   ];
 

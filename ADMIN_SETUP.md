@@ -125,6 +125,18 @@ and Step 3 (create your login).
   "Turn off" stops a code working immediately while keeping its history;
   deleting it does not. Any coupon you created before scoping existed stays
   site-wide, so nothing you have already issued changes behaviour.
+- **Edit the Terms of Service or Privacy Policy** → Admin panel → **Terms &
+  Privacy**. Both public pages (`/terms.html` and `/privacy.html`) are fully
+  editable here, with a live preview showing exactly how visitors will see it.
+  The body box understands a few simple marks: `## Heading`, `- bullet`,
+  `1. numbered`, `**bold**` and `[link text](contact.html)`. A blank line starts
+  a new paragraph. "Reset to the built-in text" puts the original wording back
+  if you want to start over.
+
+  > The supplied text is a **starting point, not legal advice**. It describes
+  > what this site genuinely does, but it has not been reviewed by a lawyer.
+  > Get someone qualified to check it, especially the refund terms and anything
+  > about personal data.
 - **See how the site is doing** → Admin panel → Analytics.
 - **Read messages from the contact form** → Admin panel → **Contact Messages**.
   Everything anyone sends through the form on `contact.html` lands here

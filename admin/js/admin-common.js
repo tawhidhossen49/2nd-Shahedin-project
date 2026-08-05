@@ -124,6 +124,86 @@ window.Admin = (function () {
     setTimeout(() => el.remove(), 3800);
   }
 
+  /* ---------- Field-level validation ----------
+     Before this, a form either bounced off the browser's own generic
+     "Please fill out this field" bubble, or went to the server and came back
+     as one toast quoting a database column — "null value in column name_bn
+     violates not-null constraint" — which never told the admin which of the
+     fourteen boxes in front of them was wrong.
+
+     validateFields marks the offending input red, writes the specific reason
+     underneath it, scrolls to the first one, and returns the short labels of
+     everything that failed so the caller can name them in a toast too. The
+     error clears itself as soon as that field is edited, so a fixed field
+     stops looking broken without needing another save attempt.
+
+     Rules: { id, label, message, test? }. Default test is "not blank". */
+  function clearFieldErrors(scope) {
+    const root = scope || document;
+    root.querySelectorAll(".is-invalid").forEach((el) => {
+      el.classList.remove("is-invalid");
+      el.removeAttribute("aria-invalid");
+    });
+    root.querySelectorAll(".field-error").forEach((el) => el.remove());
+  }
+
+  function showFieldError(el, message) {
+    el.classList.add("is-invalid");
+    el.setAttribute("aria-invalid", "true");
+    const field = el.closest(".form-field") || el.parentElement;
+    if (!field) return;
+    let msg = field.querySelector(".field-error");
+    if (!msg) {
+      msg = document.createElement("p");
+      msg.className = "field-error";
+      field.appendChild(msg);
+    }
+    msg.textContent = message;
+  }
+
+  function validateFields(scope, rules) {
+    clearFieldErrors(scope);
+    const failed = [];
+
+    rules.forEach((rule) => {
+      const el = document.getElementById(rule.id);
+      if (!el) return;
+      const ok = rule.test ? rule.test(el.value, el) : String(el.value || "").trim() !== "";
+      if (ok) return;
+
+      failed.push(rule);
+      showFieldError(el, rule.message);
+
+      if (!el.dataset.errorWired) {
+        el.dataset.errorWired = "1";
+        const clear = () => {
+          el.classList.remove("is-invalid");
+          el.removeAttribute("aria-invalid");
+          const field = el.closest(".form-field") || el.parentElement;
+          const msg = field && field.querySelector(".field-error");
+          if (msg) msg.remove();
+        };
+        el.addEventListener("input", clear);
+        el.addEventListener("change", clear);
+      }
+    });
+
+    if (failed.length) {
+      const first = document.getElementById(failed[0].id);
+      if (first) {
+        if (typeof first.scrollIntoView === "function") first.scrollIntoView({ block: "center", behavior: "smooth" });
+        first.focus({ preventScroll: true });
+      }
+    }
+    return failed.map((r) => r.label);
+  }
+
+  // "Bangla name is missing." / "3 fields still need filling in: …"
+  function missingSummary(labels) {
+    if (labels.length === 1) return `${labels[0]} is missing.`;
+    return `${labels.length} fields still need filling in: ${labels.join(", ")}.`;
+  }
+
   /* ---------- Helpers ---------- */
   /* \w is ASCII-only in JavaScript, so the old version deleted every Bangla
      character and handed back "" for a Bangla title — which then failed the
@@ -190,5 +270,9 @@ window.Admin = (function () {
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
-  return { configured, client, requireAdmin, renderShell, toast, slugify, slugifyOrFallback, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured };
+  return {
+    configured, client, requireAdmin, renderShell, toast,
+    slugify, slugifyOrFallback, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured,
+    validateFields, clearFieldErrors, showFieldError, missingSummary,
+  };
 })();

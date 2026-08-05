@@ -103,22 +103,21 @@
           <h2>${course ? "Edit course" : "Add a new course"}</h2>
           <button class="modal-close" id="closeModal">&times;</button>
         </div>
-        <form id="courseForm">
+        <!-- novalidate so the browser's generic bubble can't preempt the
+             specific per-field messages; all checks run in saveCourse. -->
+        <form id="courseForm" novalidate>
           <div class="form-grid">
-            <!-- Bangla first and required: it is the NOT NULL column in the
-                 database and the title visitors actually read. Reversed until
-                 now, which made every save fail with a not-null error. -->
             <div class="form-field">
-              <label>Title (Bangla) <span class="hint">shown on the site</span></label>
-              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}" required>
+              <label>Title (Bangla) <span class="req">mandatory</span> <span class="hint">· shown on the site</span></label>
+              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
             </div>
             <div class="form-field">
-              <label>Title (English) <span class="hint">optional</span></label>
+              <label>Title (English) <span class="req">mandatory</span></label>
               <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}">
             </div>
             <div class="form-field full">
-              <label>Link on the site <span class="hint">auto-filled from the title — only change this if you know what it does</span></label>
-              <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}" required>
+              <label>Link on the site <span class="req">mandatory</span> <span class="hint">· auto-filled from the title — only change this if you know what it does</span></label>
+              <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}">
             </div>
             <div class="form-field full">
               <label>Description (English)</label>
@@ -453,8 +452,37 @@
     if (el) el.remove();
   }
 
+  /* One rule per field, each with its own message — "Bangla title is missing"
+     can only ever mean f_title_bn is blank. */
+  const COURSE_RULES = [
+    { id: "f_title_bn", label: "Bangla title", message: "Bangla title is missing. This is the title shown to visitors on the site." },
+    { id: "f_title_en", label: "English title", message: "English title is missing." },
+    { id: "f_slug", label: "Link on the site", message: "Link on the site is missing. It is normally filled in for you from the title." },
+    {
+      id: "f_price",
+      label: "Price",
+      message: "Price must be a number — use 0, or tick “This course is free”.",
+      test: (v) => v !== "" && Number.isFinite(Number(v)) && Number(v) >= 0,
+    },
+    {
+      id: "f_rating",
+      label: "Rating",
+      message: "Rating must be between 0 and 5.",
+      test: (v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 5),
+    },
+  ];
+
   async function saveCourse(e) {
     e.preventDefault();
+
+    // Validated before the button locks or any image uploads, so a rejected
+    // save never leaves an orphaned file in storage.
+    const missing = Admin.validateFields(document.getElementById("courseForm"), COURSE_RULES);
+    if (missing.length) {
+      Admin.toast(Admin.missingSummary(missing), true);
+      return;
+    }
+
     const btn = document.getElementById("saveCourseBtn");
     btn.disabled = true;
     btn.textContent = "Saving…";
@@ -511,7 +539,26 @@
       closeModal();
       await loadCourses();
     } catch (err) {
-      Admin.toast("Couldn't save: " + (err.message || err), true);
+      // Server rejections get pinned to the field that caused them too, so
+      // the admin never has to decode a Postgres error into a form box.
+      const byColumn = { title_bn: "f_title_bn", title_en: "f_title_en", slug: "f_slug", price_bdt: "f_price" };
+      let handled = false;
+
+      if (err.code === "23505") {
+        Admin.showFieldError(document.getElementById("f_slug"), "Another course already uses this link. Change it to something unique.");
+        Admin.toast("That link is already taken by another course.", true);
+        handled = true;
+      } else if (err.code === "23502") {
+        const column = (err.message || "").match(/column "([a-z_]+)"/);
+        const target = column && byColumn[column[1]];
+        if (target) {
+          Admin.showFieldError(document.getElementById(target), "This field can't be empty.");
+          Admin.toast("A required field was left empty.", true);
+          handled = true;
+        }
+      }
+      if (!handled) Admin.toast("Couldn't save: " + (err.message || err), true);
+
       btn.disabled = false;
       btn.textContent = editingId ? "Save changes" : "Create course";
     }

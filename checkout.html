@@ -54,47 +54,130 @@
 
 
 
-  <section class="checkout-page container container-text">
-    <div class="section-head">
-      <span class="eyebrow">চেকআউট</span>
-      <h1>আপনার অর্ডার সম্পন্ন করুন</h1>
-      <p>এটি একটি মক পেমেন্ট সিস্টেম — bKash-এর সাথে সরাসরি যুক্ত না হওয়া পর্যন্ত অর্ডার সাথে সাথে সম্পন্ন হিসেবে সংরক্ষিত হয়।</p>
-    </div>
-    <div data-mount="order-summary"></div>
-    <form id="checkoutForm" class="checkout-form">
-      <div class="two-col">
-        <fieldset>
-          <legend class="visually-hidden">যোগাযোগ ও ডেলিভারি</legend>
-          <div class="field"><label for="coName">পূর্ণ নাম</label><input type="text" id="coName" name="name" autocomplete="name" required></div>
-          <div class="field"><label for="coPhone">ফোন</label><input type="tel" id="coPhone" name="phone" inputmode="tel" autocomplete="tel" required></div>
-          <div class="field"><label for="coEmail">ইমেইল <span class="small-note">(ঐচ্ছিক — অর্ডার কনফার্মেশনের জন্য)</span></label><input type="email" id="coEmail" name="email" autocomplete="email"></div>
-          <div class="field"><label for="coAddress">ডেলিভারি ঠিকানা (শুধু ডিজিটাল অর্ডারের ক্ষেত্রে বাদ দিন)</label><textarea id="coAddress" name="address" autocomplete="street-address"></textarea></div>
-        </fieldset>
-        <fieldset>
-          <legend class="visually-hidden">পেমেন্ট</legend>
-          <div class="field">
-            <label for="coCoupon">কুপন কোড</label>
-            <div class="coupon-row">
-              <input type="text" id="coCoupon" name="coupon_code" placeholder="ঐচ্ছিক" autocomplete="off" spellcheck="false">
-              <button type="button" class="btn btn-ghost" id="couponApplyBtn">প্রয়োগ করুন</button>
+  <!-- Checkout layout: form on the left, sticky summary rail on the right.
+       The submit button lives INSIDE the rail, directly under the total, and
+       reaches the form through form="checkoutForm" rather than by nesting.
+       That matters: js/checkout.js replaces the whole innerHTML of
+       [data-mount='order-summary'] on every render, so nothing persistent can
+       live inside that node, and the rail must not be inside the <form> or
+       hiding the form for an unavailable item would hide the explanation too. -->
+  <section class="checkout-page">
+    <div class="container container-wide">
+
+      <div class="checkout-head">
+        <a class="checkout-back" href="courses.html">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+          কেনাকাটায় ফিরে যান
+        </a>
+        <h1>অর্ডার সম্পন্ন করুন</h1>
+      </div>
+
+      <div class="checkout-layout">
+
+        <form id="checkoutForm" class="checkout-main">
+
+          <section class="co-group">
+            <div class="co-group-head">
+              <span class="co-step" aria-hidden="true">১</span>
+              <div>
+                <h2>যোগাযোগের তথ্য</h2>
+                <p>অর্ডার নিশ্চিত করতে আমরা এই তথ্য ব্যবহার করব।</p>
+              </div>
             </div>
-            <p class="form-status" id="couponStatus" role="status" hidden></p>
-          </div>
-          <div class="field">
-            <!-- Only one payment method exists, so this is stated rather than
-                 offered — it used to be a readonly text input styled exactly
-                 like the editable fields next to it. -->
-            <span class="field-label">পেমেন্ট পদ্ধতি</span>
-            <div class="payment-locked">
+            <div class="co-fields">
+              <div class="field"><label for="coName">পূর্ণ নাম</label><input type="text" id="coName" name="name" autocomplete="name" required></div>
+              <div class="field"><label for="coPhone">ফোন নম্বর</label><input type="tel" id="coPhone" name="phone" inputmode="tel" autocomplete="tel" required></div>
+              <div class="field co-field-wide">
+                <label for="coEmail">ইমেইল <span class="field-optional">ঐচ্ছিক</span></label>
+                <input type="email" id="coEmail" name="email" autocomplete="email">
+                <p class="field-help">অর্ডার কনফার্মেশন পাঠাতে ব্যবহার করা হবে।</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- Shown only for physical products. js/checkout.js also adds and
+               removes `required` with it: a hidden required field silently
+               blocks submission with no visible reason. -->
+          <section class="co-group" data-delivery-group hidden>
+            <div class="co-group-head">
+              <span class="co-step" aria-hidden="true">২</span>
+              <div>
+                <h2>ডেলিভারি ঠিকানা</h2>
+                <p>সারা বাংলাদেশে ৩ থেকে ৫ কার্যদিবসে পৌঁছে যাবে।</p>
+              </div>
+            </div>
+            <div class="co-fields">
+              <div class="field co-field-wide">
+                <label for="coAddress">সম্পূর্ণ ঠিকানা</label>
+                <textarea id="coAddress" name="address" autocomplete="street-address" placeholder="বাসা ও রোড নম্বর, এলাকা, থানা, জেলা"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="co-group">
+            <div class="co-group-head">
+              <span class="co-step" data-payment-step aria-hidden="true">২</span>
+              <div>
+                <h2>পেমেন্ট পদ্ধতি</h2>
+                <p>এই মুহূর্তে শুধু bKash-এ পেমেন্ট নেওয়া হচ্ছে।</p>
+              </div>
+            </div>
+
+            <div class="pay-method is-selected">
+              <span class="pay-method-check" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
               <span class="pay-icon pay-bkash">bKash</span>
-              <span class="small-note">এই মুহূর্তে bKash-এ পেমেন্ট নেওয়া হচ্ছে।</span>
+              <span class="pay-method-label">bKash মোবাইল ব্যাংকিং</span>
             </div>
             <input type="hidden" name="payment_method" value="bKash">
+
+            <p class="co-notice">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+              <span>পেমেন্ট গেটওয়ে এখনো সরাসরি যুক্ত হয়নি, তাই অর্ডারটি সাথে সাথে সম্পন্ন হিসেবে সংরক্ষিত হবে এবং আমরা আপনার সাথে যোগাযোগ করব।</span>
+            </p>
+          </section>
+
+        </form>
+
+        <aside class="checkout-rail">
+          <div class="summary-card">
+            <h2 class="summary-title">অর্ডার সারাংশ</h2>
+
+            <div data-mount="order-summary"></div>
+
+            <div class="summary-actions">
+              <div class="field coupon-field">
+                <label for="coCoupon">কুপন কোড</label>
+                <div class="coupon-row">
+                  <input type="text" id="coCoupon" name="coupon_code" placeholder="কোড থাকলে লিখুন" autocomplete="off" spellcheck="false">
+                  <button type="button" class="btn btn-ghost" id="couponApplyBtn">প্রয়োগ</button>
+                </div>
+                <p class="form-status" id="couponStatus" role="status" hidden></p>
+              </div>
+
+              <button type="submit" form="checkoutForm" class="btn btn-primary btn-block btn-lg" id="checkoutSubmitBtn">অর্ডার নিশ্চিত করুন</button>
+            </div>
+
+            <ul class="checkout-trust">
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.2 8.3 8 9 4.8-.7 8-4.5 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg>
+                <span><b>নিরাপদ চেকআউট</b>আপনার তথ্য এনক্রিপ্ট করে পাঠানো হয়।</span>
+              </li>
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>
+                <span><b>সাথে সাথে অ্যাক্সেস</b>অর্ডারের পরপরই ড্যাশবোর্ডে যুক্ত হবে।</span>
+              </li>
+              <li>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><path d="M20 16a2 2 0 0 1-2 2h-1v-5h1a2 2 0 0 1 2 2zM4 16a2 2 0 0 0 2 2h1v-5H6a2 2 0 0 0-2 2z"/></svg>
+                <span><b>কোনো প্রশ্ন আছে?</b><a href="contact.html">আমাদের সাথে যোগাযোগ করুন</a></span>
+              </li>
+            </ul>
           </div>
-        </fieldset>
+        </aside>
+
       </div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg" id="checkoutSubmitBtn">অর্ডার করুন</button>
-    </form>
+    </div>
   </section>
   </main>
 

@@ -1723,7 +1723,24 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .dash-stat-row{margin-block-end:var(--space-10);}
 .dash-progress-note{margin-block-start:var(--space-2);}
 .dash-modal-actions{display:flex; gap:var(--space-3); margin-block-start:var(--space-5); flex-wrap:wrap;}
-.dash-settings-form{max-inline-size:460px; margin-block-end:var(--space-9);}
+/* The settings form outgrew its 460px column once it stopped being just a
+   name and a phone number. Two grouped blocks, two columns each. */
+.dash-settings-form{max-inline-size:760px; margin-block-end:var(--space-9);}
+.dash-fieldset{
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1); padding:var(--space-6) clamp(var(--space-5),3vw,var(--space-7));
+  margin-block-end:var(--space-5);
+}
+.dash-fieldset .dash-section-title{font-size:var(--step-1); margin-block:0 var(--space-5);}
+.dash-field-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4) var(--space-5);}
+.dash-field-grid .field{margin-block-end:0; min-inline-size:0;}
+.dash-field-grid .field-wide{grid-column:1/-1;}
+.dash-field-grid textarea{min-block-size:88px;}
+.dash-settings-form .form-status{margin-block-end:var(--space-4);}
+@media (max-width:640px){
+  .dash-field-grid{grid-template-columns:1fr;}
+  .dash-fieldset{padding:var(--space-5) var(--space-4);}
+}
 .side-link-signout{
   inline-size:100%; text-align:start; margin-block-start:auto;
   border-block-start:1px solid var(--line); border-radius:0;

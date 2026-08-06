@@ -11,7 +11,8 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 > writes to, a few new Settings fields, and (section 17) the buyer-detail
 > columns on `orders` plus the `coupons` table, and (section 18) coupon
 > scoping so a code can be limited to courses or to store products, and
-> (section 19) digital product delivery plus the `products_safe` view. Re-running
+> (section 19) digital product delivery plus the `products_safe` view, and
+> (section 20) the extra student profile fields. Re-running
 > is safe — it never duplicates data and never overwrites anything you've
 > already typed into the admin panel. Until you do, the contact form won't be
 > able to save messages, the coupon box on checkout won't work, and orders
@@ -108,6 +109,15 @@ and Step 3 (create your login).
   someone who has actually bought that product, so it is safe to point at a real
   file. Leave delivery set to "Nothing automatic" for anything you fulfil by
   hand, and the product page will say so instead of promising a download.
+- **See a student's details** → Admin panel → **Students**. Students can now
+  fill in their own email, city, address, institution, profession and a short
+  note from the Settings tab of their dashboard. The list shows name, contact
+  and city at a glance, "View" opens the full profile, and the search box
+  covers email, city, institution and profession as well as name and phone.
+  Only fields the student actually answered are shown, so the panel is not a
+  wall of blanks. Students can only edit their own details, and only those six
+  fields; their name and phone stay tied to the login and cannot be changed
+  this way.
 - **See who bought what** → Admin panel → **Orders**. Every course enrolment
   and store purchase, newest first, with the name, phone, email and delivery
   address the buyer typed at checkout. Filter to "To ship" to see just the

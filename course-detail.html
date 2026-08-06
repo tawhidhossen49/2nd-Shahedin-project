@@ -166,7 +166,10 @@
   <script src="js/support-widget.js"></script>
   
   <script src="js/render.js"></script>
+  <!-- course-progress.js first: it owns the enrollment and exposes
+       ShahedinProgress, which video-progress.js reads resume positions from. -->
   <script src="js/course-progress.js"></script>
+  <script src="js/video-progress.js"></script>
   <script src="js/course-reviews.js"></script>
 </body>
 </html>

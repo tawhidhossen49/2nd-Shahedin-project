@@ -1487,3 +1487,31 @@ drop trigger if exists profiles_set_updated_at on profiles;
 create trigger profiles_set_updated_at
   before update on profiles
   for each row execute function set_updated_at();
+
+
+-- =========================================================================
+-- 21. VIDEO WATCH PROGRESS
+--     Safe to re-run.
+--
+--     completed_blocks records WHETHER a block is done. It says nothing about
+--     how far through a video someone actually got, so "mark as complete" was
+--     an honour-system checkbox and reopening a lesson always restarted it
+--     from zero.
+--
+--     block_progress holds the real position, keyed by content block id:
+--
+--       { "<block id>": { "pos": 412.5, "dur": 903.2, "pct": 46 } }
+--
+--         pos  seconds watched to (what a resume seeks back to)
+--         dur  the video's length in seconds
+--         pct  0-100, rounded, so the UI never has to divide
+--
+--     jsonb rather than a row per block: it is read and written as one object
+--     alongside completed_blocks on the same enrollment row, which keeps every
+--     progress write to a single statement and removes any chance of the two
+--     fields racing each other.
+--
+--     No new policy needed -- "students can update their own enrollments"
+--     (section 13) already covers this column.
+-- =========================================================================
+alter table enrollments add column if not exists block_progress jsonb not null default '{}'::jsonb;

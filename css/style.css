@@ -1504,6 +1504,23 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .footer-legal a{font-size:var(--step--2); color:var(--text-3); transition:color var(--dur-2) var(--ease-out);}
 .footer-legal a:hover{color:var(--text-1);}
 
+/* Watch progress under a curriculum video. Hidden until there is something to
+   report, so an untouched lesson stays clean. */
+.watch-bar{display:flex; align-items:center; gap:var(--space-3); margin-block-start:var(--space-3);}
+.watch-bar[hidden]{display:none;}
+.watch-track{
+  flex:1 1 auto; block-size:4px; border-radius:var(--radius-pill);
+  background:var(--surface-4); overflow:hidden; min-inline-size:0;
+}
+.watch-fill{
+  block-size:100%; inline-size:0; border-radius:inherit; background:var(--accent-fill);
+  transition:inline-size var(--dur-2) var(--ease-out);
+}
+.watch-label{flex:0 0 auto; font-size:var(--step--2); color:var(--text-3); font-family:var(--font-mixed);}
+.watch-bar.is-done .watch-fill{background:var(--good);}
+.watch-bar.is-done .watch-label{color:var(--good);}
+@media (prefers-reduced-motion: reduce){ .watch-fill{transition:none;} }
+
 /* =========================================================================
    COMMUNITY TAB (student dashboard)
    -------------------------------------------------------------------------

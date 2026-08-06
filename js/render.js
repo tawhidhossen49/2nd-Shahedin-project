@@ -207,8 +207,22 @@
 
     if (block.type === "video") {
       const vid = youtubeEmbedId(block.youtube_url);
+      /* enablejsapi + origin are what let js/video-progress.js talk to the
+         player: without them getCurrentTime() is unavailable and watching a
+         video counts for nothing. The watch bar underneath is filled in by
+         that file from the student's saved position, so a lesson they are
+         halfway through looks halfway through before they press play. */
       return `${vid
-          ? `<div class="video-embed"><iframe src="https://www.youtube.com/embed/${vid}" title="${title}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe></div>`
+          ? `<div class="video-embed" data-yt-video>
+               <iframe src="https://www.youtube.com/embed/${vid}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&rel=0"
+                       title="${title}" frameborder="0"
+                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                       allowfullscreen loading="lazy"></iframe>
+             </div>
+             <div class="watch-bar" data-watch-bar hidden>
+               <div class="watch-track"><div class="watch-fill"></div></div>
+               <span class="watch-label"></span>
+             </div>`
           : `<p class="small-note">ভিডিও লিংক এখনো দেওয়া হয়নি।</p>`}
         ${progressControl}`;
     }

@@ -35,6 +35,7 @@
     if (user) await loadEnrollment(user, course);
     paintEnrollButton(enrollBtn, course, !!user);
     paintProgress(course);
+    wireVideoProgress(course);
 
     enrollBtn.addEventListener("click", async () => {
       if (enrollment) return; // already enrolled, button is disabled anyway
@@ -165,28 +166,45 @@
         checkbox.addEventListener("change", () => markComplete(course, blockId, checkbox.checked));
       }
     });
+
+    /* Signals that the enrollment is loaded and its saved positions are
+       readable. js/video-progress.js waits for this before attaching to any
+       player, so a video never starts from zero just because the network was
+       slower than the render. */
+    document.dispatchEvent(new Event("course-progress-painted"));
   }
 
-  async function markComplete(course, blockId, isComplete) {
+  /* ---------- The one and only writer ----------
+     completed_blocks and block_progress live on the SAME enrollments row.
+     Two independent .update() calls would each send their own snapshot of the
+     row and the later one would silently undo the earlier: ticking a checkbox
+     mid-video would wipe the watch position, or a video save would resurrect a
+     block the student had just un-ticked. Everything goes through here, so
+     each write carries both fields and they can never disagree. */
+  async function persist(course, opts) {
     if (!enrollment) return;
-    const current = Array.isArray(enrollment.completed_blocks) ? enrollment.completed_blocks : [];
-    const next = isComplete ? Array.from(new Set([...current, blockId])) : current.filter((id) => id !== blockId);
-    const total = document.querySelectorAll("[data-block-id]").length;
-    const nowComplete = total > 0 && next.length >= total;
     const wasComplete = !!enrollment.completed;
+    const total = document.querySelectorAll("[data-block-id]").length;
+    const done = Array.isArray(enrollment.completed_blocks) ? enrollment.completed_blocks : [];
+    const nowComplete = total > 0 && done.length >= total;
 
-    enrollment.completed_blocks = next; // optimistic local update
     enrollment.completed = nowComplete;
     enrollment.completed_at = nowComplete ? enrollment.completed_at || new Date().toISOString() : null;
-    paintProgress(course);
+    if (opts && opts.repaint !== false) paintProgress(course);
 
     try {
       const c = window.ShahedinAuth.client();
       const { error } = await c
         .from("enrollments")
-        .update({ completed_blocks: next, completed: nowComplete, completed_at: enrollment.completed_at })
+        .update({
+          completed_blocks: done,
+          completed: nowComplete,
+          completed_at: enrollment.completed_at,
+          block_progress: enrollment.block_progress || {},
+        })
         .eq("id", enrollment.id);
       if (error) throw error;
+
       if (nowComplete && !wasComplete) {
         window.showToast && window.showToast("অভিনন্দন! আপনি কোর্সটি সম্পন্ন করেছেন — এখন একটি রিভিউ দিতে পারবেন।");
       }
@@ -194,9 +212,59 @@
         document.dispatchEvent(new CustomEvent("course-completion-changed", { detail: { completed: nowComplete } }));
       }
     } catch (err) {
-      window.showToast && window.showToast("অগ্রগতি সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।");
+      // A database still on the old schema has no block_progress column.
+      console.warn(
+        "Shahedin: couldn't save progress. If this says block_progress does not exist, " +
+        "run section 21 of schema.sql in the Supabase SQL editor.",
+        err
+      );
+      if (!opts || !opts.quiet) {
+        window.showToast && window.showToast("অগ্রগতি সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।");
+      }
     }
   }
+
+  async function markComplete(course, blockId, isComplete) {
+    if (!enrollment) return;
+    const current = Array.isArray(enrollment.completed_blocks) ? enrollment.completed_blocks : [];
+    const next = isComplete ? Array.from(new Set([...current, blockId])) : current.filter((id) => id !== blockId);
+    if (next.length === current.length && isComplete) return; // already done, nothing to write
+    enrollment.completed_blocks = next; // optimistic local update
+    await persist(course);
+  }
+
+  /* ---------- Video watch progress ----------
+     js/video-progress.js measures playback and emits events; it deliberately
+     does not touch Supabase itself, for the reason in persist() above. */
+  function wireVideoProgress(course) {
+    let timer = null;
+
+    document.addEventListener("video-progress", (e) => {
+      if (!enrollment || !e.detail || !e.detail.blockId) return;
+      const { blockId, pos, dur, pct } = e.detail;
+      enrollment.block_progress = Object.assign({}, enrollment.block_progress, {
+        [blockId]: { pos: Math.round(pos * 10) / 10, dur: Math.round(dur * 10) / 10, pct: Math.round(pct) },
+      });
+      // Debounced: a pause and a seek land within milliseconds of each other,
+      // and a watch position is not worth a request per event. Quiet, because
+      // a background save failing should not interrupt someone watching.
+      clearTimeout(timer);
+      timer = setTimeout(() => persist(course, { repaint: false, quiet: true }), 1500);
+    });
+
+    document.addEventListener("video-complete", (e) => {
+      if (!enrollment || !e.detail || !e.detail.blockId) return;
+      markComplete(course, e.detail.blockId, true);
+    });
+  }
+
+  // Read back by video-progress.js to decide where to resume from.
+  window.ShahedinProgress = {
+    blockProgress(blockId) {
+      const all = (enrollment && enrollment.block_progress) || {};
+      return all[blockId] || null;
+    },
+  };
 
   document.addEventListener("course-mounted", init);
 })();

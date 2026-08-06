@@ -140,9 +140,25 @@
 
   function progressFor(enrollment) {
     const course = courseFor(enrollment);
-    const total = course && Array.isArray(course.content_blocks) ? course.content_blocks.length : 0;
-    const done = Array.isArray(enrollment.completed_blocks) ? enrollment.completed_blocks.length : 0;
-    const pct = total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+    const blocks = course && Array.isArray(course.content_blocks) ? course.content_blocks : [];
+    const total = blocks.length;
+    const completed = Array.isArray(enrollment.completed_blocks) ? enrollment.completed_blocks : [];
+    const done = completed.length;
+
+    /* Partial credit for a video the student is midway through. Without it the
+       bar only moves when a whole lesson finishes, so someone forty minutes
+       into an hour-long lecture sees the same number as someone who has not
+       pressed play. `done` stays a whole-item count for the "৩/৫ আইটেম" label;
+       only the percentage is fractional. */
+    const watch = enrollment.block_progress || {};
+    let credit = 0;
+    blocks.forEach((b) => {
+      if (completed.includes(b.id)) { credit += 1; return; }
+      const p = watch[b.id];
+      if (p && p.pct > 0) credit += Math.min(1, p.pct / 100);
+    });
+
+    const pct = total ? Math.min(100, Math.round((credit / total) * 100)) : 0;
     return { total, done, pct };
   }
 

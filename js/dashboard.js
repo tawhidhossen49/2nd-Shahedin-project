@@ -13,6 +13,7 @@
     { id: "overview", label: "ওভারভিউ", icon: "M3 11l9-8 9 8M5 10v10h14V10" },
     { id: "courses", label: "আমার কোর্স", icon: "M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" },
     { id: "resources", label: "রিসোর্স", icon: "M12 3v12m0 0 4-4m-4 4-4-4M4 19h16" },
+    { id: "community", label: "কমিউনিটি", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
     { id: "certificates", label: "সার্টিফিকেট", icon: "M12 8a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM9 13l-2 8 5-3 5 3-2-8" },
     { id: "orders", label: "অর্ডার", icon: "M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" },
     { id: "settings", label: "সেটিংস", icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" },
@@ -25,7 +26,7 @@
   const app = document.getElementById("dashApp");
   if (!app) return;
 
-  let state = { user: null, profile: null, enrollments: [], courses: [], orders: [], products: [] };
+  let state = { user: null, profile: null, community: null, enrollments: [], courses: [], orders: [], products: [] };
 
   async function init() {
     if (!window.ShahedinAuth || !window.ShahedinAuth.configured()) {
@@ -67,17 +68,20 @@
 
   async function loadData() {
     const c = window.ShahedinAuth.client();
-    const [enrollRes, orderRes, profileRes] = await Promise.all([
+    const [enrollRes, orderRes, profileRes, communityRes] = await Promise.all([
       c.from("enrollments").select("*").eq("user_id", state.user.id).order("enrolled_at", { ascending: false }),
       c.from("orders").select("*").eq("user_id", state.user.id).order("created_at", { ascending: false }),
       // The student's own profile row, so the Settings form opens pre-filled.
       // maybeSingle: a brand-new account may not have its trigger-created row
       // visible yet, and a missing profile must not break the dashboard.
       c.from("profiles").select("*").eq("id", state.user.id).maybeSingle(),
+      // Community links, managed from Admin -> Community.
+      c.from("site_settings").select("value").eq("key", "community").maybeSingle(),
     ]);
     state.enrollments = enrollRes.data || [];
     state.orders = orderRes.data || [];
     state.profile = (profileRes && profileRes.data) || null;
+    state.community = (communityRes && communityRes.data && communityRes.data.value) || null;
 
     /* courses_safe, NOT courses. The raw `courses` table has no public read
        policy at all — only "admins can read all courses" — so this query
@@ -228,6 +232,7 @@
     if (tab === "overview") return renderOverview(main);
     if (tab === "courses") return renderCourses(main);
     if (tab === "resources") return renderResources(main);
+    if (tab === "community") return renderCommunity(main);
     if (tab === "certificates") return renderCertificates(main);
     if (tab === "orders") return renderOrders(main);
     if (tab === "settings") return renderSettings(main);
@@ -372,6 +377,55 @@
             )
             .join("")}`
         : "");
+  }
+
+  /* Brand marks for the platforms a Bangladeshi creator community actually
+     runs on. Drawn inline to match the rest of the site, which has no icon
+     dependency. "link" is the fallback for anything else. */
+  const COMMUNITY_ICONS = {
+    discord: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.32 4.57A19.8 19.8 0 0 0 15.43 3c-.21.38-.46.9-.63 1.31a18.3 18.3 0 0 0-5.6 0C9.03 3.9 8.78 3.38 8.56 3a19.7 19.7 0 0 0-4.89 1.57C.57 9.2-.26 13.7.16 18.14a19.9 19.9 0 0 0 6.03 3.06c.49-.67.92-1.38 1.3-2.13-.71-.27-1.4-.6-2.04-.99.17-.13.34-.26.5-.4a14.2 14.2 0 0 0 12.1 0c.17.14.33.27.5.4-.65.39-1.33.72-2.05 1 .37.74.8 1.45 1.3 2.12a19.9 19.9 0 0 0 6.04-3.06c.5-5.15-.84-9.6-3.52-13.57zM8.02 15.44c-1.18 0-2.15-1.09-2.15-2.42 0-1.34.95-2.43 2.15-2.43s2.17 1.1 2.15 2.43c0 1.33-.95 2.42-2.15 2.42zm7.96 0c-1.18 0-2.15-1.09-2.15-2.42 0-1.34.95-2.43 2.15-2.43s2.17 1.1 2.15 2.43c0 1.33-.94 2.42-2.15 2.42z"/></svg>',
+    telegram: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm5.56 8.22-1.86 8.77c-.14.62-.51.77-1.03.48l-2.85-2.1-1.37 1.32c-.15.15-.28.28-.58.28l.21-2.93 5.34-4.83c.23-.2-.05-.32-.36-.12L8.46 13.3l-2.84-.89c-.62-.19-.63-.62.13-.92l11.1-4.28c.51-.19.96.12.71 1.01z"/></svg>',
+    facebook: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8.4h2.8l.4-3.3h-3.2V8.1c0-1 .3-1.6 1.7-1.6h1.7V3.5c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.5H7v3.3h2.9V22z"/></svg>',
+    whatsapp: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.16-.17.2-.35.22-.64.08-.3-.15-1.26-.47-2.4-1.48-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.6.13-.14.3-.35.44-.52.15-.18.2-.3.3-.5.1-.2.05-.37-.02-.52-.08-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.48s1.07 2.87 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.62.71.23 1.36.2 1.87.12.57-.09 1.76-.72 2-1.42.25-.69.25-1.29.18-1.41-.08-.13-.28-.2-.57-.35z"/><path d="M20.52 3.45A11.82 11.82 0 0 0 12.05 0C5.5 0 .16 5.34.16 11.89c0 2.1.55 4.14 1.59 5.95L.06 24l6.3-1.65a11.88 11.88 0 0 0 5.69 1.45c6.55 0 11.89-5.34 11.89-11.9a11.82 11.82 0 0 0-3.42-8.45zm-8.47 18.3a9.87 9.87 0 0 1-5.03-1.38l-.36-.22-3.74.99 1-3.65-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.89 9.89-9.89a9.83 9.83 0 0 1 9.88 9.9c0 5.45-4.43 9.88-9.89 9.88z"/></svg>',
+    youtube: '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.5 6.2a2.8 2.8 0 0 0-2-2C18.9 3.7 12 3.7 12 3.7s-6.9 0-8.5.5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 1 12a29 29 0 0 0 .5 5.8 2.8 2.8 0 0 0 2 2c1.6.5 8.5.5 8.5.5s6.9 0 8.5-.5a2.8 2.8 0 0 0 2-2A29 29 0 0 0 23 12a29 29 0 0 0-.5-5.8zM9.8 15.5v-7l6 3.5z"/></svg>',
+    link: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  };
+
+  function renderCommunity(main) {
+    const data = state.community || {};
+    const links = Array.isArray(data.links) ? data.links.filter((l) => l && l.url && l.label) : [];
+
+    main.innerHTML = `
+      <h1 class="dash-page-title">${escapeHtml(data.title || "কমিউনিটি")}</h1>
+      <p class="dash-greeting-sub">${escapeHtml(data.intro || "অন্য শিক্ষার্থীদের সাথে যুক্ত হোন, প্রশ্ন করুন এবং আপডেট পান।")}</p>
+      <div id="communityList" class="community-grid"></div>`;
+
+    const wrap = document.getElementById("communityList");
+    if (!links.length) {
+      wrap.innerHTML = `<div class="empty-state"><p>কমিউনিটি লিংক এখনো যোগ করা হয়নি। খুব শীঘ্রই এখানে যুক্ত হবে।</p></div>`;
+      return;
+    }
+
+    wrap.innerHTML = links
+      .map((l) => {
+        const icon = COMMUNITY_ICONS[l.platform] || COMMUNITY_ICONS.link;
+        // Only real web destinations. A bad row can't turn a card into a
+        // javascript: URL just because someone pasted one into the admin box.
+        const href = /^https?:\/\/\S+$/i.test(String(l.url || "").trim()) ? l.url.trim() : "";
+        if (!href) return "";
+        return `
+        <a class="community-card" href="${escapeHtml(href)}" target="_blank" rel="noopener">
+          <span class="community-icon community-${escapeHtml(l.platform || "link")}">${icon}</span>
+          <span class="community-body">
+            <span class="community-label">${escapeHtml(l.label)}</span>
+            ${l.desc ? `<span class="community-desc">${escapeHtml(l.desc)}</span>` : ""}
+          </span>
+          <span class="community-go" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+          </span>
+        </a>`;
+      })
+      .join("");
   }
 
   function renderCertificates(main) {
@@ -548,59 +602,156 @@
      The phone stays read-only: it is the login credential, and changing it
      means re-verifying by OTP, which is a different flow entirely. */
   const PROFILE_FIELDS = [
-    { key: "email", label: "ইমেইল", type: "email", hint: "অর্ডার ও রসিদ পাঠাতে", placeholder: "you@example.com" },
-    { key: "city", label: "শহর / জেলা", type: "text", placeholder: "ঢাকা" },
-    { key: "institution", label: "শিক্ষা প্রতিষ্ঠান", type: "text", hint: "ঐচ্ছিক", placeholder: "ঢাকা বিশ্ববিদ্যালয়" },
-    { key: "profession", label: "পেশা", type: "text", hint: "ঐচ্ছিক", placeholder: "শিক্ষার্থী" },
-    { key: "address", label: "ঠিকানা", type: "textarea", hint: "ঐচ্ছিক — ফিজিক্যাল অর্ডার পৌঁছে দিতে কাজে লাগে", placeholder: "বাসা ও রোড নম্বর, এলাকা, থানা, জেলা" },
-    { key: "bio", label: "নিজের সম্পর্কে", type: "textarea", hint: "ঐচ্ছিক", placeholder: "" },
+    { key: "email", group: "contact", label: "ইমেইল", type: "email", help: "অর্ডার কনফার্মেশন ও রসিদ এখানে পাঠানো হবে।", placeholder: "you@example.com" },
+    { key: "city", group: "contact", label: "শহর / জেলা", type: "text", placeholder: "ঢাকা" },
+    { key: "address", group: "contact", label: "ঠিকানা", type: "textarea", wide: true, help: "ফিজিক্যাল অর্ডার পৌঁছে দিতে কাজে লাগে।", placeholder: "বাসা ও রোড নম্বর, এলাকা, থানা, জেলা" },
+    { key: "institution", group: "about", label: "শিক্ষা প্রতিষ্ঠান", type: "text", placeholder: "ঢাকা বিশ্ববিদ্যালয়" },
+    { key: "profession", group: "about", label: "পেশা", type: "text", placeholder: "শিক্ষার্থী" },
+    { key: "bio", group: "about", label: "নিজের সম্পর্কে", type: "textarea", wide: true, placeholder: "কী শিখতে চান, কী নিয়ে কাজ করেন…" },
+  ];
+
+  /* One "আপনার তথ্য" box holding six unrelated fields told the student nothing
+     about why any of them were being asked for. Split into groups that each
+     answer that question in their own subtitle. */
+  const PROFILE_GROUPS = [
+    { id: "contact", title: "যোগাযোগ", desc: "অর্ডার, রসিদ ও ডেলিভারির জন্য আমরা এগুলো ব্যবহার করি।" },
+    { id: "about", title: "আপনার সম্পর্কে", desc: "ঐচ্ছিক। কারা শিখছেন তা জানলে আমরা আরও ভালো কোর্স বানাতে পারি।" },
   ];
 
   function renderSettings(main) {
+    const p = state.profile || {};
+    const name = window.ShahedinAuth.displayName(state.user);
+    const phone = window.ShahedinAuth.formatPhone(state.user.phone);
+
+    // Completeness is a reason to fill optional fields in. Counted over the
+    // display name plus the six profile fields.
+    const filled = (name ? 1 : 0) + PROFILE_FIELDS.filter((f) => String(p[f.key] || "").trim()).length;
+    const pct = Math.round((filled / (PROFILE_FIELDS.length + 1)) * 100);
+    const joined = p.created_at ? new Date(p.created_at).toLocaleDateString("bn-BD", { year: "numeric", month: "long" }) : "";
+
+    const fieldHTML = (f) => {
+      const value = escapeHtml(p[f.key] || "");
+      const control = f.type === "textarea"
+        ? `<textarea id="set_${f.key}" name="${f.key}" rows="3" placeholder="${escapeHtml(f.placeholder)}">${value}</textarea>`
+        : `<input type="${f.type}" id="set_${f.key}" name="${f.key}" value="${value}" placeholder="${escapeHtml(f.placeholder)}">`;
+      return `
+        <div class="field${f.wide ? " field-wide" : ""}">
+          <label for="set_${f.key}">${f.label}</label>
+          ${control}
+          ${f.help ? `<p class="field-help">${f.help}</p>` : ""}
+        </div>`;
+    };
+
     main.innerHTML = `
       <h1 class="dash-page-title">সেটিংস</h1>
+
+      <!-- Identity card. A settings page with no sense of WHO the account
+           belongs to is just a form; this makes it an account. -->
+      <div class="profile-card">
+        <span class="profile-avatar" aria-hidden="true">${escapeHtml((name || "?").trim().charAt(0))}</span>
+        <div class="profile-id">
+          <h2>${escapeHtml(name || "নাম দেওয়া হয়নি")}</h2>
+          <p>${escapeHtml([phone, p.email].filter(Boolean).join(" · ") || "যোগাযোগের তথ্য যোগ করুন")}</p>
+          ${joined ? `<p class="profile-joined">যুক্ত হয়েছেন ${escapeHtml(joined)}</p>` : ""}
+        </div>
+        <div class="profile-meter">
+          <div class="profile-meter-head">
+            <span>প্রোফাইল সম্পূর্ণ</span>
+            <b>${bn(pct)}%</b>
+          </div>
+          <div class="progress-track"><div class="progress-fill" style="width:${pct}%;"></div></div>
+          ${pct < 100 ? `<p>${bn(PROFILE_FIELDS.length + 1 - filled)}টি ঘর এখনো বাকি</p>` : `<p>সব তথ্য দেওয়া হয়েছে</p>`}
+        </div>
+      </div>
+
       <form id="settingsForm" class="dash-settings-form">
-        <div class="dash-fieldset">
-          <h2 class="dash-section-title">অ্যাকাউন্ট</h2>
-          <div class="dash-field-grid">
-            <div class="field"><label for="set_name">প্রদর্শিত নাম</label><input type="text" id="set_name" name="name" value="${escapeHtml(window.ShahedinAuth.displayName(state.user))}"></div>
+
+        <section class="settings-row">
+          <div class="settings-row-label">
+            <h2>অ্যাকাউন্ট</h2>
+            <p>আপনার পরিচয় ও লগইন তথ্য।</p>
+          </div>
+          <div class="settings-row-fields">
+            <div class="field">
+              <label for="set_name">প্রদর্শিত নাম</label>
+              <input type="text" id="set_name" name="name" value="${escapeHtml(name)}">
+            </div>
             <div class="field">
               <label for="set_phone">ফোন নম্বর</label>
-              <input type="tel" id="set_phone" value="${escapeHtml(window.ShahedinAuth.formatPhone(state.user.phone))}" readonly>
-              <p class="field-help">এই নম্বর দিয়েই আপনি লগ ইন করেন, তাই এটি এখান থেকে পরিবর্তন করা যায় না।</p>
+              <div class="field-locked">
+                <input type="tel" id="set_phone" value="${escapeHtml(phone)}" readonly tabindex="-1">
+                <span class="field-lock" title="পরিবর্তন করা যায় না" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                </span>
+              </div>
+              <p class="field-help">এই নম্বর দিয়েই আপনি লগ ইন করেন।</p>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="dash-fieldset">
-          <h2 class="dash-section-title">আপনার তথ্য</h2>
-          <div class="dash-field-grid">
-            ${PROFILE_FIELDS.map((f) => {
-              const value = escapeHtml((state.profile || {})[f.key] || "");
-              const label = `<label for="set_${f.key}">${f.label}${f.hint ? ` <span class="field-optional">${f.hint}</span>` : ""}</label>`;
-              const control = f.type === "textarea"
-                ? `<textarea id="set_${f.key}" name="${f.key}" rows="3" placeholder="${escapeHtml(f.placeholder)}">${value}</textarea>`
-                : `<input type="${f.type}" id="set_${f.key}" name="${f.key}" value="${value}" placeholder="${escapeHtml(f.placeholder)}">`;
-              return `<div class="field${f.type === "textarea" ? " field-wide" : ""}">${label}${control}</div>`;
-            }).join("")}
+        ${PROFILE_GROUPS.map((g) => `
+          <section class="settings-row">
+            <div class="settings-row-label">
+              <h2>${g.title}</h2>
+              <p>${g.desc}</p>
+            </div>
+            <div class="settings-row-fields">
+              ${PROFILE_FIELDS.filter((f) => f.group === g.id).map(fieldHTML).join("")}
+            </div>
+          </section>`).join("")}
+
+        <p class="settings-privacy">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.2 8.3 8 9 4.8-.7 8-4.5 8-9V6z"/></svg>
+          <span>এই তথ্য শুধু Shahedin টিম দেখতে পায়। কীভাবে ব্যবহার করা হয় তা <a href="privacy.html">প্রাইভেসি পলিসিতে</a> লেখা আছে।</span>
+        </p>
+
+        <!-- Appears only once something has actually changed, so the page is
+             calm at rest and it is never ambiguous whether there is anything
+             left to save. -->
+        <div class="settings-bar" id="settingsBar" hidden>
+          <p class="form-status" id="settingsStatus" role="status"></p>
+          <div class="settings-bar-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="settingsReset">বাতিল করুন</button>
+            <button type="submit" class="btn btn-primary btn-sm">পরিবর্তন সংরক্ষণ করুন</button>
           </div>
-          <p class="field-help">এই তথ্য শুধু Shahedin টিম দেখতে পায়। কীভাবে ব্যবহার করা হয় তা <a class="text-link" href="privacy.html">প্রাইভেসি পলিসিতে</a> লেখা আছে।</p>
         </div>
-
-        <p class="form-status" id="settingsStatus" role="status" hidden></p>
-        <button type="submit" class="btn btn-primary">পরিবর্তন সংরক্ষণ করুন</button>
       </form>`;
 
-    document.getElementById("settingsForm").addEventListener("submit", async (e) => {
+    /* Dirty tracking. The save bar is hidden until something actually differs
+       from what was loaded, so "is there anything unsaved?" is answered by
+       looking at the page rather than by remembering. */
+    const settingsForm = document.getElementById("settingsForm");
+    const bar = document.getElementById("settingsBar");
+    const editable = ["name"].concat(PROFILE_FIELDS.map((f) => f.key));
+    const initial = {};
+    editable.forEach((k) => { initial[k] = settingsForm[k].value; });
+
+    const isDirty = () => editable.some((k) => settingsForm[k].value !== initial[k]);
+    const syncBar = () => { bar.hidden = !isDirty(); };
+    editable.forEach((k) => {
+      settingsForm[k].addEventListener("input", syncBar);
+    });
+
+    // Shared by the reset and submit handlers, so it lives outside both.
+    const statusEl = document.getElementById("settingsStatus");
+    const setStatus = (text, kind) => {
+      statusEl.textContent = text || "";
+      statusEl.classList.toggle("is-error", kind === "error");
+      statusEl.classList.toggle("is-ok", kind === "ok");
+    };
+
+    document.getElementById("settingsReset").addEventListener("click", () => {
+      editable.forEach((k) => { settingsForm[k].value = initial[k]; });
+      // Cleared, not hidden: the bar's default "you have unsaved changes"
+      // line is a :empty::before rule, so hiding the node would suppress it
+      // the next time the student edits something.
+      setStatus("");
+      syncBar();
+    });
+
+    settingsForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
-      const status = document.getElementById("settingsStatus");
-      const setStatus = (text, kind) => {
-        status.textContent = text || "";
-        status.hidden = !text;
-        status.classList.toggle("is-error", kind === "error");
-        status.classList.toggle("is-ok", kind === "ok");
-      };
 
       // Checked before saving: a mistyped address is worse than a blank one,
       // because it looks like a working contact route and silently is not.
@@ -627,8 +778,12 @@
         if (error) throw error;
 
         state.profile = Object.assign({}, state.profile || {}, patch);
-        setStatus("সংরক্ষণ করা হয়েছে।", "ok");
+        // The saved values become the new baseline, so the bar retreats and
+        // the identity card and completeness meter pick the changes up.
+        editable.forEach((k) => { initial[k] = form[k].value; });
+        renderTab("settings");
         window.showToast && window.showToast("সেটিংস সংরক্ষণ করা হয়েছে।");
+        return;
       } catch (err) {
         setStatus("সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।", "error");
         // A database still on the old schema has no email/city columns.

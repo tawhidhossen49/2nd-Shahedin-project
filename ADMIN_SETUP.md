@@ -109,6 +109,16 @@ and Step 3 (create your login).
   someone who has actually bought that product, so it is safe to point at a real
   file. Leave delivery set to "Nothing automatic" for anything you fulfil by
   hand, and the product page will say so instead of promising a download.
+- **Add community links** → Admin panel → **Community**. Whatever you add here
+  appears on the **কমিউনিটি** tab of every student's dashboard: a Discord
+  server, a Telegram or WhatsApp group, a Facebook group, or any other link.
+  Each one gets a name, the link itself, an optional one-line description, and
+  a platform so it shows the right logo. Use the ↑ / ↓ buttons to control the
+  order students see. You can also edit the tab's heading and intro line.
+
+  > These links are **publicly readable** through the site's API, which is how
+  > the dashboard loads them. Invite links are meant to be shared, so that is
+  > normally fine, but don't put anything secret here.
 - **See a student's details** → Admin panel → **Students**. Students can now
   fill in their own email, city, address, institution, profession and a short
   note from the Settings tab of their dashboard. The list shows name, contact

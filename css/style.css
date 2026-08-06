@@ -1504,6 +1504,64 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .footer-legal a{font-size:var(--step--2); color:var(--text-3); transition:color var(--dur-2) var(--ease-out);}
 .footer-legal a:hover{color:var(--text-1);}
 
+/* Watch progress under a curriculum video. Hidden until there is something to
+   report, so an untouched lesson stays clean. */
+.watch-bar{display:flex; align-items:center; gap:var(--space-3); margin-block-start:var(--space-3);}
+.watch-bar[hidden]{display:none;}
+.watch-track{
+  flex:1 1 auto; block-size:4px; border-radius:var(--radius-pill);
+  background:var(--surface-4); overflow:hidden; min-inline-size:0;
+}
+.watch-fill{
+  block-size:100%; inline-size:0; border-radius:inherit; background:var(--accent-fill);
+  transition:inline-size var(--dur-2) var(--ease-out);
+}
+.watch-label{flex:0 0 auto; font-size:var(--step--2); color:var(--text-3); font-family:var(--font-mixed);}
+.watch-bar.is-done .watch-fill{background:var(--good);}
+.watch-bar.is-done .watch-label{color:var(--good);}
+@media (prefers-reduced-motion: reduce){ .watch-fill{transition:none;} }
+
+/* =========================================================================
+   COMMUNITY TAB (student dashboard)
+   -------------------------------------------------------------------------
+   Cards, not a link list: each destination is a decision ("do I want Discord
+   or the Facebook group?"), and the platform mark is what people actually
+   recognise. Brand colours are used only on the icon tile, so the page keeps
+   one accent everywhere else.
+   ========================================================================= */
+.community-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:var(--space-4);}
+.community-card{
+  display:flex; align-items:center; gap:var(--space-4);
+  padding:var(--space-5); border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1); min-inline-size:0;
+  transition:border-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), background var(--dur-2);
+}
+.community-card:hover{border-color:var(--line-strong); background:var(--surface-2); transform:translateY(-2px);}
+.community-card:active{transform:translateY(0);}
+
+.community-icon{
+  flex:0 0 auto; inline-size:44px; block-size:44px; border-radius:var(--radius-s);
+  display:grid; place-items:center; background:var(--surface-3); color:var(--text-2);
+}
+/* Recognisable brand colours, muted to sit in a dark UI. */
+.community-discord{background:rgba(88,101,242,.16); color:#8b95f6;}
+.community-telegram{background:rgba(42,171,238,.16); color:#4fc0f0;}
+.community-whatsapp{background:rgba(37,211,102,.14); color:#4bd07a;}
+.community-facebook{background:rgba(24,119,242,.16); color:#5b9bf5;}
+.community-youtube{background:rgba(255,0,0,.14); color:#f4677d;}
+
+.community-body{display:flex; flex-direction:column; gap:3px; min-inline-size:0; flex:1;}
+.community-label{font-weight:600; color:var(--text-1); font-family:var(--font-body);}
+.community-desc{font-size:var(--step--2); color:var(--text-3); line-height:1.5;}
+.community-go{flex:0 0 auto; color:var(--text-3); transition:color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);}
+.community-card:hover .community-go{color:var(--accent-ink); transform:translate(2px,-2px);}
+
+@media (prefers-reduced-motion: reduce){
+  .community-card,.community-go{transition:none;}
+  .community-card:hover{transform:none;}
+  .community-card:hover .community-go{transform:none;}
+}
+
 /* Purchased-download rows in the dashboard's Resources tab. The bought items
    sit above course resources and carry the accent, because someone who just
    paid is looking for that file and nothing else. */
@@ -1723,23 +1781,102 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .dash-stat-row{margin-block-end:var(--space-10);}
 .dash-progress-note{margin-block-start:var(--space-2);}
 .dash-modal-actions{display:flex; gap:var(--space-3); margin-block-start:var(--space-5); flex-wrap:wrap;}
-/* The settings form outgrew its 460px column once it stopped being just a
-   name and a phone number. Two grouped blocks, two columns each. */
-.dash-settings-form{max-inline-size:760px; margin-block-end:var(--space-9);}
-.dash-fieldset{
-  border:1px solid var(--line); border-radius:var(--radius-m);
-  background:var(--surface-1); padding:var(--space-6) clamp(var(--space-5),3vw,var(--space-7));
-  margin-block-end:var(--space-5);
+/* =========================================================================
+   SETTINGS / PROFILE
+   -------------------------------------------------------------------------
+   Was two identical grey boxes of fields with no sense of whose account it
+   was and no reason to fill the optional half in. Now: an identity card with
+   a completeness meter, then label-left / fields-right rows where each
+   group's subtitle answers "why are you asking me this?", and a save bar
+   that only appears once something has actually changed.
+   ========================================================================= */
+.dash-settings-form{max-inline-size:920px; margin-block-end:var(--space-11);}
+
+/* ---- Identity card ---- */
+.profile-card{
+  display:flex; align-items:center; gap:var(--space-5); flex-wrap:wrap;
+  max-inline-size:920px; margin-block-end:var(--space-8);
+  padding:var(--space-6); border-radius:var(--radius-m);
+  border:1px solid var(--line-strong); background:var(--surface-2);
 }
-.dash-fieldset .dash-section-title{font-size:var(--step-1); margin-block:0 var(--space-5);}
-.dash-field-grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4) var(--space-5);}
-.dash-field-grid .field{margin-block-end:0; min-inline-size:0;}
-.dash-field-grid .field-wide{grid-column:1/-1;}
-.dash-field-grid textarea{min-block-size:88px;}
-.dash-settings-form .form-status{margin-block-end:var(--space-4);}
+.profile-avatar{
+  flex:0 0 auto; inline-size:60px; block-size:60px; border-radius:var(--radius-pill);
+  display:grid; place-items:center; text-transform:uppercase;
+  font-family:var(--font-display); font-size:var(--step-2); font-weight:700; line-height:1;
+  color:var(--text-on-accent);
+  background:linear-gradient(140deg, var(--accent-hover), var(--accent-fill));
+  box-shadow:var(--shadow-accent);
+}
+.profile-id{flex:1 1 200px; min-inline-size:0;}
+.profile-id h2{margin:0; font-size:var(--step-2); font-family:var(--font-display);}
+.profile-id p{margin:var(--space-1) 0 0; font-size:var(--step--1); color:var(--text-2); overflow-wrap:anywhere;}
+.profile-joined{color:var(--text-3) !important; font-size:var(--step--2) !important;}
+
+.profile-meter{flex:0 0 auto; inline-size:200px;}
+.profile-meter-head{display:flex; justify-content:space-between; align-items:baseline; gap:var(--space-3); margin-block-end:var(--space-2);}
+.profile-meter-head span{font-size:var(--step--2); color:var(--text-3);}
+.profile-meter-head b{font-family:var(--font-num); font-size:var(--step--1); color:var(--text-1);}
+.profile-meter p{margin:var(--space-2) 0 0; font-size:var(--step--2); color:var(--text-3);}
+
+/* ---- Label-left, fields-right rows ---- */
+.settings-row{
+  display:grid; grid-template-columns:230px minmax(0,1fr); gap:clamp(20px,4vw,56px);
+  padding-block:var(--space-7); border-block-start:1px solid var(--line);
+}
+.settings-row:first-of-type{border-block-start:none; padding-block-start:0;}
+.settings-row-label h2{margin:0; font-size:var(--step-0); font-family:var(--font-body); font-weight:600;}
+.settings-row-label p{margin:var(--space-2) 0 0; font-size:var(--step--2); color:var(--text-3); line-height:1.6;}
+.settings-row-fields{display:grid; grid-template-columns:1fr 1fr; gap:var(--space-5);}
+.settings-row-fields .field{margin-block-end:0; min-inline-size:0;}
+.settings-row-fields .field-wide{grid-column:1/-1;}
+.settings-row-fields textarea{min-block-size:92px;}
+
+/* A read-only field must not look identical to an editable one. */
+.field-locked{position:relative;}
+.field-locked input{background:var(--surface-1); color:var(--text-2); cursor:default; padding-inline-end:38px;}
+.field-locked input:hover{border-color:var(--line);}
+.field-lock{
+  position:absolute; inset-inline-end:12px; inset-block-start:50%; transform:translateY(-50%);
+  color:var(--text-3); pointer-events:none; display:grid; place-items:center;
+}
+
+.settings-privacy{
+  display:flex; gap:var(--space-3); align-items:flex-start;
+  margin:var(--space-7) 0 0; padding:var(--space-4) var(--space-5);
+  border-radius:var(--radius-s); background:var(--surface-1);
+  font-size:var(--step--2); line-height:1.6; color:var(--text-3);
+}
+.settings-privacy svg{flex:0 0 auto; margin-block-start:2px;}
+.settings-privacy a{color:var(--text-2); text-decoration:underline; text-underline-offset:2px;}
+.settings-privacy a:hover{color:var(--text-1);}
+
+/* ---- Save bar: sticks to the bottom while there are unsaved changes ---- */
+.settings-bar{
+  position:sticky; inset-block-end:var(--space-5); z-index:var(--z-sticky);
+  margin-block-start:var(--space-6);
+  display:flex; align-items:center; justify-content:space-between; gap:var(--space-4); flex-wrap:wrap;
+  padding:var(--space-4) var(--space-5); border-radius:var(--radius-m);
+  border:1px solid var(--line-accent); background:var(--surface-3);
+  box-shadow:var(--shadow-3);
+}
+.settings-bar[hidden]{display:none;}
+.settings-bar .form-status{margin:0; flex:1 1 auto;}
+.settings-bar .form-status:empty::before{content:"সংরক্ষণ করা হয়নি এমন পরিবর্তন আছে।"; color:var(--text-2);}
+.settings-bar-actions{display:flex; gap:var(--space-3); flex:0 0 auto;}
+
+@media (prefers-reduced-motion: no-preference){
+  .settings-bar{animation:settings-bar-in var(--dur-3) var(--ease-out);}
+  @keyframes settings-bar-in{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+}
+
+@media (max-width:900px){
+  .settings-row{grid-template-columns:minmax(0,1fr); gap:var(--space-5);}
+}
 @media (max-width:640px){
-  .dash-field-grid{grid-template-columns:1fr;}
-  .dash-fieldset{padding:var(--space-5) var(--space-4);}
+  .settings-row-fields{grid-template-columns:1fr;}
+  .profile-meter{inline-size:100%;}
+  .settings-bar{flex-direction:column; align-items:stretch;}
+  .settings-bar-actions .btn{flex:1;}
 }
 .side-link-signout{
   inline-size:100%; text-align:start; margin-block-start:auto;

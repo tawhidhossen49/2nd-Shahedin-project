@@ -58,7 +58,7 @@
       </div>
 
       <div class="form-field" style="max-width:320px; margin-bottom:16px;">
-        <input type="text" id="studentSearch" placeholder="Search by name or phone…">
+        <input type="text" id="studentSearch" placeholder="Search name, phone, email, city…">
       </div>
 
       <div id="studentTableWrap"></div>`;
@@ -76,19 +76,33 @@
     const term = searchTerm.trim().toLowerCase();
     const filtered = !term
       ? students
-      : students.filter((s) => (s.full_name || "").toLowerCase().includes(term) || (s.phone || "").toLowerCase().includes(term));
+      // Search now covers the details students fill in themselves, so you can
+      // find everyone in Chattogram or look someone up by their email.
+      : students.filter((s) =>
+          [s.full_name, s.phone, s.email, s.city, s.institution, s.profession]
+            .filter(Boolean).join(" ").toLowerCase().includes(term)
+        );
 
     wrap.innerHTML = !filtered.length
       ? `<div class="empty-state">${students.length ? "No students match your search." : "No students have signed up yet."}</div>`
       : `<table class="admin-table">
-          <thead><tr><th>Name</th><th>Phone</th><th>Joined</th><th>Enrolled courses</th><th>Total spent</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Contact</th><th>Location</th><th>Joined</th><th>Courses</th><th>Total spent</th><th></th></tr></thead>
           <tbody>
             ${filtered
               .map(
                 (s) => `
               <tr data-id="${s.id}">
-                <td>${Admin.escapeHtml(s.full_name || "(no name)")}</td>
-                <td>${Admin.escapeHtml(formatPhone(s.phone))}</td>
+                <td>
+                  <div class="row-title">${Admin.escapeHtml(s.full_name || "(no name)")}</div>
+                  ${s.institution || s.profession
+                    ? `<div class="row-sub">${Admin.escapeHtml([s.profession, s.institution].filter(Boolean).join(" · "))}</div>`
+                    : ""}
+                </td>
+                <td>
+                  <div>${Admin.escapeHtml(formatPhone(s.phone))}</div>
+                  ${s.email ? `<div class="row-sub"><a href="mailto:${Admin.escapeHtml(s.email)}">${Admin.escapeHtml(s.email)}</a></div>` : `<div class="row-sub">no email given</div>`}
+                </td>
+                <td class="row-sub">${Admin.escapeHtml(s.city || "—")}</td>
                 <td class="row-sub">${new Date(s.created_at).toLocaleDateString()}</td>
                 <td>${s.enrollments.length}</td>
                 <td>৳${s.totalSpent.toLocaleString()}</td>
@@ -102,6 +116,31 @@
     wrap.querySelectorAll("[data-view]").forEach((btn) => {
       btn.addEventListener("click", () => openDetail(btn.dataset.view));
     });
+  }
+
+  /* Everything the student filled in on their own Settings page. Only the
+     fields they actually answered are shown: a wall of "—" rows tells you
+     nothing and buries the ones that do have an answer. */
+  function profileBlock(s) {
+    const rows = [
+      ["Email", s.email ? `<a href="mailto:${Admin.escapeHtml(s.email)}">${Admin.escapeHtml(s.email)}</a>` : ""],
+      ["City / district", Admin.escapeHtml(s.city || "")],
+      ["Institution", Admin.escapeHtml(s.institution || "")],
+      ["Profession", Admin.escapeHtml(s.profession || "")],
+      ["Address", s.address ? `<span style="white-space:pre-wrap;">${Admin.escapeHtml(s.address)}</span>` : ""],
+      ["About", s.bio ? `<span style="white-space:pre-wrap;">${Admin.escapeHtml(s.bio)}</span>` : ""],
+    ].filter(([, v]) => v);
+
+    if (!rows.length) {
+      return `<p class="row-sub" style="margin-bottom:24px;">This student hasn't filled in any profile details yet.</p>`;
+    }
+    return `
+      <h3 style="font-size:.95rem; margin-bottom:10px;">Profile details</h3>
+      <table class="admin-table" style="margin-bottom:24px;">
+        <tbody>
+          ${rows.map(([label, value]) => `<tr><td class="row-sub" style="width:150px;">${label}</td><td>${value}</td></tr>`).join("")}
+        </tbody>
+      </table>`;
   }
 
   function openDetail(id) {
@@ -118,6 +157,8 @@
           <button class="modal-close" id="closeStudentModal">&times;</button>
         </div>
         <p class="row-sub" style="margin-bottom:20px;">${Admin.escapeHtml(formatPhone(s.phone))} · joined ${new Date(s.created_at).toLocaleDateString()}</p>
+
+        ${profileBlock(s)}
 
         <h3 style="font-size:.95rem; margin-bottom:10px;">Enrolled courses (${s.enrollments.length})</h3>
         ${

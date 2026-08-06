@@ -1434,3 +1434,56 @@ from products p
 where p.is_published = true or auth.uid() in (select id from admins);
 
 grant select on products_safe to anon, authenticated;
+
+
+-- =========================================================================
+-- 20. STUDENT PROFILE DETAILS
+--     Safe to re-run.
+--
+--     Students could only ever give a name and a phone number. These columns
+--     let them fill in the rest themselves from the dashboard's Settings tab,
+--     and the admin sees it under Students.
+--
+--     NOTE ON WRITE ACCESS: `profiles` had no student update policy at all --
+--     the table is kept in sync from auth.users by the triggers in section 12
+--     and nothing wrote to it directly. Two things are needed here, and both
+--     matter:
+--
+--       1. A row policy, so a student can update their OWN row and no one
+--          else's.
+--       2. A COLUMN grant, so that even on their own row they can only touch
+--          the self-service fields. full_name and phone are owned by
+--          auth.users and mirrored down by those triggers; letting a student
+--          write them directly would desync the two and would let someone
+--          show the admin a phone number that is not the one they log in with.
+-- =========================================================================
+alter table profiles add column if not exists email       text;
+alter table profiles add column if not exists city        text;
+alter table profiles add column if not exists address     text;
+alter table profiles add column if not exists institution text;
+alter table profiles add column if not exists profession  text;
+alter table profiles add column if not exists bio         text;
+alter table profiles add column if not exists updated_at  timestamptz not null default now();
+
+drop policy if exists "students can update their own profile" on profiles;
+create policy "students can update their own profile"
+  on profiles for update
+  using (auth.uid() = id)
+  with check (auth.uid() = id);
+
+-- Column-level privileges. Supabase grants blanket table access to the
+-- `authenticated` role and relies on RLS for rows; RLS cannot restrict
+-- COLUMNS, so this is the piece that keeps full_name, phone and id read-only
+-- for students. Revoke the blanket UPDATE first, then hand back exactly the
+-- six fields the Settings form owns.
+revoke update on profiles from authenticated;
+grant update (email, city, address, institution, profession, bio)
+  on profiles to authenticated;
+
+-- Keeps updated_at honest. A BEFORE trigger assigning NEW.updated_at does not
+-- require the caller to hold an UPDATE grant on that column, so this works
+-- alongside the restricted grant above.
+drop trigger if exists profiles_set_updated_at on profiles;
+create trigger profiles_set_updated_at
+  before update on profiles
+  for each row execute function set_updated_at();

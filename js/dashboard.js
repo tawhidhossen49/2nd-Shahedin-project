@@ -25,7 +25,7 @@
   const app = document.getElementById("dashApp");
   if (!app) return;
 
-  let state = { user: null, enrollments: [], courses: [], orders: [], products: [] };
+  let state = { user: null, profile: null, enrollments: [], courses: [], orders: [], products: [] };
 
   async function init() {
     if (!window.ShahedinAuth || !window.ShahedinAuth.configured()) {
@@ -67,12 +67,17 @@
 
   async function loadData() {
     const c = window.ShahedinAuth.client();
-    const [enrollRes, orderRes] = await Promise.all([
+    const [enrollRes, orderRes, profileRes] = await Promise.all([
       c.from("enrollments").select("*").eq("user_id", state.user.id).order("enrolled_at", { ascending: false }),
       c.from("orders").select("*").eq("user_id", state.user.id).order("created_at", { ascending: false }),
+      // The student's own profile row, so the Settings form opens pre-filled.
+      // maybeSingle: a brand-new account may not have its trigger-created row
+      // visible yet, and a missing profile must not break the dashboard.
+      c.from("profiles").select("*").eq("id", state.user.id).maybeSingle(),
     ]);
     state.enrollments = enrollRes.data || [];
     state.orders = orderRes.data || [];
+    state.profile = (profileRes && profileRes.data) || null;
 
     /* courses_safe, NOT courses. The raw `courses` table has no public read
        policy at all — only "admins can read all courses" — so this query
@@ -534,27 +539,104 @@
       </table>`;
   }
 
+  /* Two stores behind one form, deliberately:
+       - the display name lives in auth.users metadata and is mirrored into
+         `profiles` by a trigger, so it is saved through ShahedinAuth.
+       - everything below is written straight to `profiles`, where a student
+         holds a column-level grant on exactly these six fields and nothing
+         else (see section 20 of schema.sql).
+     The phone stays read-only: it is the login credential, and changing it
+     means re-verifying by OTP, which is a different flow entirely. */
+  const PROFILE_FIELDS = [
+    { key: "email", label: "ইমেইল", type: "email", hint: "অর্ডার ও রসিদ পাঠাতে", placeholder: "you@example.com" },
+    { key: "city", label: "শহর / জেলা", type: "text", placeholder: "ঢাকা" },
+    { key: "institution", label: "শিক্ষা প্রতিষ্ঠান", type: "text", hint: "ঐচ্ছিক", placeholder: "ঢাকা বিশ্ববিদ্যালয়" },
+    { key: "profession", label: "পেশা", type: "text", hint: "ঐচ্ছিক", placeholder: "শিক্ষার্থী" },
+    { key: "address", label: "ঠিকানা", type: "textarea", hint: "ঐচ্ছিক — ফিজিক্যাল অর্ডার পৌঁছে দিতে কাজে লাগে", placeholder: "বাসা ও রোড নম্বর, এলাকা, থানা, জেলা" },
+    { key: "bio", label: "নিজের সম্পর্কে", type: "textarea", hint: "ঐচ্ছিক", placeholder: "" },
+  ];
+
   function renderSettings(main) {
     main.innerHTML = `
       <h1 class="dash-page-title">সেটিংস</h1>
       <form id="settingsForm" class="dash-settings-form">
-        <div class="field"><label>প্রদর্শিত নাম</label><input type="text" name="name" value="${escapeHtml(window.ShahedinAuth.displayName(state.user))}"></div>
-        <div class="field"><label>ফোন নম্বর</label><input type="tel" value="${escapeHtml(window.ShahedinAuth.formatPhone(state.user.phone))}" disabled></div>
+        <div class="dash-fieldset">
+          <h2 class="dash-section-title">অ্যাকাউন্ট</h2>
+          <div class="dash-field-grid">
+            <div class="field"><label for="set_name">প্রদর্শিত নাম</label><input type="text" id="set_name" name="name" value="${escapeHtml(window.ShahedinAuth.displayName(state.user))}"></div>
+            <div class="field">
+              <label for="set_phone">ফোন নম্বর</label>
+              <input type="tel" id="set_phone" value="${escapeHtml(window.ShahedinAuth.formatPhone(state.user.phone))}" readonly>
+              <p class="field-help">এই নম্বর দিয়েই আপনি লগ ইন করেন, তাই এটি এখান থেকে পরিবর্তন করা যায় না।</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-fieldset">
+          <h2 class="dash-section-title">আপনার তথ্য</h2>
+          <div class="dash-field-grid">
+            ${PROFILE_FIELDS.map((f) => {
+              const value = escapeHtml((state.profile || {})[f.key] || "");
+              const label = `<label for="set_${f.key}">${f.label}${f.hint ? ` <span class="field-optional">${f.hint}</span>` : ""}</label>`;
+              const control = f.type === "textarea"
+                ? `<textarea id="set_${f.key}" name="${f.key}" rows="3" placeholder="${escapeHtml(f.placeholder)}">${value}</textarea>`
+                : `<input type="${f.type}" id="set_${f.key}" name="${f.key}" value="${value}" placeholder="${escapeHtml(f.placeholder)}">`;
+              return `<div class="field${f.type === "textarea" ? " field-wide" : ""}">${label}${control}</div>`;
+            }).join("")}
+          </div>
+          <p class="field-help">এই তথ্য শুধু Shahedin টিম দেখতে পায়। কীভাবে ব্যবহার করা হয় তা <a class="text-link" href="privacy.html">প্রাইভেসি পলিসিতে</a> লেখা আছে।</p>
+        </div>
+
+        <p class="form-status" id="settingsStatus" role="status" hidden></p>
         <button type="submit" class="btn btn-primary">পরিবর্তন সংরক্ষণ করুন</button>
       </form>`;
 
     document.getElementById("settingsForm").addEventListener("submit", async (e) => {
       e.preventDefault();
       const form = e.target;
+      const status = document.getElementById("settingsStatus");
+      const setStatus = (text, kind) => {
+        status.textContent = text || "";
+        status.hidden = !text;
+        status.classList.toggle("is-error", kind === "error");
+        status.classList.toggle("is-ok", kind === "ok");
+      };
+
+      // Checked before saving: a mistyped address is worse than a blank one,
+      // because it looks like a working contact route and silently is not.
+      const email = form.email.value.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+        setStatus("ইমেইল ঠিকানাটি সঠিক নয়। উদাহরণ: you@example.com", "error");
+        form.email.focus();
+        return;
+      }
+
       const btn = form.querySelector('button[type="submit"]');
       const original = btn.textContent;
       btn.disabled = true;
       btn.textContent = "সংরক্ষণ হচ্ছে…";
+      setStatus("");
+
       try {
         await window.ShahedinAuth.updateProfile({ full_name: form.name.value.trim() });
+
+        const patch = {};
+        PROFILE_FIELDS.forEach((f) => { patch[f.key] = form[f.key].value.trim() || null; });
+        const c = window.ShahedinAuth.client();
+        const { error } = await c.from("profiles").update(patch).eq("id", state.user.id);
+        if (error) throw error;
+
+        state.profile = Object.assign({}, state.profile || {}, patch);
+        setStatus("সংরক্ষণ করা হয়েছে।", "ok");
         window.showToast && window.showToast("সেটিংস সংরক্ষণ করা হয়েছে।");
       } catch (err) {
-        window.showToast && window.showToast("সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।");
+        setStatus("সংরক্ষণ করা যায়নি, আবার চেষ্টা করুন।", "error");
+        // A database still on the old schema has no email/city columns.
+        console.warn(
+          "Shahedin dashboard: couldn't save profile. If this says a column does not exist, " +
+          "run section 20 of schema.sql in the Supabase SQL editor.",
+          err
+        );
       } finally {
         btn.disabled = false;
         btn.textContent = original;

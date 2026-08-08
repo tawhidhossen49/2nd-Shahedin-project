@@ -420,15 +420,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   content:""; position:absolute; inset-block-start:-1px; inset-inline:0; block-size:1px;
   background:linear-gradient(90deg,transparent,var(--line-accent),transparent);
 }
+/* Brand block left, link columns anchored right, with the space between them
+   as deliberate breathing room rather than a hole left by the removed image.
+   `auto` on the second track lets the columns size to their content and sit
+   flush to the right edge instead of floating in the middle. */
 .footer-inner{
   max-width:var(--container); margin-inline:auto;
   padding:0 var(--gutter) var(--space-9);
-  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); gap:var(--space-9);
-  position:relative; z-index:2;
+  display:grid; grid-template-columns:minmax(0,1fr) auto; gap:clamp(40px,8vw,140px);
+  align-items:start; position:relative; z-index:2;
 }
+.footer-brand{max-inline-size:40ch;}
 .footer-brand p{margin:var(--space-4) 0 var(--space-6); max-width:36ch; font-size:var(--step--1);}
 .footer-social{display:flex; gap:var(--space-3);}
-.footer-cols{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-7); align-content:start;}
+.footer-cols{display:grid; grid-template-columns:repeat(2,minmax(120px,auto)); gap:clamp(40px,6vw,88px); align-content:start;}
 /* Footer column headings are <h2>, not <h4>: the footer is its own landmark
    and an h4 straight after the page h1/h2 skipped two outline levels. */
 .footer-col h2,.footer-col h4{
@@ -443,32 +448,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .footer-col a:hover{color:var(--text-1); transform:translateX(3px);}
 .footer-nl{display:flex; margin-block-start:var(--space-2); gap:var(--space-2);}
 
-/* Footer portrait.
-   ASSET NOTE: assets/img/shahedin-cutout.webp was authored for exactly this
-   slot — a transparent cutout feathered at the feet, sitting directly on the
-   footer with no card. This is the only place it is used at its intended
-   crop. A replacement should be: full-body or knee-up, transparent PNG/WebP,
-   >=1200px tall, lit from the upper right to match the warm glow. */
-.footer-cutout-wrap{
-  position:absolute; inset-inline-end:3%; inset-block-end:0; block-size:100%; inline-size:38%; max-inline-size:460px;
-  display:flex; align-items:flex-end; justify-content:center; pointer-events:none; z-index:1;
-}
-.footer-cutout-wrap img{
-  block-size:90%; inline-size:auto; object-fit:contain; object-position:bottom;
-  -webkit-mask-image:linear-gradient(to top,transparent 0%,#000 8%,#000 100%);
-  mask-image:linear-gradient(to top,transparent 0%,#000 8%,#000 100%);
-  filter:saturate(.86) brightness(.94) contrast(1.04);
-  will-change:transform;
-}
-.footer-cutout-tint{
-  position:absolute; inset:0; pointer-events:none; mix-blend-mode:multiply;
-  background:radial-gradient(60% 70% at 50% 20%, rgba(20,10,10,0), rgba(8,4,2,.6) 100%);
-}
-.footer-cutout-shadow{
-  position:absolute; inset-block-end:2%; inset-inline-start:50%; transform:translateX(-50%);
-  inline-size:56%; block-size:22px; filter:blur(5px); z-index:0;
-  background:radial-gradient(ellipse, rgba(0,0,0,.6), transparent 70%);
-}
+/* The portrait that used to sit here is gone. Its absolute box occupied the
+   right 38% of the footer, which is why the columns were squeezed into the
+   left two thirds and stopped short of the right edge. */
 .footer-bottom{
   border-block-start:1px solid var(--line); padding:var(--space-5) var(--gutter);
   display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:var(--space-3);
@@ -2136,8 +2118,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-hero-media img{object-position:50% 34%;}
   .hero-portrait{max-block-size:440px;}
   .footer-inner{grid-template-columns:minmax(0,1fr);}
-  .footer-cutout-wrap{position:relative; inline-size:100%; block-size:260px; margin-block-start:var(--space-6); justify-content:flex-end; inset-inline-end:0;}
-  .footer-cutout-wrap img{block-size:100%;}
   .grid-4{grid-template-columns:repeat(2,minmax(0,1fr));}
   .grid-3{grid-template-columns:repeat(2,minmax(0,1fr));}
   .kit-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));}

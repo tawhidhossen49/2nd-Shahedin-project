@@ -416,25 +416,9 @@
     }
   });
 
-  /* ---------- Footer subtle parallax ---------- */
-  const footerCutout = document.querySelector(".footer-cutout-wrap");
-  if (footerCutout && window.matchMedia("(min-width: 761px)").matches) {
-    const footer = document.querySelector(".site-footer");
-    window.addEventListener(
-      "scroll",
-      () => {
-        if (!footer) return;
-        const rect = footer.getBoundingClientRect();
-        const winH = window.innerHeight;
-        if (rect.top < winH && rect.bottom > 0) {
-          const progress = (winH - rect.top) / (winH + rect.height);
-          const offset = (progress - 0.5) * 30;
-          footerCutout.style.transform = `translateY(${offset}px)`;
-        }
-      },
-      { passive: true }
-    );
-  }
+  /* The footer parallax lived here. It drove .footer-cutout-wrap, which no
+     longer exists, and it did so from an unthrottled scroll listener running
+     getBoundingClientRect on every frame. Removed with the portrait. */
 
   /* ---------- Simple calendar widget (contact page) ---------- */
   const calGrid = document.querySelector("[data-cal-grid]");

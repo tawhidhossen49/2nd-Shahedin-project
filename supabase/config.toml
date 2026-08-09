@@ -1,0 +1,35 @@
+# =============================================================================
+# Supabase project configuration
+# -----------------------------------------------------------------------------
+# Only the pieces this repo actually needs are set here. Everything else keeps
+# the Supabase CLI defaults.
+#
+# The site's tables, views, policies and functions are NOT managed from here --
+# they live in schema.sql at the repo root and are applied through the SQL
+# editor. This file exists for the Send SMS Hook.
+# =============================================================================
+
+# Replace with your project ref (Supabase dashboard -> Settings -> General).
+# It is also the first path segment of your project URL:
+#   https://<project-ref>.supabase.co
+project_id = "vkpokhjltfaclyeurxux"
+
+[functions.send-sms]
+# MUST stay false. Supabase Auth calls this hook BEFORE the user is
+# authenticated -- there is no JWT to verify at OTP time, so leaving the
+# default on would reject every call with 401 and no OTP would ever send.
+# The request is authenticated instead by its Standard Webhooks signature,
+# which index.ts verifies against SEND_SMS_HOOK_SECRETS.
+verify_jwt = false
+
+[auth.hook.send_sms]
+enabled = true
+
+# Deployed: point at the function's public URL.
+uri = "https://vkpokhjltfaclyeurxux.supabase.co/functions/v1/send-sms"
+
+# Running locally with `supabase start`, comment the line above and use:
+# uri = "http://host.docker.internal:54321/functions/v1/send-sms"
+
+# Read from the environment, never written here. See DEPLOY_SMS_HOOK.md.
+secrets = "env(SEND_SMS_HOOK_SECRETS)"

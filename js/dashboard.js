@@ -594,14 +594,17 @@
           ${state.orders
             .map(
               (o) => `
+            <!-- data-label drives the mobile card layout in css/style.css:
+                 below 760px each row becomes a card and every cell shows its
+                 column name, so the table never scrolls sideways. -->
             <tr>
-              <td>${escapeHtml(o.item_title)}</td>
-              <td>${o.kind === "course" ? "কোর্স" : "প্রোডাক্ট"}</td>
-              <td>${o.qty}</td>
-              <td>${o.amount_bdt === 0 ? "ফ্রি" : "৳" + o.amount_bdt}</td>
-              <td>${new Date(o.created_at).toLocaleDateString("bn-BD")}</td>
-              <td><span class="badge badge-live">${o.status === "completed" ? "সম্পন্ন" : o.status === "pending" ? "অপেক্ষমাণ" : "বাতিল"}</span></td>
-              <td>${actionCell(o)}</td>
+              <td data-label="আইটেম">${escapeHtml(o.item_title)}</td>
+              <td data-label="ধরন">${o.kind === "course" ? "কোর্স" : "প্রোডাক্ট"}</td>
+              <td data-label="পরিমাণ">${o.qty}</td>
+              <td data-label="মূল্য">${o.amount_bdt === 0 ? "ফ্রি" : "৳" + o.amount_bdt}</td>
+              <td data-label="তারিখ">${new Date(o.created_at).toLocaleDateString("bn-BD")}</td>
+              <td data-label="অবস্থা"><span class="badge badge-live">${o.status === "completed" ? "সম্পন্ন" : o.status === "pending" ? "অপেক্ষমাণ" : "বাতিল"}</span></td>
+              <td data-label="">${actionCell(o)}</td>
             </tr>`
             )
             .join("")}

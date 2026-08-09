@@ -2196,6 +2196,168 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* =========================================================================
+   19b. RESPONSIVE POLISH
+   -------------------------------------------------------------------------
+   Findings from a pass at 375 / 768 / 1440. Kept in one block rather than
+   scattered so the reasoning stays together and nothing above is disturbed.
+   Purely additive: no existing rule is rewritten, so the desktop design is
+   byte-for-byte what it was.
+   ========================================================================= */
+
+/* ---- 1. The 768px gap ----
+   Several grids went from 4 columns straight to 2 at 760px, so iPad portrait
+   (exactly 768) landed on the desktop rule and rendered four columns in
+   ~720px. Both of these carry large numerals that were being squeezed. */
+@media (max-width:900px){
+  .hero-stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .trust-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+
+/* ---- 2. Grids that overflow below their own track width ----
+   auto-fill/auto-fit with a fixed minimum cannot go narrower than that
+   minimum, so on a 320px phone a 280px track plus gutters pushed the page
+   sideways. min() lets the track collapse to the container instead. */
+.community-grid{grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));}
+.press-strip{grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));}
+
+/* ---- 3. Data tables ----
+   A table cannot shrink below its content, and none of these had a scroll
+   container: on mobile the columns were simply cut off by the body's
+   overflow-x:hidden, silently hiding order totals and dates. The container
+   scrolls instead, so every column stays reachable. */
+#orderList,
+#studentTableWrap,
+#courseTableWrap,
+#productTableWrap,
+#tableWrap,
+[data-scope-table]{
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-x:contain;   /* don't chain the swipe to page navigation */
+}
+/* Catches any table added later without needing this list updated. */
+.panel:has(> .admin-table),
+.dash-main div:has(> .admin-table){overflow-x:auto; -webkit-overflow-scrolling:touch;}
+.admin-table{inline-size:100%;}
+
+/* Below tablet the table stops being a table: each row becomes a card and
+   each cell shows its own column name, so nothing scrolls sideways and
+   nothing is hidden. Cells carry data-label from js/dashboard.js. */
+@media (max-width:760px){
+  #orderList{overflow-x:visible;}
+  .admin-table{display:block; min-inline-size:0;}
+  .admin-table thead{display:none;}
+  .admin-table tbody,.admin-table tr,.admin-table td{display:block;}
+  .admin-table tr{
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:var(--radius-m); padding:var(--space-4) var(--space-5);
+    margin-block-end:var(--space-3);
+  }
+  .admin-table tr:last-child{margin-block-end:0;}
+  .admin-table td{
+    padding-block:9px; border-block-end:1px solid var(--line);
+    display:grid; grid-template-columns:minmax(84px,34%) 1fr;
+    gap:var(--space-4); align-items:start;
+  }
+  .admin-table td:first-child{padding-block-start:0;}
+  .admin-table td:last-child{padding-block-end:0; border-block-end:none;}
+  .admin-table td::before{
+    content:attr(data-label);
+    font-size:var(--step--2); font-weight:600; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--text-3);
+  }
+  /* Also covers any cell rendered without a data-label, which would otherwise
+     reserve an empty label gutter. */
+  .admin-table td[data-label=""],
+  .admin-table td:not([data-label]){grid-template-columns:1fr; padding-block-start:var(--space-3);}
+  .admin-table td[data-label=""]::before,
+  .admin-table td:not([data-label])::before{display:none;}
+  .admin-table td:empty{display:none;}
+}
+
+/* ---- 4. Touch targets ----
+   Gated on a coarse pointer so the desktop keeps its tighter, more refined
+   sizing. Only the hit area grows; the visual box is unchanged where the
+   element is a circle with a centred glyph. */
+@media (pointer:coarse){
+  .icon-btn,
+  .modal-close,
+  .qty-stepper button{min-inline-size:44px; min-block-size:44px;}
+  .chip{padding-block:11px;}
+  .cal-day{min-block-size:44px;}
+  .footer-col a{padding-block:10px;}
+  .footer-legal a{display:inline-block; padding-block:8px;}
+  .side-link{min-block-size:44px;}
+  .cb-progress{padding-block:8px;}
+}
+
+/* ---- 5. Long unbroken strings ----
+   Emails, URLs and slugs have no break opportunity and were the single
+   biggest source of sideways push in the dashboard and order tables. */
+.osr-title,.osr-sub,
+.res-row .rleft span,
+.community-label,.community-desc,
+.admin-table td,
+.dash-course-row .dinfo h3{overflow-wrap:anywhere;}
+
+/* ---- 5b. Signed-out dashboard ----
+   The login card is ~350px tall. Below it, .dash-main's 80px bottom padding
+   and .site-footer's 80px top margin stacked into ~160px of empty black
+   before the footer, which on a phone reads as a broken render rather than
+   deliberate space. Filling the viewport and centring the card removes the
+   void without touching the card itself.
+
+   min-block-size, not block-size: if the form grows (the OTP step adds a
+   field and two buttons) the container grows with it instead of clipping.
+   svh rather than vh, because vh on mobile is the URL-bar-collapsed height,
+   which reintroduces a gap that only closes once you scroll. */
+.dash-main.dash-centered{
+  display:flex; flex-direction:column; justify-content:center;
+  min-block-size:calc(100vh - var(--nav-h));
+  min-block-size:calc(100svh - var(--nav-h));
+  padding-block:calc(var(--nav-h) + var(--space-6)) var(--space-8);
+}
+
+/* ---- 6. Mobile-only spacing and sizing corrections ---- */
+@media (max-width:760px){
+  /* 120px of thumbnail left ~190px for the title on a 375 screen. */
+  .dash-course-row .dthumb{inline-size:88px;}
+  .dash-course-row{gap:var(--space-3);}
+  /* The pane was taller than most phone viewports. */
+  .pdf-embed{block-size:min(420px,60vh);}
+  /* Sat flush against the viewport edge once the rail unsticks. */
+  .checkout-rail,.summary-card{min-inline-size:0;}
+}
+
+@media (max-width:480px){
+  /* Was 36px, below the touch minimum, and the coarse-pointer rule above
+     needs the base to not fight it. */
+  .qty-stepper button{inline-size:44px; block-size:44px;}
+  .cal-grid{gap:4px;}
+  /* Full-bleed modals read better than a 20px frame at this width.
+     .modal-inline named explicitly: it sets its own padding at equal
+     specificity, so relying on source order alone would be fragile. */
+  .modal-backdrop{padding:var(--space-6) var(--space-4);}
+  .modal,.modal-inline{padding:var(--space-5);}
+  .profile-card{padding:var(--space-5);}
+  .settings-row{padding-block:var(--space-6);}
+  .co-group{padding:var(--space-5) var(--space-4);}
+  .legal-body h2{margin-block-start:var(--space-7);}
+}
+
+/* ---- 7. 375px specifically ----
+   The narrowest target. Two-up grids that still worked at 480 stop working
+   here once padding is accounted for. */
+@media (max-width:390px){
+  .hero-stats{grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-3);}
+  .footer-cols{grid-template-columns:minmax(0,1fr); gap:var(--space-6);}
+  .coupon-row{flex-wrap:wrap;}
+  .coupon-row .btn{inline-size:100%;}
+  .dash-course-row{flex-wrap:wrap;}
+  .dash-course-row .btn{inline-size:100%;}
+}
+
+/* =========================================================================
    20. ACCESSIBILITY + PRINT
    ========================================================================= */
 :focus-visible{

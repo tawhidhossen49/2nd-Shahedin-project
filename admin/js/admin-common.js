@@ -100,7 +100,7 @@ window.Admin = (function () {
         </aside>
         <main class="admin-main">
           <div class="admin-topbar">
-            <button class="icon-btn" id="mobileNavToggle" style="display:none;">☰</button>
+            <button class="icon-btn" id="mobileNavToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="adminSidebar">☰</button>
             <div><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ""}</div>
             <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm">View site ↗</a>
           </div>
@@ -113,6 +113,73 @@ window.Admin = (function () {
       await client().auth.signOut();
       window.location.href = "login.html";
     });
+
+    /* Mobile sidebar. Below 860px admin.css moves .admin-sidebar off-canvas
+       and only .open brings it back, but nothing ever added that class and
+       the toggle was rendered display:none -- so on a phone you could see the
+       page you landed on and reach none of the others. CSS handles when the
+       button is visible; this handles what it does. */
+    const sidebar = document.getElementById("adminSidebar");
+    const toggle = document.getElementById("mobileNavToggle");
+    if (sidebar && toggle) {
+      const scrim = document.createElement("div");
+      scrim.className = "admin-scrim";
+      document.body.appendChild(scrim);
+
+      const setOpen = (open) => {
+        sidebar.classList.toggle("open", open);
+        scrim.classList.toggle("show", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        // Stops the page behind scrolling under the open drawer.
+        document.body.style.overflow = open ? "hidden" : "";
+      };
+
+      toggle.addEventListener("click", () => setOpen(!sidebar.classList.contains("open")));
+      scrim.addEventListener("click", () => setOpen(false));
+      document.addEventListener("keydown", (e) => { if (e.key === "Escape") setOpen(false); });
+      // Following a link should not leave the drawer covering the new page.
+      sidebar.querySelectorAll("a").forEach((a) => a.addEventListener("click", () => setOpen(false)));
+    }
+
+    watchTables();
+  }
+
+  /* ---------- Responsive tables ----------
+     Below 760px admin.css turns every table row into a stacked card, which
+     needs each cell to know which column it came from. Rather than hand-
+     writing data-label into eight different render functions (and remembering
+     to do it in the ninth), the header text is copied down automatically.
+
+     Runs off a MutationObserver because tables are painted by innerHTML at
+     unpredictable times. Only childList is observed, and this writes
+     attributes, so it cannot retrigger itself. */
+  function labelTable(table) {
+    const heads = Array.from(table.querySelectorAll("thead th")).map((th) => th.textContent.trim());
+    if (!heads.length) return;
+    table.querySelectorAll("tbody tr").forEach((tr) => {
+      Array.from(tr.children).forEach((cell, i) => {
+        // An empty header means an unlabelled column (the row-actions one);
+        // the CSS gives those the full width instead of a label gutter.
+        cell.setAttribute("data-label", heads[i] || "");
+      });
+    });
+  }
+
+  function labelTables(root) {
+    (root || document).querySelectorAll(".admin-table").forEach(labelTable);
+  }
+
+  function watchTables() {
+    const content = document.getElementById("adminContent");
+    if (!content) return;
+    labelTables(content);
+    if (!("MutationObserver" in window)) return;
+    let queued = false;
+    new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => { queued = false; labelTables(content); });
+    }).observe(content, { childList: true, subtree: true });
   }
 
   /* ---------- Toasts ---------- */

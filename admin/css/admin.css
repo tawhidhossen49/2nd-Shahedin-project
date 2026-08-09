@@ -28,7 +28,10 @@ body{
   background:var(--surface-0);
   color:var(--text-1);
   font-family:var(--font-body);
-  font-size:15px;
+  /* 16px, not 15. Form controls inherit this (see the reset above), and iOS
+     Safari zooms the whole page whenever a focused input is under 16px --
+     which made every admin form jump on a phone. */
+  font-size:16px;
   line-height:1.55;
   -webkit-font-smoothing:antialiased;
 }
@@ -344,4 +347,159 @@ svg:where(:not([width]):not([height])){ inline-size:1.15em; block-size:1.15em; f
     animation-iteration-count:1 !important;
     transition-duration:.001ms !important;
   }
+}
+
+/* =========================================================================
+   RESPONSIVE POLISH
+   -------------------------------------------------------------------------
+   Pass at 375 / 768 / 1440. Additive only; nothing above is rewritten.
+   ========================================================================= */
+
+/* ---- Data tables ----
+   Admin tables run to seven columns (Orders) and had no scroll container, so
+   on a phone the page itself scrolled sideways and the row actions ended up
+   off screen. The wrapper scrolls instead, keeping the page fixed. */
+#studentTableWrap, #courseTableWrap, #productTableWrap, #tableWrap,
+#orderList, [data-scope-table]{
+  overflow-x:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-x:contain;
+}
+.panel:has(> .admin-table){ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.admin-table td{ overflow-wrap:anywhere; }
+
+/* ---- Tables become cards on mobile ----
+   Scrolling a seven-column table sideways on a phone is miserable: you lose
+   the row you were reading and the actions live off-screen. Below 760 each
+   row becomes a self-contained card and each cell carries its column name,
+   so nothing is hidden and there is no sideways movement at all.
+   admin-common.js copies the <th> text into data-label on every cell. */
+@media (max-width:760px){
+  /* Nothing to scroll any more. */
+  #studentTableWrap, #courseTableWrap, #productTableWrap, #tableWrap,
+  #orderList, [data-scope-table]{ overflow-x:visible; }
+  .panel:has(> .admin-table){ overflow-x:visible; }
+
+  .admin-table{ display:block; min-inline-size:0; font-size:.9rem; }
+  .admin-table thead{ display:none; }
+  .admin-table tbody, .admin-table tr, .admin-table td{ display:block; }
+
+  .admin-table tr{
+    background:var(--surface-2); border:1px solid var(--line);
+    border-radius:var(--radius-m); padding:14px 16px; margin-bottom:12px;
+  }
+  .admin-table tr:hover td{ background:none; }
+  .admin-table tr:last-child{ margin-bottom:0; }
+
+  .admin-table td{
+    padding:9px 0; border-bottom:1px solid var(--line);
+    display:grid; grid-template-columns:minmax(84px,34%) 1fr;
+    gap:14px; align-items:start; text-align:start;
+  }
+  .admin-table td:first-child{ padding-top:0; }
+  .admin-table td:last-child{ padding-bottom:0; border-bottom:none; }
+  .admin-table td::before{
+    content:attr(data-label);
+    font-size:.7rem; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--text-3); padding-top:2px;
+  }
+  /* Unlabelled column (row actions): no label gutter, buttons go full width.
+     :not([data-label]) covers tables built without a <thead> at all -- the
+     student profile-details table is one -- which get no label and would
+     otherwise reserve an empty 84px gutter for nothing. */
+  .admin-table td[data-label=""],
+  .admin-table td:not([data-label]){ grid-template-columns:1fr; padding-top:12px; }
+  .admin-table td[data-label=""]::before,
+  .admin-table td:not([data-label])::before{ display:none; }
+  .admin-table td[data-label=""] .row-actions{ justify-content:flex-start; }
+  /* A cell with nothing in it is noise once stacked. */
+  .admin-table td:empty{ display:none; }
+}
+
+/* ---- Long values ---- */
+.row-title, .row-sub{ overflow-wrap:anywhere; }
+
+@media (max-width:860px){
+  /* The hamburger existed in the markup but was hard-coded display:none with
+     no handler, so below 860 the sidebar was off-canvas with no way to open
+     it: you could see one page and reach none of the others. It is shown and
+     wired now (see renderShell in admin-common.js). */
+  #mobileNavToggle{ display:inline-flex !important; align-items:center; justify-content:center;
+                    min-width:44px; min-height:44px; font-size:1.15rem; flex:0 0 auto; }
+  .admin-sidebar{ box-shadow:var(--shadow-4); }
+  /* Tapping outside the drawer closes it. */
+  .admin-scrim{
+    position:fixed; inset:0; z-index:39; background:rgba(6,4,3,.6);
+    opacity:0; pointer-events:none; transition:opacity var(--dur-2) var(--ease-out);
+  }
+  .admin-scrim.show{ opacity:1; pointer-events:auto; }
+  .admin-topbar{ gap:12px; }
+  .admin-topbar h1{ font-size:1.05rem; }
+  .admin-topbar p{ display:none; }   /* the subtitle pushed the row to three lines */
+}
+
+@media (min-width:861px){
+  .admin-scrim{ display:none; }
+}
+
+/* ---- Touch targets ---- */
+@media (pointer:coarse){
+  .icon-btn{ min-width:44px; min-height:44px; }
+  .btn-sm{ min-height:40px; }
+  .admin-nav a{ min-height:44px; }
+  .modal-close{ min-width:44px; min-height:44px; }
+  .form-check input{ width:20px; height:20px; }
+}
+
+/* ---- Forms and modals on small screens ---- */
+@media (max-width:640px){
+  /* 1fr 90px auto auto put four controls on one line inside a modal that is
+     already narrower than the viewport. */
+  .lesson-row{ grid-template-columns:1fr; gap:6px; }
+  .lesson-row input{ width:100%; }
+  .modal{ padding:20px 16px; }
+  .modal-backdrop{ padding:16px 12px; }
+  .modal-foot{ flex-direction:column-reverse; }
+  .modal-foot .btn{ width:100%; }
+  .sub-toolbar{ flex-direction:column; align-items:stretch; }
+  .toast-wrap{ top:12px; right:12px; left:12px; }
+  .toast{ width:auto; }
+  /* Two-column coupon rows collapse rather than squeeze. */
+  #linkList .module-head > div{ grid-template-columns:1fr !important; }
+}
+
+/* ---- Sidebar: menu button, and reaching Log out ----
+   The hamburger inherited the muted .icon-btn colour and read as disabled.
+   And .admin-nav is flex:1 with no overflow rule, so on a phone thirteen nav
+   items pushed .admin-sidebar-foot past the bottom of a 100vh column and
+   "Log out" was cut in half. Giving the nav its own scroll (min-height:0 is
+   required, or a flex child refuses to shrink) pins the footer where it
+   belongs. */
+#mobileNavToggle{
+  color:var(--text-1);
+  background:var(--surface-2);
+  border-color:var(--line-strong);
+}
+#mobileNavToggle:hover{ background:var(--surface-3); }
+
+.admin-nav{ overflow-y:auto; min-height:0; overscroll-behavior:contain; }
+.admin-sidebar-foot{ flex:0 0 auto; background:var(--surface-1); }
+.admin-logout{
+  color:var(--text-1);
+  border:1px solid var(--line-strong);
+  background:var(--surface-2);
+  justify-content:center;
+}
+.admin-logout:hover{ background:var(--accent-dim); border-color:var(--line-accent); color:var(--accent-ink); }
+.admin-logout svg{ flex:0 0 auto; }
+
+/* ---- Destructive panel actions ----
+   .row-actions is a table-row utility (flex, right-aligned). Reused as a
+   panel footer it pushed both buttons off the right edge on a phone. */
+@media (max-width:640px){
+  .danger-panel .row-actions,
+  .panel > .row-actions{
+    flex-direction:column; align-items:stretch; justify-content:flex-start;
+    gap:10px; margin-top:14px;
+  }
+  .danger-panel .row-actions .btn,
+  .panel > .row-actions .btn{ width:100%; }
 }

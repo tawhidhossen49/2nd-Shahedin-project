@@ -156,6 +156,19 @@ img{max-width:100%; display:block;}
 .badge-live{ background:var(--good-dim); color:var(--good); }
 .badge-draft{ background:var(--warn-dim); color:var(--warn); }
 .badge-free{ background:var(--accent-dim); color:var(--accent-ink); }
+
+/* A badge that is also a button. The border is what separates it from the
+   read-only Live/Draft badge sitting in the next column over -- without it
+   there is nothing to suggest one of them can be clicked and the other can't. */
+.badge-toggle{
+  border:1px solid transparent;
+  font:inherit; font-size:.72rem; font-weight:600;
+  transition:background .15s ease, border-color .15s ease;
+}
+.badge-toggle.is-on{ background:var(--good-dim); color:var(--good); border-color:color-mix(in srgb, var(--good) 35%, transparent); }
+.badge-toggle.is-off{ background:var(--surface-3); color:var(--text-3); border-color:var(--line-strong); }
+.badge-toggle:hover{ border-color:currentColor; }
+.badge-toggle:disabled{ opacity:.55; cursor:progress; }
 .tone-swatch{ width:16px; height:16px; border-radius:50%; display:inline-block; border:1px solid var(--line-strong); }
 .tone-1{ background:linear-gradient(135deg,#c31432,#e2274d); }
 .tone-2{ background:linear-gradient(135deg,#2b5876,#4e4376); }

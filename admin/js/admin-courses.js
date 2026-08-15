@@ -51,7 +51,7 @@
     }
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Order</th><th></th></tr></thead>
+        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Reviews</th><th>Order</th><th></th></tr></thead>
         <tbody>
           ${courses.map((course) => `
             <tr>
@@ -66,6 +66,13 @@
               </td>
               <td>${course.is_free ? '<span class="badge badge-free">Free</span>' : "৳" + course.price_bdt}</td>
               <td>${course.is_published ? '<span class="badge badge-live">Live</span>' : '<span class="badge badge-draft">Draft</span>'}</td>
+              <td>
+                <button type="button" class="badge badge-toggle reviews-btn ${course.reviews_enabled === false ? "is-off" : "is-on"}"
+                        data-id="${course.id}"
+                        title="${course.reviews_enabled === false ? "Reviews are hidden on this course page — click to show them" : "Reviews are shown on this course page — click to hide them"}">
+                  ${course.reviews_enabled === false ? "Hidden" : "Shown"}
+                </button>
+              </td>
               <td>${course.sort_order}</td>
               <td>
                 <div class="row-actions">
@@ -79,6 +86,46 @@
 
     wrap.querySelectorAll(".edit-btn").forEach((b) => b.addEventListener("click", () => openModal(b.dataset.id)));
     wrap.querySelectorAll(".del-btn").forEach((b) => b.addEventListener("click", () => deleteCourse(b.dataset.id)));
+    wrap.querySelectorAll(".reviews-btn").forEach((b) => b.addEventListener("click", () => toggleReviews(b)));
+  }
+
+  /* Flips the reviews section on or off for one course, straight from the
+     table. The same switch lives in the edit modal, but hiding a course's
+     reviews is a one-second decision and shouldn't cost a modal, fourteen
+     fields and a full save.
+
+     Only reviews_enabled is sent, so this can't overwrite anything else on the
+     row, and the button repaints from the value the database actually stored
+     rather than from what was clicked. */
+  async function toggleReviews(btn) {
+    const id = btn.dataset.id;
+    const course = courses.find((x) => x.id === id);
+    if (!course) return;
+    const next = course.reviews_enabled === false;
+
+    btn.disabled = true;
+    const { data, error } = await c
+      .from("courses")
+      .update({ reviews_enabled: next })
+      .eq("id", id)
+      .select("reviews_enabled")
+      .single();
+    btn.disabled = false;
+
+    if (error) {
+      if (error.code === "42703" || error.code === "PGRST204") {
+        Admin.toast("This database is missing the reviews_enabled column. Run section 23 of schema.sql in the Supabase SQL editor.", true);
+      } else {
+        Admin.toast("Couldn't change that: " + error.message, true);
+      }
+      return;
+    }
+
+    course.reviews_enabled = data.reviews_enabled;
+    renderTable();
+    Admin.toast(course.reviews_enabled
+      ? "Reviews are now shown on that course page."
+      : "Reviews are now hidden on that course page.");
   }
 
   async function deleteCourse(id) {

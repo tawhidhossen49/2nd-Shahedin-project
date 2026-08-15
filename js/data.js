@@ -26,7 +26,6 @@ window.SITE_DATA = {
         { text: "Downloadable resources & notes" },
         { text: "Certificate of completion" },
         { text: "Bangla support" },
-        { text: "Pay with bKash" },
       ],
       faqs: [
         { question: "Do I need any prior knowledge of politics?", answer: "No — this course starts from zero and builds up gradually, so it's fine if this is your first time studying geopolitics." },
@@ -53,7 +52,6 @@ window.SITE_DATA = {
         { text: "Downloadable resources & notes" },
         { text: "Certificate of completion" },
         { text: "Bangla support" },
-        { text: "Pay with bKash" },
       ],
       faqs: [
         { question: "Is this course only about writing?", answer: "No — it also covers building an analysis framework and source-checking, not just the writing process." },
@@ -79,7 +77,6 @@ window.SITE_DATA = {
         { text: "Downloadable resources & notes" },
         { text: "Certificate of completion" },
         { text: "Bangla support" },
-        { text: "Pay with bKash" },
       ],
       faqs: [
         { question: "Do I need expensive equipment to start?", answer: "No — the course specifically covers how to start with budget-friendly gear you likely already own." },
@@ -105,7 +102,6 @@ window.SITE_DATA = {
         { text: "Downloadable resources & notes" },
         { text: "Certificate of completion" },
         { text: "Bangla support" },
-        { text: "Pay with bKash" },
       ],
       faqs: [
         { question: "Is this course updated as the economy changes?", answer: "The core frameworks stay relevant long-term; any major update notes are shared with enrolled students." },
@@ -131,7 +127,6 @@ window.SITE_DATA = {
         { text: "Downloadable resources & notes" },
         { text: "Certificate of completion" },
         { text: "Bangla support" },
-        { text: "Pay with bKash" },
       ],
       faqs: [
         { question: "Does this cover viva as well as the written exam?", answer: "Yes — there's a dedicated module on viva prep, including a full mock viva walkthrough." },

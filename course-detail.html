@@ -86,9 +86,13 @@
         <h2 class="section-title">আপনার প্রশিক্ষক</h2>
         <div data-mount="course-mentor"></div>
 
-        <h2 class="section-title section-title-spaced">রিভিউ</h2>
-        <div data-mount="course-review-form"></div>
-        <div data-mount="course-reviews"></div>
+        <!-- The three review nodes are marked so course-reviews.js can hide
+             them together when the admin has switched reviews off for this
+             course. The heading is static markup, so hiding only the mounts
+             would leave a "রিভিউ" title with nothing under it. -->
+        <h2 class="section-title section-title-spaced" data-review-part>রিভিউ</h2>
+        <div data-mount="course-review-form" data-review-part></div>
+        <div data-mount="course-reviews" data-review-part></div>
       </aside>
     </div>
   </section>

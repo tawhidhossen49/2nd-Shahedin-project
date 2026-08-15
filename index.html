@@ -95,29 +95,6 @@
     </div>
   </section>
 
-  <section class="section-pad container" data-section-key="about">
-    <div class="about-grid">
-      <div class="about-portrait reveal">
-        <img src="assets/img/shahedin-cutout.webp" alt="শাহেদীনের প্রতিকৃতি" data-field="about.image_url" loading="lazy" decoding="async">
-      </div>
-      <div class="about-copy reveal reveal-delay-1">
-        <span class="eyebrow" data-field="about.eyebrow">গল্পটা যেভাবে শুরু</span>
-        <h2 data-field="about.title">একজন শিক্ষক হয়ে ওঠার গল্প</h2>
-        <div data-repeat="about.paragraphs">
-          <p>শাহেদীন একটি ছোট্ট ঘর থেকে ফোনের ক্যামেরা আর ভূ-রাজনীতির উপর কিছু লাইব্রেরির বই নিয়ে ভিডিও বানানো শুরু করেছিলেন — কারণ তখন কেউ সংবাদকে এমনভাবে ব্যাখ্যা করছিল না যা সহজে বোঝা যায়।</p>
-          <p>জোরে চিন্তা করার একটি উপায় হিসেবে শুরু হওয়া এই যাত্রা এখন এমন একটি চ্যানেলে পরিণত হয়েছে, যেখানে লাখো মানুষ সংবাদ পড়ার আগে ঘুরে আসেন। এই একই প্রবৃত্তি — জটিলতাকে স্পষ্টতায় রূপান্তর করা — এই সাইটের প্রতিটি কোর্সের ভিত্তি হয়ে উঠেছে।</p>
-          <p>আজ এই কাজ বিস্তৃত হয়েছে ভিডিও প্রবন্ধ, কাঠামোবদ্ধ কোর্স এবং ব্যবহারিক, কর্মজীবনে কাজে লাগার মতো দক্ষতার একটি ক্রমবর্ধমান লাইব্রেরিতে — দ্রুত পরিবর্তনশীল বিশ্বে চলার পথ খুঁজে পেতে চাওয়া একটি দর্শকগোষ্ঠীর জন্য।</p>
-        </div>
-        <div class="timeline-h" data-repeat="about.timeline">
-          <div class="timeline-h-item"><span class="yr">২০১৮</span>সাইড প্রজেক্ট হিসেবে সাপ্তাহিক এক্সপ্লেইনার আপলোড শুরু</div>
-          <div class="timeline-h-item"><span class="yr">২০২০</span>আন্তর্জাতিক সম্পর্ক বিষয়ে স্নাতকোত্তর পড়াশোনা সম্পন্ন</div>
-          <div class="timeline-h-item"><span class="yr">২০২২</span>৫ লাখ সাবস্ক্রাইবার অতিক্রম, প্রথম পেইড কোর্স চালু</div>
-          <div class="timeline-h-item"><span class="yr">২০২৬</span>পরবর্তী প্রজন্মের জন্য একটি সম্পূর্ণ লার্নিং প্ল্যাটফর্ম তৈরি</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- Band: pulls the video shelf onto its own surface so the page stops
        reading as one uniform column of identical sections. -->
   <section class="section-pad surface-raised" id="videos" data-section-key="videos">
@@ -149,6 +126,31 @@
       <a href="courses.html" class="text-link">সব কোর্স দেখুন</a>
     </div>
     <div class="grid grid-3 reveal-stagger" data-mount="featured-courses"></div>
+  </section>
+
+  <!-- Sits after the video shelf and the course shelf on purpose: a first-time
+       visitor sees the work before the biography. -->
+  <section class="section-pad container" data-section-key="about">
+    <div class="about-grid">
+      <div class="about-portrait reveal">
+        <img src="assets/img/shahedin-cutout.webp" alt="শাহেদীনের প্রতিকৃতি" data-field="about.image_url" loading="lazy" decoding="async">
+      </div>
+      <div class="about-copy reveal reveal-delay-1">
+        <span class="eyebrow" data-field="about.eyebrow">গল্পটা যেভাবে শুরু</span>
+        <h2 data-field="about.title">একজন শিক্ষক হয়ে ওঠার গল্প</h2>
+        <div data-repeat="about.paragraphs">
+          <p>শাহেদীন একটি ছোট্ট ঘর থেকে ফোনের ক্যামেরা আর ভূ-রাজনীতির উপর কিছু লাইব্রেরির বই নিয়ে ভিডিও বানানো শুরু করেছিলেন — কারণ তখন কেউ সংবাদকে এমনভাবে ব্যাখ্যা করছিল না যা সহজে বোঝা যায়।</p>
+          <p>জোরে চিন্তা করার একটি উপায় হিসেবে শুরু হওয়া এই যাত্রা এখন এমন একটি চ্যানেলে পরিণত হয়েছে, যেখানে লাখো মানুষ সংবাদ পড়ার আগে ঘুরে আসেন। এই একই প্রবৃত্তি — জটিলতাকে স্পষ্টতায় রূপান্তর করা — এই সাইটের প্রতিটি কোর্সের ভিত্তি হয়ে উঠেছে।</p>
+          <p>আজ এই কাজ বিস্তৃত হয়েছে ভিডিও প্রবন্ধ, কাঠামোবদ্ধ কোর্স এবং ব্যবহারিক, কর্মজীবনে কাজে লাগার মতো দক্ষতার একটি ক্রমবর্ধমান লাইব্রেরিতে — দ্রুত পরিবর্তনশীল বিশ্বে চলার পথ খুঁজে পেতে চাওয়া একটি দর্শকগোষ্ঠীর জন্য।</p>
+        </div>
+        <div class="timeline-h" data-repeat="about.timeline">
+          <div class="timeline-h-item"><span class="yr">২০১৮</span>সাইড প্রজেক্ট হিসেবে সাপ্তাহিক এক্সপ্লেইনার আপলোড শুরু</div>
+          <div class="timeline-h-item"><span class="yr">২০২০</span>আন্তর্জাতিক সম্পর্ক বিষয়ে স্নাতকোত্তর পড়াশোনা সম্পন্ন</div>
+          <div class="timeline-h-item"><span class="yr">২০২২</span>৫ লাখ সাবস্ক্রাইবার অতিক্রম, প্রথম পেইড কোর্স চালু</div>
+          <div class="timeline-h-item"><span class="yr">২০২৬</span>পরবর্তী প্রজন্মের জন্য একটি সম্পূর্ণ লার্নিং প্ল্যাটফর্ম তৈরি</div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="section-pad surface-inset" data-section-key="growth">

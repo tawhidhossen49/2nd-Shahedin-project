@@ -50,8 +50,30 @@
         return;
       }
 
+      /* Paid course. There is no payment gateway, so buying does not happen on
+         this site at all. The student is sent to an external enrolment form
+         (a Google Form), which carries the payment instructions; they send the
+         money off-site and the admin grants access from Admin -> Students once
+         the payment is verified.
+
+         requireAuth() above is what makes the "log in first, then the form"
+         order work: an anonymous visitor gets the login modal and only lands
+         on the form once there is an account for the admin to grant access to.
+
+         Free courses never reach this branch, and products still go through
+         checkout.html untouched. */
       if (!course.free) {
-        window.location.href = `checkout.html?course=${encodeURIComponent(course.slug)}`;
+        const form = await enrollmentFormUrl(course);
+        if (form) {
+          window.location.href = form;
+          return;
+        }
+        /* Nothing configured anywhere. Previously this fell through to
+           checkout.html, which offered a bKash payment that cannot be
+           completed — a dead end dressed up as a purchase. Say so instead. */
+        enrollBtn.disabled = false;
+        enrollBtn.textContent = originalText;
+        window.showToast && window.showToast("এই কোর্সের ভর্তি ফর্ম এখনো যুক্ত করা হয়নি। অনুগ্রহ করে আমাদের সাথে যোগাযোগ করুন।");
         return;
       }
 
@@ -78,6 +100,31 @@
       if (!enrollment || !e.detail || !e.detail.blockId) return;
       await markComplete(course, e.detail.blockId, true);
     });
+  }
+
+  /* Where the buy button sends a student for a paid course.
+
+     Two levels, so the admin can work either way:
+       1. the course's own "Purchase / enrollment form URL" field, and
+       2. the site-wide default in Settings -> Course enrollment,
+     with the per-course value winning when both are set. The default is what
+     makes a newly created paid course work without remembering to paste the
+     link again; the override is for a course that needs its own form.
+
+     Only http(s) is accepted. The admin field is free text, and a stray
+     "javascript:" in it must not become a live link on the buy button. */
+  async function enrollmentFormUrl(course) {
+    const own = String(course.purchaseUrl || "").trim();
+    if (/^https?:\/\/\S+$/i.test(own)) return own;
+
+    let fallback = "";
+    try {
+      const settings = window.SiteSettings ? await window.SiteSettings.ready() : null;
+      fallback = String((settings && settings.enrollment && settings.enrollment.form_url) || "").trim();
+    } catch (err) {
+      fallback = ""; // settings unreachable — treated as "not configured"
+    }
+    return /^https?:\/\/\S+$/i.test(fallback) ? fallback : "";
   }
 
   async function loadEnrollment(user, course) {

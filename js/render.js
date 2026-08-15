@@ -638,7 +638,7 @@
       const id = qs("id") || data.courses[0].id;
       const c = data.courses.find((x) => x.id === id) || data.courses[0];
       document.title = c.title + " — Shahedin";
-      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price };
+      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price, purchaseUrl: c.purchaseUrl || null, reviewsEnabled: c.reviewsEnabled !== false };
       const durationLabel = durationBn(c.duration);
       mount(
         "[data-mount='course-detail']",
@@ -683,10 +683,11 @@
          <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>
          <ul>
            ${includes.map((item) => `<li>${ICON.check} <span>${escapeHtml(item.text)}</span></li>`).join("")}
-         </ul>
-         ${c.free ? "" : `<div class="pay-icons">
-           <span class="pay-icon pay-bkash">bKash</span>
-         </div>`}`
+         </ul>`
+         /* The bKash badge that sat here is gone: a paid course is no longer
+            bought on this site at all, it goes out to an external enrolment
+            form. The product buy card below keeps its badge, because a
+            product IS still paid for through checkout.html. */
       );
       /* Related — this used to be "the first three other courses", which
          ignored the category entirely and put cooking next to geopolitics.

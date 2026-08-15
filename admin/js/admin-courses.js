@@ -140,6 +140,19 @@
               <label>&nbsp;</label>
               <label class="form-check"><input type="checkbox" id="f_free" ${course?.is_free ? "checked" : ""}> This course is free</label>
             </div>
+            <div class="form-field full">
+              <label>Purchase / enrollment form URL
+                <span class="hint">where the "এখনই কিনুন" button sends students for this paid course</span>
+              </label>
+              <input type="url" id="f_purchase_url" placeholder="https://docs.google.com/forms/..."
+                     value="${Admin.escapeHtml(course?.purchase_url || "")}">
+              <p class="hint" style="margin-top:8px;">
+                Only fill this in if <em>this</em> course needs its own form. Leave it blank and the course uses the
+                site-wide link from <strong>Settings → Course enrollment</strong>, which is the usual setup.
+                Either way: the student logs in, lands on the form, sends the money, and you switch their access on
+                from <strong>Students → a student → কোর্স অ্যাক্সেস</strong> once you have verified the payment.
+              </p>
+            </div>
             <div class="form-field">
               <label>Rating <span class="hint">0–5</span></label>
               <input type="number" id="f_rating" min="0" max="5" step="0.1" value="${course?.rating ?? 4.8}">
@@ -167,6 +180,13 @@
             <div class="form-field">
               <label>&nbsp;</label>
               <label class="form-check"><input type="checkbox" id="f_published" ${course === null || course?.is_published ? "checked" : ""}> Published (visible on site)</label>
+            </div>
+            <div class="form-field full">
+              <!-- ?? not ||: an unticked box saves false, and false || true is
+                   true — which would tick itself back on every time the modal
+                   reopened. A brand new course starts with reviews on. -->
+              <label class="form-check"><input type="checkbox" id="f_reviews" ${(course ? course.reviews_enabled ?? true : true) ? "checked" : ""}> Show the reviews section on this course page</label>
+              <span class="hint">Untick to hide the review list <em>and</em> the write-a-review form for this course only. Existing reviews are kept — they come straight back if you tick it again.</span>
             </div>
           </div>
 
@@ -470,6 +490,14 @@
       message: "Rating must be between 0 and 5.",
       test: (v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 5),
     },
+    {
+      id: "f_purchase_url",
+      label: "Purchase form URL",
+      // Blank is valid and meaningful: it falls back to the site-wide form. A
+      // half-typed URL is not, and would send buyers nowhere.
+      message: "Enter the full link, starting with https:// — or leave it blank to use the site-wide enrollment form.",
+      test: (v) => v.trim() === "" || /^https?:\/\/\S+$/i.test(v.trim()),
+    },
   ];
 
   async function saveCourse(e) {
@@ -512,6 +540,10 @@
         duration_en: document.getElementById("f_duration").value.trim(),
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
         is_free: document.getElementById("f_free").checked,
+        // Blank saves as null, which is what makes the front end fall back to
+        // the site-wide enrollment form rather than linking nowhere.
+        purchase_url: document.getElementById("f_purchase_url").value.trim() || null,
+        reviews_enabled: document.getElementById("f_reviews").checked,
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
         tone: selectedTone ? parseInt(selectedTone.dataset.tone, 10) : 1,
         thumbnail_url,
@@ -556,6 +588,14 @@
           Admin.toast("A required field was left empty.", true);
           handled = true;
         }
+      }
+      // A database still on an older schema has no purchase_url /
+      // reviews_enabled column, and Postgres only says "column not found" —
+      // which reads like a bug in the panel rather than a migration you
+      // haven't run yet.
+      if (!handled && (err.code === "42703" || err.code === "PGRST204")) {
+        Admin.toast("This database is missing a column the form saves. Run the latest schema.sql (sections 22–23) in the Supabase SQL editor, then try again.", true);
+        handled = true;
       }
       if (!handled) Admin.toast("Couldn't save: " + (err.message || err), true);
 

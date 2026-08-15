@@ -293,8 +293,7 @@ update courses set includes = '[
   {"text": "অন-ডিমান্ড ভিডিও"},
   {"text": "ডাউনলোডযোগ্য রিসোর্স ও নোট"},
   {"text": "সম্পন্নতার সার্টিফিকেট"},
-  {"text": "বাংলা সাপোর্ট"},
-  {"text": "bKash-এ পেমেন্ট গ্রহণযোগ্য"}
+  {"text": "বাংলা সাপোর্ট"}
 ]'::jsonb
 where includes = '[]'::jsonb;
 
@@ -1515,3 +1514,127 @@ create trigger profiles_set_updated_at
 --     (section 13) already covers this column.
 -- =========================================================================
 alter table enrollments add column if not exists block_progress jsonb not null default '{}'::jsonb;
+
+
+-- =========================================================================
+-- 22. MANUAL ENROLMENT PIPELINE (no payment gateway yet)
+--     Safe to re-run.
+--
+--     There is no payment gateway, so a paid course no longer goes through
+--     checkout.html. The flow is:
+--
+--       student clicks buy  ->  external form (Google Form)
+--                           ->  pays by bKash send-money, off-site
+--                           ->  admin verifies the payment
+--                           ->  admin grants access from Admin -> Students
+--
+--     Products are unaffected and still use checkout.html.
+-- =========================================================================
+
+-- (a) Where the buy button sends a student. Per course, admin-editable.
+--     NULL/blank keeps the old checkout.html behaviour, so a course the
+--     admin has not configured yet still works.
+alter table courses add column if not exists purchase_url text;
+
+-- (b) The public site reads courses through courses_safe, NOT the courses
+--     table, so a column added above is invisible to the front end until the
+--     view is rebuilt. Recreated below in full, identical to section 13 plus
+--     purchase_url.
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.is_free, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+      )), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) elem
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;
+
+-- (c) enrollments had only "students can create their own enrollments", whose
+--     check is auth.uid() = user_id. An admin granting access to SOMEONE ELSE
+--     fails that check, so the manual grant would be rejected at the database
+--     layer no matter what the panel did. These two policies are what make
+--     the pipeline work at all.
+drop policy if exists "admins can insert enrollments" on enrollments;
+create policy "admins can insert enrollments"
+  on enrollments for insert
+  with check (auth.uid() in (select id from admins));
+
+drop policy if exists "admins can delete enrollments" on enrollments;
+create policy "admins can delete enrollments"
+  on enrollments for delete
+  using (auth.uid() in (select id from admins));
+
+-- (d) The seeded "what's included" list promised bKash payment on the course
+--     page, which is no longer how a course is bought. Removes just that one
+--     entry and leaves everything else in the array untouched. Idempotent:
+--     the WHERE clause means a second run matches nothing.
+update courses
+set includes = (
+      select coalesce(jsonb_agg(elem), '[]'::jsonb)
+      from jsonb_array_elements(includes) elem
+      where elem->>'text' is distinct from 'bKash-এ পেমেন্ট গ্রহণযোগ্য'
+    )
+where includes @> '[{"text": "bKash-এ পেমেন্ট গ্রহণযোগ্য"}]'::jsonb;
+
+
+-- =========================================================================
+-- 23. PER-COURSE REVIEWS TOGGLE
+--     Safe to re-run.
+--
+--     Lets the admin switch the whole reviews block off for one course
+--     without touching any other course: the "রিভিউ" heading, the published
+--     review list and the write-a-review form all disappear together.
+--     Existing courses default to true, so nothing changes until the admin
+--     unticks the box.
+-- =========================================================================
+
+alter table courses add column if not exists reviews_enabled boolean not null default true;
+
+-- The public site reads courses through courses_safe, never the courses table
+-- itself, so the column above is invisible to the front end until this view is
+-- rebuilt. Recreated in full: identical to section 22 plus reviews_enabled.
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.is_free, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.reviews_enabled,
+  c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+      )), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) elem
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;
+
+-- Hiding the block is a display choice, not a security boundary: the reviews
+-- themselves stay in course_reviews with their policies unchanged, so ticking
+-- the box back on brings every existing review back exactly as it was.

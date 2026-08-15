@@ -30,6 +30,15 @@
     const formMount = document.querySelector("[data-mount='course-review-form']");
     if (!course || !reviewsMount) return;
 
+    /* Reviews switched off for this course in the admin panel. Remove the
+       heading and both mounts rather than emptying them, so the aside closes
+       up instead of leaving the gap their margins reserve. Nothing below runs:
+       no review fetch, no eligibility check. */
+    if (course.reviewsEnabled === false) {
+      document.querySelectorAll("[data-review-part]").forEach((el) => el.remove());
+      return;
+    }
+
     if (!course.dbId || !(window.ShahedinAuth && window.ShahedinAuth.configured())) {
       reviewsMount.innerHTML = `<p class="small-note">এখনো কোনো রিভিউ নেই।</p>`;
       return;

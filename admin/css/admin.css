@@ -36,7 +36,11 @@ body{
   -webkit-font-smoothing:antialiased;
 }
 a{color:inherit; text-decoration:none;}
-button{font-family:inherit; cursor:pointer;}
+/* color:inherit matters as much as the font. Without it a <button> uses the
+   UA's `buttontext` system colour, which on this dark surface renders as dim
+   grey -- which is why the table row icons and the menu toggle looked
+   disabled. The public stylesheet has always had it; this one did not. */
+button{font-family:inherit; color:inherit; cursor:pointer;}
 input,textarea,select{font-family:inherit; font-size:inherit; color:inherit;}
 ul{list-style:none;}
 img{max-width:100%; display:block;}
@@ -120,9 +124,21 @@ img{max-width:100%; display:block;}
 .btn-sm{ padding:6px 12px; font-size:.78rem; }
 .btn:disabled{ opacity:.5; cursor:not-allowed; }
 .btn-block{ width:100%; }
-.icon-btn{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-s); padding:7px; display:inline-flex; }
-.icon-btn:hover{ background:var(--surface-3); }
+/* Stated rather than left to inheritance: these are row actions on a table
+   whose cells use muted tones, so relying on inherit would drag them grey. */
+.icon-btn{ background:var(--surface-2); border:1px solid var(--line); border-radius:var(--radius-s); padding:7px; display:inline-flex; color:var(--text-1); }
+.icon-btn:hover{ background:var(--surface-3); border-color:var(--line-strong); color:var(--text-1); }
 .icon-btn svg{ width:15px; height:15px; }
+/* Every destructive icon button declares itself on hover, so "remove" never
+   looks identical to "move up" a pixel before the click. */
+.icon-btn.del-btn:hover,
+.icon-btn.remove-item:hover,
+.icon-btn.remove-row:hover,
+.icon-btn.remove-block:hover,
+.icon-btn.remove-faq:hover,
+.icon-btn.remove-include:hover,
+.icon-btn.remove-option:hover,
+.icon-btn.remove-question:hover{ color:var(--accent-ink); border-color:var(--line-accent); }
 
 /* ---------- Table ---------- */
 .admin-table{ width:100%; border-collapse:collapse; font-size:.87rem; }

@@ -1067,10 +1067,21 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .course-hero.has-media{background:var(--surface-0);}
 .course-hero.has-media .course-hero-main{text-shadow:0 1px 20px rgba(7,5,4,.6);}
 
+/* One column unless there is something to sit beside the copy. The price
+   card used to be the second column and was always present; the preview video
+   that replaced it is optional, so the band has to be able to close up.
+   render.js adds .has-preview when coursePreviewHTML() actually returns a
+   player -- a class rather than :has(), for the same deterministic reason the
+   rest of this file uses classes. */
 .course-hero-grid{
-  display:grid; grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);
+  display:grid; grid-template-columns:minmax(0,1fr);
   gap:clamp(28px,4.5vw,64px); align-items:center;
 }
+.course-hero-grid.has-preview{grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);}
+/* With a neighbour, the 1.1fr column gave the headline its measure. Without
+   one it would set across the full 1112px container, so the cap has to be
+   stated. 65ch here is the width that column used to resolve to at 1440. */
+.course-hero-grid:not(.has-preview) .course-hero-main{max-inline-size:min(100%,65ch);}
 .course-hero-main{display:flex; flex-direction:column;}
 /* Course titles run long and are often bilingual — this is deliberately
    smaller than the site-wide h1 and scoped to this page only. */
@@ -1145,10 +1156,32 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink));
 }
 
-/* Curriculum + aside. Deliberately not a 1:1 split — the curriculum is the
-   page's substance and the mentor/reviews rail supports it. */
-.course-body-grid{display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:clamp(32px,4.5vw,64px); align-items:start;}
-.course-aside{position:sticky; inset-block-start:calc(var(--nav-h) + 24px);}
+/* Curriculum + rail. Deliberately not a 1:1 split — the curriculum is the
+   page's substance and the price / mentor / reviews rail supports it.
+
+   Explicit placement rather than source order, because the buy card is FIRST
+   in the markup so that the phone layout (which switches these rules off) puts
+   the price under the hero rather than under the whole curriculum.
+
+   grid-template-rows:auto 1fr is what keeps the card and the instructor block
+   together. With both rows auto, a curriculum taller than the rail would push
+   the spare height into BOTH rows and open a growing gap between the price and
+   "আপনার প্রশিক্ষক"; pinning row 1 to the card's own height sends all of it to
+   row 2 instead. */
+.course-body-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+  grid-template-rows:auto 1fr;
+  column-gap:clamp(32px,4.5vw,64px);
+  row-gap:var(--space-7);
+  align-items:start;
+}
+.course-main-col{grid-column:1; grid-row:1 / span 2;}
+.course-body-grid > .course-buy-card{grid-column:2; grid-row:1;}
+.course-aside{grid-column:2; grid-row:2;}
+/* Not sticky. The rail now carries the price card, the mentor and the whole
+   review list; once that stack is taller than the viewport, a sticky element
+   pins its top and the bottom of it can never be scrolled to. */
 
 /* Course content blocks.
    Each block is a dropdown built on the shared .accordion-item mechanism, so
@@ -2102,9 +2135,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 @media (max-width:1080px){
   .about-grid,.about-grid-text-first,
   .product-grid,.contact-grid,.course-hero-grid,.two-col,.course-body-grid{grid-template-columns:minmax(0,1fr);}
-  .course-aside{position:static;}
+  /* Placements off, so the grid falls back to source order: buy card,
+     curriculum, then the mentor / reviews rail. */
+  .course-body-grid{grid-template-rows:auto;}
+  .course-main-col,
+  .course-body-grid > .course-buy-card,
+  .course-aside{grid-column:auto; grid-row:auto;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
-  .course-buy-card{margin-block-start:var(--space-7);}
+
   /* Stacked, the copy no longer has a column of its own — it runs the full
      width, straight over the busiest part of the picture — so the horizontal
      pass is dropped and the vertical one has to carry the whole band on its
@@ -2423,4 +2461,49 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
     font-size:11.6pt; inline-size:100%; box-shadow:none;
     border-radius:0; aspect-ratio:1.414/1; break-inside:avoid;
   }
+}
+
+/* ---------- Course preview / trailer (hero, right of the copy) ----------
+   :empty is what makes an unconfigured course identical to how it was before
+   this existed: render.js writes "" into the mount, the box collapses, and
+   .course-hero-grid never gets .has-preview, so the band stays one column. */
+.course-preview:empty{display:none;}
+.preview-frame{
+  position:relative; aspect-ratio:16/9;
+  border:1px solid var(--line-strong); border-radius:var(--radius-l);
+  overflow:hidden; background:#000;
+  box-shadow:0 18px 50px -22px rgba(0,0,0,.85);
+}
+.preview-frame iframe,
+.preview-frame video{
+  position:absolute; inset:0;
+  inline-size:100%; block-size:100%;
+  border:0; display:block; object-fit:cover;
+}
+
+/* ---------- "এই কোর্সে কি কি থাকছে…" ----------
+   Sits above the curriculum in the same column. Its own surface, because the
+   curriculum immediately below is a stack of bordered accordion rows and two
+   untinted lists running together would read as one long list. */
+.course-learn{
+  background:var(--surface-1);
+  border:1px solid var(--line);
+  border-radius:var(--radius-l);
+  padding:clamp(20px,3vw,30px);
+  margin-block-end:var(--space-8);
+}
+.course-learn .section-title{margin-block-end:var(--space-5);}
+/* Two columns only when a column can still hold a readable line. Short points
+   pair up; long ones are not squeezed into 20ch ribbons. */
+.learn-list{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
+  gap:var(--space-4) var(--space-6);
+}
+.learn-list li{
+  display:flex; gap:var(--space-3); align-items:flex-start;
+  color:var(--text-2); font-size:var(--step--1); line-height:1.55;
+}
+.learn-list li svg{
+  inline-size:17px; block-size:17px; flex:none;
+  margin-block-start:3px; color:var(--accent-ink);
 }

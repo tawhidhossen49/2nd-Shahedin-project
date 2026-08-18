@@ -1638,3 +1638,105 @@ grant select on courses_safe to anon, authenticated;
 -- Hiding the block is a display choice, not a security boundary: the reviews
 -- themselves stay in course_reviews with their policies unchanged, so ticking
 -- the box back on brings every existing review back exactly as it was.
+
+
+-- =========================================================================
+-- 24. PER-COURSE STUDENT-COUNT TOGGLE
+--     Safe to re-run.
+--
+--     A brand new course honestly reads "০ শিক্ষার্থী", which is worse than
+--     saying nothing at all. This lets the admin drop the figure from one
+--     course's page and put it back once the number is worth showing.
+--     Existing courses default to true, so nothing changes until it is
+--     switched off.
+-- =========================================================================
+
+alter table courses add column if not exists show_students_count boolean not null default true;
+
+-- courses_safe again: the public site never reads the courses table directly,
+-- so the column above stays invisible until the view is rebuilt. Identical to
+-- section 23 plus show_students_count.
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.is_free, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.reviews_enabled, c.show_students_count,
+  c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+      )), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) elem
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;
+
+-- students_count itself is untouched: the trigger keeps counting real
+-- enrollments, the admin panel keeps showing the true figure, and only the
+-- public course page stops printing it.
+
+
+-- =========================================================================
+-- 25. "WHAT YOU'LL LEARN" SECTION + COURSE PREVIEW VIDEO
+--     Safe to re-run.
+--
+--     Two separate, independently optional pieces of a course page:
+--
+--       learn_title / learn_points  the "এই কোর্সে কি কি থাকছে…" block above
+--                                   the curriculum. Empty array = no section
+--                                   at all, so existing courses are unchanged
+--                                   until the admin adds a point.
+--
+--       preview_video_url           a trailer shown in the hero. Blank = the
+--                                   hero renders exactly as it does today.
+--
+--     learn_points mirrors the shape `includes` and `faqs` already use --
+--     [{"text": "…"}] -- so the admin editor is the same pattern the panel
+--     uses in three other places rather than a fourth invention.
+-- =========================================================================
+
+alter table courses add column if not exists learn_title text;
+alter table courses add column if not exists learn_points jsonb not null default '[]'::jsonb;
+alter table courses add column if not exists preview_video_url text;
+
+-- courses_safe again. The three columns above are public: they are marketing
+-- copy and a trailer, shown to visitors who have NOT bought the course, which
+-- is the whole point of them. Nothing gated moves here -- content_blocks keeps
+-- its existing enrolment check untouched below.
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.is_free, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.reviews_enabled, c.show_students_count,
+  c.learn_title, c.learn_points, c.preview_video_url,
+  c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+      )), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) elem
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;

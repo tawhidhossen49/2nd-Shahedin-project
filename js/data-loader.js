@@ -43,6 +43,16 @@
          than an explicit false counts as on, so a database still missing the
          column (section 23 of schema.sql) keeps showing reviews as before. */
       reviewsEnabled: row.reviews_enabled !== false,
+      /* Same shape, same reason: an older database missing the column
+         (section 24 of schema.sql) keeps showing the count as before. */
+      showStudents: row.show_students_count !== false,
+      /* The "what you'll learn" block. An empty array means the section is
+         not rendered at all, which is how every existing course stays
+         exactly as it is until someone adds a point to it. */
+      learnTitle: row.learn_title || "",
+      learnPoints: Array.isArray(row.learn_points) ? row.learn_points : [],
+      // Blank = no trailer, and the hero renders as it always has.
+      previewVideoUrl: row.preview_video_url || "",
       modules: Array.isArray(row.modules) ? row.modules.map(mapModule) : [],
       contentBlocks: Array.isArray(row.content_blocks) ? row.content_blocks : [],
       includes: Array.isArray(row.includes) ? row.includes : [],

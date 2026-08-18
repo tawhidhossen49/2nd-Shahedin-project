@@ -169,6 +169,18 @@ img{max-width:100%; display:block;}
 .badge-toggle.is-off{ background:var(--surface-3); color:var(--text-3); border-color:var(--line-strong); }
 .badge-toggle:hover{ border-color:currentColor; }
 .badge-toggle:disabled{ opacity:.55; cursor:progress; }
+/* The tick/cross is what actually carries the state -- the green tells you
+   faster, but it must not be the only thing that tells you. */
+.badge-toggle .flag-mark{ margin-inline-end:5px; font-size:.9em; line-height:1; }
+.toggle-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+
+/* The matching group inside the edit modal. */
+.flag-checks{ display:flex; flex-direction:column; gap:12px; margin-top:8px; }
+.flag-checks .form-check{ align-items:flex-start; gap:10px; margin:0; }
+.flag-checks .form-check input{ margin-top:3px; flex:none; }
+.flag-checks .form-check > span{ display:flex; flex-direction:column; gap:3px; }
+.flag-checks .form-check b{ font-weight:600; }
+.flag-checks .form-check .hint{ display:block; }
 .tone-swatch{ width:16px; height:16px; border-radius:50%; display:inline-block; border:1px solid var(--line-strong); }
 .tone-1{ background:linear-gradient(135deg,#c31432,#e2274d); }
 .tone-2{ background:linear-gradient(135deg,#2b5876,#4e4376); }

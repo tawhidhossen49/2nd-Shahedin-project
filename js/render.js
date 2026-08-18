@@ -386,6 +386,59 @@
     }
   }
 
+  /* ---------- "এই কোর্সে কি কি থাকছে…" ----------
+     Admin-authored selling points, shown above the curriculum. Returns "" when
+     the course has none, so the mount stays empty and the page is unchanged --
+     a heading with nothing under it is worse than no section at all.
+
+     Blank rows are dropped here as well as in the admin panel: a row that was
+     cleared but not removed would otherwise render as a tick pointing at
+     nothing. Plain strings are accepted alongside {text:…} so hand-seeded
+     data doesn't have to match the panel's shape exactly. */
+  function courseLearnHTML(c) {
+    const points = (Array.isArray(c.learnPoints) ? c.learnPoints : [])
+      .map((p) => (typeof p === "string" ? p : (p && p.text) || ""))
+      .map((t) => String(t).trim())
+      .filter(Boolean);
+    if (!points.length) return "";
+
+    const title = String(c.learnTitle || "").trim() || "এই কোর্সে কি কি থাকছে…";
+    return `
+      <section class="course-learn" aria-labelledby="course-learn-title">
+        <h2 class="section-title" id="course-learn-title">${escapeHtml(title)}</h2>
+        <ul class="learn-list">
+          ${points.map((t) => `<li>${ICON.check}<span>${escapeHtml(t)}</span></li>`).join("")}
+        </ul>
+      </section>`;
+  }
+
+  /* ---------- Course preview / trailer ----------
+     One admin field holds either a YouTube link or an uploaded video file, so
+     the admin never has to declare which kind it is -- the URL says so.
+
+     A YouTube link becomes a lazy iframe; anything else is served through a
+     native <video> with controls and no autoplay. Anything that is not an
+     http(s) URL renders nothing rather than becoming a live src, so a stray
+     "javascript:" typed into the admin field stays inert.
+
+     No poster attribute: pointing it at the course thumbnail would show the
+     thumbnail under a play button on a video that hasn't loaded, which reads
+     as broken. The browser's own first frame is honest. */
+  function coursePreviewHTML(c) {
+    const url = String(c.previewVideoUrl || "").trim();
+    if (!/^https?:\/\/\S+$/i.test(url)) return "";
+
+    const vid = youtubeEmbedId(url);
+    const body = vid
+      ? `<iframe src="https://www.youtube.com/embed/${vid}?rel=0"
+                 title="কোর্স প্রিভিউ" loading="lazy"
+                 allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                 allowfullscreen></iframe>`
+      : `<video controls preload="metadata" playsinline src="${escapeHtml(url)}">আপনার ব্রাউজারে ভিডিওটি চালানো যাচ্ছে না।</video>`;
+
+    return `<div class="preview-frame">${body}</div>`;
+  }
+
   const DEFAULT_MENTOR = {
     name: "Shahedin",
     bio: "ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক, ১৮ লাখ+ সাবস্ক্রাইবার।",
@@ -647,20 +700,32 @@
          <h1>${escapeHtml(c.title)}</h1>
          <div class="meta-row">
            ${stars(c.rating)}
-           <span>${ICON.users} ${bnNum(Number(c.students) || 0)} শিক্ষার্থী</span>
+           ${c.showStudents === false ? "" : `<span>${ICON.users} ${bnNum(Number(c.students) || 0)} শিক্ষার্থী</span>`}
            ${durationLabel ? `<span>${ICON.clock} ${escapeHtml(durationLabel)}</span>` : ""}
          </div>
          ${c.desc ? `<p class="course-desc">${escapeHtml(c.desc)}</p>` : ""}`
       );
       courseHeroMedia(c);
+      /* Both return "" when unconfigured, so the mounts simply stay empty.
+         .has-preview is what lets the hero close up to a single full-width
+         column when there is no trailer -- without it the copy would sit in a
+         1.1fr column next to nine hundred pixels of nothing, which is what the
+         price card used to fill. */
+      const previewHTML = coursePreviewHTML(c);
+      mount("[data-mount='course-preview']", previewHTML);
+      const heroGrid = document.querySelector(".course-hero-grid");
+      if (heroGrid) heroGrid.classList.toggle("has-preview", !!previewHTML);
+      mount("[data-mount='course-learn']", courseLearnHTML(c));
       mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
       const curriculumEl = document.querySelector("[data-mount='course-curriculum']");
       if (curriculumEl) wireQuizzes(curriculumEl);
       mount("[data-mount='course-faq']", courseFaqHTML(c));
       mount("[data-mount='course-mentor']", courseMentorHTML(c));
-      // Layout note: the price + enrol block lives in the hero's LEFT column
-      // with the title and description. `.enrolled-banner` is hidden until
-      // course-progress.js adds .is-enrolled to the card (B9).
+      /* Layout note: the price + enrol card is no longer in the hero at all.
+         It is the first thing in the right-hand rail beside the curriculum,
+         directly above "আপনার প্রশিক্ষক" -- see .course-body-grid in
+         css/style.css. `.enrolled-banner` is hidden until course-progress.js
+         adds .is-enrolled to the card (B9). */
       const includes = Array.isArray(c.includes) && c.includes.length
         ? c.includes
         : [

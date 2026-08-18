@@ -58,27 +58,40 @@
 
   <!-- B2: the hero is a cinematic band — the course thumbnail runs full
        bleed behind it (mounted into .course-hero-media by render.js) with a
-       two-axis veil over the top, the copy sits in the left column and the
-       price / enrol card in the right.
+       two-axis veil over the top.
+       The price / enrol card no longer lives here; it sits at the top of the
+       right-hand rail beside the curriculum. What shares the hero now is the
+       optional preview video, and when there is none the band is a single
+       full-width column.
        It holds its shape at every content extreme — long title + long
        description, one-word title + one-word description, thumbnail present,
-       thumbnail missing — because neither column depends on the other's
-       length: the grid is vertically centred, the media layer is absolutely
-       positioned so it never adds height, and .course-hero falls back to its
-       gradient when a course has no thumbnail at all. -->
+       thumbnail missing — because the media layer is absolutely positioned so
+       it never adds height, and .course-hero falls back to its gradient when a
+       course has no thumbnail at all. -->
   <section class="course-hero">
     <div class="course-hero-media" data-mount="course-hero-media" aria-hidden="true"></div>
     <div class="container course-hero-grid">
       <div class="course-hero-main">
         <div data-mount="course-detail"></div>
       </div>
-      <div class="course-buy-card" id="course-buy" data-mount="course-buy"></div>
+      <!-- Empty unless the admin set a preview video. When it is empty the
+           grid drops to a single column (see .course-hero-grid.has-preview),
+           so the copy runs full width instead of sitting in a narrow column
+           beside a hole where the price card used to be. -->
+      <div class="course-preview" data-mount="course-preview"></div>
     </div>
   </section>
 
   <section class="section-pad container" id="course-curriculum">
     <div class="course-body-grid">
-      <div class="reveal">
+      <!-- First in the DOM on purpose. On a phone this grid collapses to one
+           column and the placement rules below are switched off, so source
+           order decides: the price lands directly under the hero instead of
+           below the entire curriculum. On desktop the rules put it in the
+           right column, above the instructor. -->
+      <div class="course-buy-card" id="course-buy" data-mount="course-buy"></div>
+      <div class="course-main-col reveal">
+        <div data-mount="course-learn"></div>
         <h2 class="section-title">কারিকুলাম</h2>
         <div data-mount="course-curriculum"></div>
       </div>

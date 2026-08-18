@@ -19,6 +19,37 @@
     pdf: "PDF",
   };
 
+  /* Everything the admin can show or hide on a public course page, in one
+     place. Adding another switch here puts it in the table AND the edit modal
+     with no further wiring -- the previous version hardcoded "reviews"
+     through five separate places, which is how the second toggle would have
+     drifted out of sync with the first.
+
+     'column' is a real database column name and is never taken from user
+     input, so interpolating it into the update below is safe. */
+  const PAGE_FLAGS = [
+    {
+      column: "reviews_enabled",
+      label: "Reviews",
+      fieldId: "f_reviews",
+      modalLabel: "Reviews section",
+      modalHint: "The published review list and the write-a-review form. Existing reviews are kept either way — they come straight back when you switch it on.",
+      onMsg: "Reviews are now shown on that course page.",
+      offMsg: "Reviews are now hidden on that course page.",
+    },
+    {
+      column: "show_students_count",
+      label: "Students",
+      fieldId: "f_show_students",
+      modalLabel: "Enrolled-student count",
+      modalHint: "The “০ শিক্ষার্থী” figure beside the rating. A new course honestly reads zero, which sells it worse than saying nothing. The real number keeps counting in the background and stays visible to you here.",
+      onMsg: "The student count is now shown on that course page.",
+      offMsg: "The student count is now hidden on that course page.",
+    },
+  ];
+
+  const flagOn = (course, flag) => course[flag.column] !== false;
+
   content.innerHTML = `
     <div class="panel">
       <div class="panel-head">
@@ -51,7 +82,7 @@
     }
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Reviews</th><th>Order</th><th></th></tr></thead>
+        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Show on page</th><th>Order</th><th></th></tr></thead>
         <tbody>
           ${courses.map((course) => `
             <tr>
@@ -66,13 +97,7 @@
               </td>
               <td>${course.is_free ? '<span class="badge badge-free">Free</span>' : "৳" + course.price_bdt}</td>
               <td>${course.is_published ? '<span class="badge badge-live">Live</span>' : '<span class="badge badge-draft">Draft</span>'}</td>
-              <td>
-                <button type="button" class="badge badge-toggle reviews-btn ${course.reviews_enabled === false ? "is-off" : "is-on"}"
-                        data-id="${course.id}"
-                        title="${course.reviews_enabled === false ? "Reviews are hidden on this course page — click to show them" : "Reviews are shown on this course page — click to hide them"}">
-                  ${course.reviews_enabled === false ? "Hidden" : "Shown"}
-                </button>
-              </td>
+              <td><div class="toggle-chips">${PAGE_FLAGS.map((flag) => pageFlagHTML(course, flag)).join("")}</div></td>
               <td>${course.sort_order}</td>
               <td>
                 <div class="row-actions">
@@ -86,46 +111,60 @@
 
     wrap.querySelectorAll(".edit-btn").forEach((b) => b.addEventListener("click", () => openModal(b.dataset.id)));
     wrap.querySelectorAll(".del-btn").forEach((b) => b.addEventListener("click", () => deleteCourse(b.dataset.id)));
-    wrap.querySelectorAll(".reviews-btn").forEach((b) => b.addEventListener("click", () => toggleReviews(b)));
+    wrap.querySelectorAll(".page-flag").forEach((b) => b.addEventListener("click", () => togglePageFlag(b)));
   }
 
-  /* Flips the reviews section on or off for one course, straight from the
-     table. The same switch lives in the edit modal, but hiding a course's
-     reviews is a one-second decision and shouldn't cost a modal, fourteen
-     fields and a full save.
 
-     Only reviews_enabled is sent, so this can't overwrite anything else on the
-     row, and the button repaints from the value the database actually stored
-     rather than from what was clicked. */
-  async function toggleReviews(btn) {
+  /* A badge that is also a toggle. The tick/cross carries the state as well as
+     the colour does, so it still reads correctly in greyscale and to anyone
+     who cannot separate the green from the grey. */
+  function pageFlagHTML(course, flag) {
+    const on = flagOn(course, flag);
+    return `<button type="button" class="badge badge-toggle page-flag ${on ? "is-on" : "is-off"}"
+              data-id="${course.id}" data-column="${flag.column}" aria-pressed="${on}"
+              title="${flag.label} — ${on ? "shown on the course page. Click to hide." : "hidden on the course page. Click to show."}"
+            ><span class="flag-mark" aria-hidden="true">${on ? "✓" : "✕"}</span>${flag.label}</button>`;
+  }
+
+  /* Flips one switch for one course straight from the table. The same switches
+     live in the edit modal, but hiding a course's student count is a
+     one-second decision and shouldn't cost a modal, fifteen fields and a full
+     save.
+
+     Only the one column is sent, so this can't overwrite anything else on the
+     row, and the badge repaints from the value the database actually returned
+     rather than from what was clicked -- a failed write leaves the badge
+     telling the truth. */
+  async function togglePageFlag(btn) {
     const id = btn.dataset.id;
+    const flag = PAGE_FLAGS.find((x) => x.column === btn.dataset.column);
     const course = courses.find((x) => x.id === id);
-    if (!course) return;
-    const next = course.reviews_enabled === false;
+    if (!flag || !course) return;
 
     btn.disabled = true;
     const { data, error } = await c
       .from("courses")
-      .update({ reviews_enabled: next })
+      .update({ [flag.column]: !flagOn(course, flag) })
       .eq("id", id)
-      .select("reviews_enabled")
+      .select(flag.column)
       .single();
     btn.disabled = false;
 
-    if (error) {
-      if (error.code === "42703" || error.code === "PGRST204") {
-        Admin.toast("This database is missing the reviews_enabled column. Run section 23 of schema.sql in the Supabase SQL editor.", true);
-      } else {
-        Admin.toast("Couldn't change that: " + error.message, true);
-      }
-      return;
-    }
+    if (error) { reportSchemaError(error); return; }
 
-    course.reviews_enabled = data.reviews_enabled;
+    course[flag.column] = data[flag.column];
     renderTable();
-    Admin.toast(course.reviews_enabled
-      ? "Reviews are now shown on that course page."
-      : "Reviews are now hidden on that course page.");
+    Admin.toast(flagOn(course, flag) ? flag.onMsg : flag.offMsg);
+  }
+
+  /* Postgres only says "column not found", which reads like a bug in the panel
+     rather than a migration that hasn't been run yet. */
+  function reportSchemaError(err) {
+    if (err.code === "42703" || err.code === "PGRST204") {
+      Admin.toast("This database is missing a column the panel needs. Run the latest schema.sql (sections 22–25) in the Supabase SQL editor, then try again.", true);
+    } else {
+      Admin.toast("Couldn't change that: " + (err.message || err), true);
+    }
   }
 
   async function deleteCourse(id) {
@@ -229,11 +268,18 @@
               <label class="form-check"><input type="checkbox" id="f_published" ${course === null || course?.is_published ? "checked" : ""}> Published (visible on site)</label>
             </div>
             <div class="form-field full">
-              <!-- ?? not ||: an unticked box saves false, and false || true is
-                   true — which would tick itself back on every time the modal
-                   reopened. A brand new course starts with reviews on. -->
-              <label class="form-check"><input type="checkbox" id="f_reviews" ${(course ? course.reviews_enabled ?? true : true) ? "checked" : ""}> Show the reviews section on this course page</label>
-              <span class="hint">Untick to hide the review list <em>and</em> the write-a-review form for this course only. Existing reviews are kept — they come straight back if you tick it again.</span>
+              <label>Show on the course page <span class="hint">each of these can also be flipped straight from the courses table, without opening this form</span></label>
+              <div class="flag-checks">
+                ${PAGE_FLAGS.map((flag) => `
+                  <label class="form-check">
+                    <!-- ?? not ||: an unticked box saves false, and false || true
+                         is true, which would tick itself back on every time the
+                         modal reopened. A brand new course starts with everything
+                         shown. -->
+                    <input type="checkbox" id="${flag.fieldId}" ${(course ? course[flag.column] ?? true : true) ? "checked" : ""}>
+                    <span><b>${flag.modalLabel}</b><span class="hint">${flag.modalHint}</span></span>
+                  </label>`).join("")}
+              </div>
             </div>
           </div>
 
@@ -263,6 +309,25 @@
             </div>
             <input type="file" id="f_mentor_avatar" accept="image/*" style="margin-top:6px;">
             ${course?.mentor?.avatar_url ? `<div class="hint">Current: <a href="${course.mentor.avatar_url}" target="_blank">view image</a></div>` : `<div class="hint">Leave blank to use the default Shahedin photo</div>`}
+          </div>
+
+          <div class="form-field full">
+            <label>What this course teaches <span class="hint">the "এই কোর্সে কি কি থাকছে…" section above the curriculum — leave it empty and the whole section disappears from the course page</span></label>
+            <input type="text" id="f_learn_title" placeholder="এই কোর্সে কি কি থাকছে…" value="${Admin.escapeHtml(course?.learn_title || "")}" style="margin-bottom:10px;">
+            <span class="hint" style="display:block; margin-bottom:10px;">Heading — leave blank to use “এই কোর্সে কি কি থাকছে…”.</span>
+            <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="addLearnBtn">+ Add point</button>
+          </div>
+
+          <div class="form-field full">
+            <label>Course preview video <span class="hint">plays in the top-right of the course page — leave both boxes empty and nothing is shown, exactly as now</span></label>
+            <input type="url" id="f_preview_url" placeholder="https://www.youtube.com/watch?v=..." value="${Admin.escapeHtml(course?.preview_video_url || "")}">
+            <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.</span>
+            <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
+            <p class="hint" style="margin-top:8px;">
+              Video files are uploaded to your own storage, so keep them small — a YouTube link costs you nothing
+              and streams better. To remove the video, clear the box above and save.
+            </p>
           </div>
 
           <div class="form-field full">
@@ -315,6 +380,9 @@
 
     (course?.content_blocks || []).forEach((b) => addContentBlock(b.type, b));
 
+    (course?.learn_points || []).forEach((item) => addLearnItem(item));
+    document.getElementById("addLearnBtn").addEventListener("click", () => addLearnItem());
+
     (course?.includes || []).forEach((item) => addIncludeItem(item));
     if (!course) addIncludeItem(); // start a new course with one empty line to fill in
     document.getElementById("addIncludeBtn").addEventListener("click", () => addIncludeItem());
@@ -323,6 +391,43 @@
     document.getElementById("addFaqBtn").addEventListener("click", () => addFaqItem());
 
     document.getElementById("courseForm").addEventListener("submit", saveCourse);
+  }
+
+  /* ---------- "What this course teaches" editor ----------
+     Same shape as the includes editor above (rows of {text}), on purpose: the
+     panel already teaches this pattern in three places and a fourth invention
+     would only be one more thing to learn. Reordering uses the same ↑/↓ as the
+     content blocks, because the order these appear in on the course page is
+     the order they are listed in here. */
+
+  function addLearnItem(existing) {
+    const wrap = document.getElementById("learnList");
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex; gap:8px; align-items:center;";
+    row.innerHTML = `
+      <input type="text" class="learn-text" placeholder="e.g. ভূরাজনীতির মৌলিক ধারণা" value="${Admin.escapeHtml(existing?.text || "")}" style="flex:1; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
+      <button type="button" class="icon-btn learn-up" title="Move up">↑</button>
+      <button type="button" class="icon-btn learn-down" title="Move down">↓</button>
+      <button type="button" class="icon-btn remove-learn" title="Remove">✕</button>`;
+    wrap.appendChild(row);
+    row.querySelector(".remove-learn").addEventListener("click", () => row.remove());
+    row.querySelector(".learn-up").addEventListener("click", () => {
+      const prev = row.previousElementSibling;
+      if (prev) row.parentNode.insertBefore(row, prev);
+    });
+    row.querySelector(".learn-down").addEventListener("click", () => {
+      const next = row.nextElementSibling;
+      if (next) row.parentNode.insertBefore(next, row);
+    });
+  }
+
+  /* Blank rows are dropped rather than saved. A row the admin cleared but did
+     not remove would otherwise render as a tick pointing at nothing. */
+  function collectLearnPoints() {
+    return Array.from(document.querySelectorAll("#learnList > div"))
+      .map((row) => row.querySelector(".learn-text").value.trim())
+      .filter((text) => text)
+      .map((text) => ({ text }));
   }
 
   /* ---------- "What's included" checklist editor ---------- */
@@ -538,6 +643,14 @@
       test: (v) => v === "" || (Number.isFinite(Number(v)) && Number(v) >= 0 && Number(v) <= 5),
     },
     {
+      id: "f_preview_url",
+      label: "Preview video link",
+      // Blank is valid and means "no trailer". Anything else has to be a
+      // real address, or the hero would hold a player pointing nowhere.
+      message: "Enter a full video link starting with https:// — or leave it blank for no preview video.",
+      test: (v) => v.trim() === "" || /^https?://S+$/i.test(v.trim()),
+    },
+    {
       id: "f_purchase_url",
       label: "Purchase form URL",
       // Blank is valid and meaningful: it falls back to the site-wide form. A
@@ -575,6 +688,16 @@
         mentor_avatar_url = await Admin.uploadImage(mentorFileInput.files[0], "mentors");
       }
 
+      /* One field, two ways to fill it. An uploaded file wins over whatever
+         is typed in the box, because uploading is the more deliberate act --
+         and the box is then left holding a stale URL for one render only,
+         since loadCourses() repaints it from the database straight after. */
+      let preview_video_url = document.getElementById("f_preview_url").value.trim() || null;
+      const previewFileInput = document.getElementById("f_preview_file");
+      if (previewFileInput.files[0]) {
+        preview_video_url = await Admin.uploadFile(previewFileInput.files[0], "course-previews");
+      }
+
       const selectedTone = document.querySelector("#tonePicker button.selected");
 
       const payload = {
@@ -590,13 +713,17 @@
         // Blank saves as null, which is what makes the front end fall back to
         // the site-wide enrollment form rather than linking nowhere.
         purchase_url: document.getElementById("f_purchase_url").value.trim() || null,
-        reviews_enabled: document.getElementById("f_reviews").checked,
+        // Every switch from PAGE_FLAGS, so adding one there is enough.
+        ...Object.fromEntries(PAGE_FLAGS.map((flag) => [flag.column, document.getElementById(flag.fieldId).checked])),
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
         tone: selectedTone ? parseInt(selectedTone.dataset.tone, 10) : 1,
         thumbnail_url,
         sort_order: parseInt(document.getElementById("f_sort").value || "0", 10),
         is_published: document.getElementById("f_published").checked,
         content_blocks: collectContentBlocks(),
+        learn_title: document.getElementById("f_learn_title").value.trim() || null,
+        learn_points: collectLearnPoints(),
+        preview_video_url,
         includes: collectIncludes(),
         faqs: collectFaqs(),
         mentor: {
@@ -641,7 +768,7 @@
       // which reads like a bug in the panel rather than a migration you
       // haven't run yet.
       if (!handled && (err.code === "42703" || err.code === "PGRST204")) {
-        Admin.toast("This database is missing a column the form saves. Run the latest schema.sql (sections 22–23) in the Supabase SQL editor, then try again.", true);
+        Admin.toast("This database is missing a column the form saves. Run the latest schema.sql (sections 22–25) in the Supabase SQL editor, then try again.", true);
         handled = true;
       }
       if (!handled) Admin.toast("Couldn't save: " + (err.message || err), true);

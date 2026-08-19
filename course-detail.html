@@ -73,28 +73,34 @@
     <div class="container course-hero-grid">
       <div class="course-hero-main">
         <div data-mount="course-detail"></div>
+        <!-- The price and the enrol button, directly under the description.
+             Keeps #course-buy and .course-buy-card: course-progress.js finds
+             the card with btn.closest('.course-buy-card') to flip it to the
+             enrolled state, and both main.js and render.js scroll to
+             #course-buy. Only the checklist moved out of here. -->
+        <div class="course-buy-card" id="course-buy" data-mount="course-buy"></div>
       </div>
       <!-- Empty unless the admin set a preview video. When it is empty the
            grid drops to a single column (see .course-hero-grid.has-preview),
            so the copy runs full width instead of sitting in a narrow column
-           beside a hole where the price card used to be. -->
+           beside a hole. -->
       <div class="course-preview" data-mount="course-preview"></div>
     </div>
   </section>
 
   <section class="section-pad container" id="course-curriculum">
     <div class="course-body-grid">
-      <!-- First in the DOM on purpose. On a phone this grid collapses to one
-           column and the placement rules below are switched off, so source
-           order decides: the price lands directly under the hero instead of
-           below the entire curriculum. On desktop the rules put it in the
-           right column, above the instructor. -->
-      <div class="course-buy-card" id="course-buy" data-mount="course-buy"></div>
       <div class="course-main-col reveal">
         <h2 class="section-title">কারিকুলাম</h2>
         <div data-mount="course-curriculum"></div>
       </div>
       <aside class="course-aside reveal reveal-delay-1">
+        <!-- What the course covers, on its own surface above the instructor.
+             render.js writes "" here when the admin has removed every point,
+             and :empty collapses the card so the rail starts at the
+             instructor instead of showing an empty box. -->
+        <div class="course-includes-card" data-mount="course-includes"></div>
+
         <h2 class="section-title">আপনার প্রশিক্ষক</h2>
         <div data-mount="course-mentor"></div>
 

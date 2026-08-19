@@ -702,15 +702,26 @@
          directly above "আপনার প্রশিক্ষক" -- see .course-body-grid in
          css/style.css. `.enrolled-banner` is hidden until course-progress.js
          adds .is-enrolled to the card (B9). */
-      /* The buy card's checklist. Admin-authored, no default: an empty list
-         has to be reachable, or "remove every point and the card shrinks to
-         just the price and the button" can never happen. Blank rows are
-         dropped here as well as in the panel, so a row someone cleared but
-         did not delete cannot render as a tick beside nothing. */
+      /* What the course covers. Admin-authored with no default, because an
+         empty list has to be reachable: remove every point and the card is not
+         rendered at all. Blank rows are dropped here as well as in the panel,
+         so a row someone cleared but did not delete cannot render as a tick
+         beside nothing. */
       const buyPoints = (Array.isArray(c.learnPoints) ? c.learnPoints : [])
         .map((p) => (typeof p === "string" ? p : (p && p.text) || ""))
         .map((t) => String(t).trim())
         .filter(Boolean);
+      /* Two cards, two jobs.
+
+         The price and the button go in the hero under the description, where
+         a visitor decides. The checklist goes in the rail beside the
+         curriculum, where a visitor compares. Split also means the price card
+         no longer changes height with the number of points.
+
+         .buy-price-row and .enrolled-banner stay together in this card on
+         purpose: .course-buy-card.is-enrolled hides the first and reveals the
+         second, and course-progress.js sets that class by walking up from the
+         button with .closest(".course-buy-card"). */
       mount(
         "[data-mount='course-buy']",
         `<div class="buy-price-row">
@@ -722,14 +733,17 @@
            <span><b>ভর্তি হয়েছেন</b><span>আজীবন অ্যাক্সেস</span></span>
          </div>
          <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}">${c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
-         <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>
-         ${buyPoints.length
-           ? `<ul>${buyPoints.map((t) => `<li>${ICON.check} <span>${escapeHtml(t)}</span></li>`).join("")}</ul>`
-           : ""}`
-         /* The bKash badge that sat here is gone: a paid course is no longer
-            bought on this site at all, it goes out to an external enrolment
-            form. The product buy card below keeps its badge, because a
-            product IS still paid for through checkout.html. */
+         <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>`
+      );
+
+      /* "" when the admin has removed every point, so :empty collapses the
+         card and the rail starts at the instructor instead of an empty box.
+         No heading: the ticks read as "what you get" without one. */
+      mount(
+        "[data-mount='course-includes']",
+        buyPoints.length
+          ? `<ul>${buyPoints.map((t) => `<li>${ICON.check} <span>${escapeHtml(t)}</span></li>`).join("")}</ul>`
+          : ""
       );
       /* Related — this used to be "the first three other courses", which
          ignored the category entirely and put cooking next to geopolitics.

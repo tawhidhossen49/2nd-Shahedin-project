@@ -1123,9 +1123,29 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .course-buy-card .price{font-size:clamp(1.8rem,3.4vw,2.4rem); line-height:1;}
 .course-buy-card .small-note{margin-block-start:6px;}
 .course-buy-card .btn{margin-block-start:var(--space-5);}
-.course-buy-card ul{margin-block-start:var(--space-5); display:flex; flex-direction:column; gap:var(--space-3); font-size:var(--step--1);}
-.course-buy-card li{display:flex; gap:var(--space-3); align-items:flex-start; color:var(--text-2);}
-.course-buy-card li svg{inline-size:16px; block-size:16px; color:var(--accent-ink); margin-block-start:3px;}
+/* In the hero the card follows the description instead of filling a column of
+   its own, so it needs a top gap and a measure -- stretched to the full column
+   the button becomes a 570px slab. */
+.course-hero-main > .course-buy-card{
+  margin-block-start:var(--space-6);
+  max-inline-size:min(100%, 420px);
+}
+/* ---------- "What you get" card (rail, above the instructor) ----------
+   Split out of the price card so the price and the button sit in the hero
+   where the decision happens, and the list sits beside the curriculum where
+   the comparing happens. :empty is what lets the admin delete every point and
+   have the card disappear rather than leave an empty box. */
+.course-includes-card:empty{display:none;}
+.course-includes-card{
+  background:var(--surface-1);
+  border:1px solid var(--line);
+  border-radius:var(--radius-l);
+  padding:var(--space-6);
+  margin-block-end:var(--space-7);
+}
+.course-includes-card ul{display:flex; flex-direction:column; gap:var(--space-3); font-size:var(--step--1);}
+.course-includes-card li{display:flex; gap:var(--space-3); align-items:flex-start; color:var(--text-2); line-height:1.5;}
+.course-includes-card li svg{inline-size:16px; block-size:16px; flex:none; color:var(--accent-ink); margin-block-start:3px;}
 .course-buy-card .pay-icons{margin-block-start:var(--space-5);}
 
 /* B9: enrolled state for the WHOLE card, not just the button label. */
@@ -1157,28 +1177,17 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* Curriculum + rail. Deliberately not a 1:1 split — the curriculum is the
-   page's substance and the price / mentor / reviews rail supports it.
+   page's substance and the "what you get" / mentor / reviews rail supports it.
 
-   Explicit placement rather than source order, because the buy card is FIRST
-   in the markup so that the phone layout (which switches these rules off) puts
-   the price under the hero rather than under the whole curriculum.
-
-   grid-template-rows:auto 1fr is what keeps the card and the instructor block
-   together. With both rows auto, a curriculum taller than the rail would push
-   the spare height into BOTH rows and open a growing gap between the price and
-   "আপনার প্রশিক্ষক"; pinning row 1 to the card's own height sends all of it to
-   row 2 instead. */
+   Plain source order: the price card used to live in this grid and needed
+   explicit placement to stay in the right column while sitting first in the
+   markup. It is in the hero now, so the two children fall where they are. */
 .course-body-grid{
   display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
-  grid-template-rows:auto 1fr;
-  column-gap:clamp(32px,4.5vw,64px);
-  row-gap:var(--space-7);
+  gap:clamp(32px,4.5vw,64px);
   align-items:start;
 }
-.course-main-col{grid-column:1; grid-row:1 / span 2;}
-.course-body-grid > .course-buy-card{grid-column:2; grid-row:1;}
-.course-aside{grid-column:2; grid-row:2;}
 /* Not sticky. The rail now carries the price card, the mentor and the whole
    review list; once that stack is taller than the viewport, a sticky element
    pins its top and the bottom of it can never be scrolled to. */
@@ -2135,12 +2144,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 @media (max-width:1080px){
   .about-grid,.about-grid-text-first,
   .product-grid,.contact-grid,.course-hero-grid,.two-col,.course-body-grid{grid-template-columns:minmax(0,1fr);}
-  /* Placements off, so the grid falls back to source order: buy card,
-     curriculum, then the mentor / reviews rail. */
-  .course-body-grid{grid-template-rows:auto;}
-  .course-main-col,
-  .course-body-grid > .course-buy-card,
-  .course-aside{grid-column:auto; grid-row:auto;}
 
   /* ---- Hero on a phone: one column, and the trailer moves up under the
      headline ----------------------------------------------------------------
@@ -2172,6 +2175,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-hero-grid.has-preview .course-preview{order:4; margin-block:var(--space-5) 0;}
   .course-hero-grid.has-preview .meta-row{order:5;}
   .course-hero-grid.has-preview .course-desc{order:6;}
+  /* The price card is a child of .course-hero-main, so display:contents above
+     lifts it into the grid too and it needs a place in the order -- last,
+     right under the description, exactly where it sits on desktop. Without
+     this it defaults to order 0 and jumps above the breadcrumb. */
+  .course-hero-grid.has-preview > .course-hero-main > .course-buy-card{order:7;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
 
   /* Stacked, the copy no longer has a column of its own — it runs the full

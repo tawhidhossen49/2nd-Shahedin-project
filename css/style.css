@@ -2141,6 +2141,37 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-main-col,
   .course-body-grid > .course-buy-card,
   .course-aside{grid-column:auto; grid-row:auto;}
+
+  /* ---- Hero on a phone: one column, and the trailer moves up under the
+     headline ----------------------------------------------------------------
+     Two separate problems, one block.
+
+     1. Specificity. The shared rule above is `.course-hero-grid` (0-1-0) but
+        the two-column rule is `.course-hero-grid.has-preview` (0-2-0), so it
+        outranked the override at every width and the hero stayed two columns
+        on a 375px screen -- the copy crushed into ~190px with the video
+        floating beside it. Matching the specificity here is the fix.
+
+     2. Order. Stacked, the trailer would land after the entire block of copy,
+        which buries it. It belongs directly under the headline. The copy and
+        the trailer are nested at different depths, so `order` alone cannot
+        reach across them; display:contents lifts the copy's children up to be
+        grid items alongside the trailer, and then order can interleave the
+        two. No markup change and no JS -- and it reverts to the desktop
+        nesting the moment the query stops matching.
+
+     row-gap:0 because these children already carry their own vertical margins
+     from the flex column they used to live in; a grid gap would add to them
+     and space the headline off the eyebrow by 28px. */
+  .course-hero-grid.has-preview{grid-template-columns:minmax(0,1fr); row-gap:0;}
+  .course-hero-grid.has-preview .course-hero-main,
+  .course-hero-grid.has-preview [data-mount='course-detail']{display:contents;}
+  .course-hero-grid.has-preview .crumb{order:1;}
+  .course-hero-grid.has-preview .eyebrow{order:2;}
+  .course-hero-grid.has-preview h1{order:3;}
+  .course-hero-grid.has-preview .course-preview{order:4; margin-block:var(--space-5) 0;}
+  .course-hero-grid.has-preview .meta-row{order:5;}
+  .course-hero-grid.has-preview .course-desc{order:6;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
 
   /* Stacked, the copy no longer has a column of its own — it runs the full
@@ -2466,44 +2497,37 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* ---------- Course preview / trailer (hero, right of the copy) ----------
    :empty is what makes an unconfigured course identical to how it was before
    this existed: render.js writes "" into the mount, the box collapses, and
-   .course-hero-grid never gets .has-preview, so the band stays one column. */
+   .course-hero-grid never gets .has-preview, so the band stays one column.
+
+   The two kinds are shaped separately, because they are not the same problem.
+   A YouTube embed is always 16/9 and letterboxes its own content, so the frame
+   sets the ratio. An uploaded file can be any shape at all -- a phone clip is
+   usually portrait -- and the previous rule forced BOTH into a 16/9 box with
+   object-fit:cover, which silently sliced the top and bottom off every
+   portrait video. Nothing here crops the admin's footage any more. */
 .course-preview:empty{display:none;}
 .preview-frame{
-  position:relative; aspect-ratio:16/9;
   border:1px solid var(--line-strong); border-radius:var(--radius-l);
   overflow:hidden; background:#000;
   box-shadow:0 18px 50px -22px rgba(0,0,0,.85);
 }
-.preview-frame iframe,
-.preview-frame video{
+
+/* YouTube: fixed ratio, iframe pinned to fill it. */
+.preview-frame.is-embed{position:relative; aspect-ratio:16/9;}
+.preview-frame.is-embed iframe{
   position:absolute; inset:0;
   inline-size:100%; block-size:100%;
-  border:0; display:block; object-fit:cover;
+  border:0; display:block;
 }
 
-/* ---------- "এই কোর্সে কি কি থাকছে…" ----------
-   Sits above the curriculum in the same column. Its own surface, because the
-   curriculum immediately below is a stack of bordered accordion rows and two
-   untinted lists running together would read as one long list. */
-.course-learn{
-  background:var(--surface-1);
-  border:1px solid var(--line);
-  border-radius:var(--radius-l);
-  padding:clamp(20px,3vw,30px);
-  margin-block-end:var(--space-8);
-}
-.course-learn .section-title{margin-block-end:var(--space-5);}
-/* Two columns only when a column can still hold a readable line. Short points
-   pair up; long ones are not squeezed into 20ch ribbons. */
-.learn-list{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));
-  gap:var(--space-4) var(--space-6);
-}
-.learn-list li{
-  display:flex; gap:var(--space-3); align-items:flex-start;
-  color:var(--text-2); font-size:var(--step--1); line-height:1.55;
-}
-.learn-list li svg{
-  inline-size:17px; block-size:17px; flex:none;
-  margin-block-start:3px; color:var(--accent-ink);
+/* Uploaded file: no imposed ratio. Both max- constraints are set and both
+   dimensions left auto, which is the one combination where a replaced element
+   scales down inside the box while keeping its own proportions -- so a
+   portrait clip stays portrait and a landscape one stays landscape, and
+   neither can overflow the column or run past the fold on a phone. */
+.preview-frame.is-file{display:flex; justify-content:center; align-items:center;}
+.preview-frame.is-file video{
+  inline-size:auto; max-inline-size:100%;
+  block-size:auto; max-block-size:min(62svh, 520px);
+  display:block; border:0;
 }

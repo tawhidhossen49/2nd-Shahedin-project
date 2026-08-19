@@ -386,32 +386,6 @@
     }
   }
 
-  /* ---------- "এই কোর্সে কি কি থাকছে…" ----------
-     Admin-authored selling points, shown above the curriculum. Returns "" when
-     the course has none, so the mount stays empty and the page is unchanged --
-     a heading with nothing under it is worse than no section at all.
-
-     Blank rows are dropped here as well as in the admin panel: a row that was
-     cleared but not removed would otherwise render as a tick pointing at
-     nothing. Plain strings are accepted alongside {text:…} so hand-seeded
-     data doesn't have to match the panel's shape exactly. */
-  function courseLearnHTML(c) {
-    const points = (Array.isArray(c.learnPoints) ? c.learnPoints : [])
-      .map((p) => (typeof p === "string" ? p : (p && p.text) || ""))
-      .map((t) => String(t).trim())
-      .filter(Boolean);
-    if (!points.length) return "";
-
-    const title = String(c.learnTitle || "").trim() || "এই কোর্সে কি কি থাকছে…";
-    return `
-      <section class="course-learn" aria-labelledby="course-learn-title">
-        <h2 class="section-title" id="course-learn-title">${escapeHtml(title)}</h2>
-        <ul class="learn-list">
-          ${points.map((t) => `<li>${ICON.check}<span>${escapeHtml(t)}</span></li>`).join("")}
-        </ul>
-      </section>`;
-  }
-
   /* ---------- Course preview / trailer ----------
      One admin field holds either a YouTube link or an uploaded video file, so
      the admin never has to declare which kind it is -- the URL says so.
@@ -434,9 +408,12 @@
                  title="কোর্স প্রিভিউ" loading="lazy"
                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                  allowfullscreen></iframe>`
-      : `<video controls preload="metadata" playsinline src="${escapeHtml(url)}">আপনার ব্রাউজারে ভিডিওটি চালানো যাচ্ছে না।</video>`;
+      : `<video controls playsinline preload="metadata" src="${escapeHtml(url)}">আপনার ব্রাউজারে ভিডিওটি চালানো যাচ্ছে না।</video>`;
 
-    return `<div class="preview-frame">${body}</div>`;
+    /* is-embed / is-file: the two are shaped by completely different CSS.
+       A YouTube embed is reliably 16/9; an uploaded file is whatever the admin
+       filmed, very often a portrait phone clip, and must keep its own shape. */
+    return `<div class="preview-frame ${vid ? "is-embed" : "is-file"}">${body}</div>`;
   }
 
   const DEFAULT_MENTOR = {
@@ -715,7 +692,6 @@
       mount("[data-mount='course-preview']", previewHTML);
       const heroGrid = document.querySelector(".course-hero-grid");
       if (heroGrid) heroGrid.classList.toggle("has-preview", !!previewHTML);
-      mount("[data-mount='course-learn']", courseLearnHTML(c));
       mount("[data-mount='course-curriculum']", courseCurriculumHTML(c));
       const curriculumEl = document.querySelector("[data-mount='course-curriculum']");
       if (curriculumEl) wireQuizzes(curriculumEl);
@@ -726,14 +702,15 @@
          directly above "আপনার প্রশিক্ষক" -- see .course-body-grid in
          css/style.css. `.enrolled-banner` is hidden until course-progress.js
          adds .is-enrolled to the card (B9). */
-      const includes = Array.isArray(c.includes) && c.includes.length
-        ? c.includes
-        : [
-            { text: `${durationLabel || c.duration} অন-ডিমান্ড ভিডিও` },
-            { text: "ডাউনলোডযোগ্য রিসোর্স ও নোট" },
-            { text: "সম্পন্নতার সার্টিফিকেট" },
-            { text: "বাংলা সাপোর্ট" },
-          ];
+      /* The buy card's checklist. Admin-authored, no default: an empty list
+         has to be reachable, or "remove every point and the card shrinks to
+         just the price and the button" can never happen. Blank rows are
+         dropped here as well as in the panel, so a row someone cleared but
+         did not delete cannot render as a tick beside nothing. */
+      const buyPoints = (Array.isArray(c.learnPoints) ? c.learnPoints : [])
+        .map((p) => (typeof p === "string" ? p : (p && p.text) || ""))
+        .map((t) => String(t).trim())
+        .filter(Boolean);
       mount(
         "[data-mount='course-buy']",
         `<div class="buy-price-row">
@@ -746,9 +723,9 @@
          </div>
          <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}">${c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
          <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>
-         <ul>
-           ${includes.map((item) => `<li>${ICON.check} <span>${escapeHtml(item.text)}</span></li>`).join("")}
-         </ul>`
+         ${buyPoints.length
+           ? `<ul>${buyPoints.map((t) => `<li>${ICON.check} <span>${escapeHtml(t)}</span></li>`).join("")}</ul>`
+           : ""}`
          /* The bKash badge that sat here is gone: a paid course is no longer
             bought on this site at all, it goes out to an external enrolment
             form. The product buy card below keeps its badge, because a

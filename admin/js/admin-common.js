@@ -312,7 +312,28 @@ window.Admin = (function () {
      the URL changes too. contentType is passed explicitly so a PDF is served
      as application/pdf and opens in the browser's viewer instead of
      downloading as an unnamed binary. */
+  /* Supabase enforces a per-file ceiling on the storage API, and on the free
+     plan it is 50 MB. Hitting it server-side means uploading the whole file
+     first and then being told no, which on a phone connection is minutes of
+     progress bar for a rejection -- and the raw reply is a bare 413 that says
+     nothing about what to do instead. Checked here so an oversized file is
+     refused instantly, in words, with the way round it.
+
+     Raising this alone achieves nothing: the limit lives in the platform, not
+     in this number. Keep the two in step if the plan changes.
+     Storage > Settings > "Upload file size limit" in the dashboard. */
+  const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
+
   async function uploadFile(file, folder) {
+    if (file && file.size > MAX_UPLOAD_BYTES) {
+      const mb = Math.ceil(file.size / (1024 * 1024));
+      throw new Error(
+        `That file is ${mb} MB and the limit is 50 MB. For a video this long, ` +
+        `put it on YouTube (an unlisted video works) and paste the link into the ` +
+        `box above instead — there is no size limit that way, it costs you no ` +
+        `storage, and it streams far better on a phone.`
+      );
+    }
     const c = client();
     const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;

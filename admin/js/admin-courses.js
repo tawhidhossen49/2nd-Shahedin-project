@@ -312,9 +312,7 @@
           </div>
 
           <div class="form-field full">
-            <label>What this course teaches <span class="hint">the "এই কোর্সে কি কি থাকছে…" section above the curriculum — leave it empty and the whole section disappears from the course page</span></label>
-            <input type="text" id="f_learn_title" placeholder="এই কোর্সে কি কি থাকছে…" value="${Admin.escapeHtml(course?.learn_title || "")}" style="margin-bottom:10px;">
-            <span class="hint" style="display:block; margin-bottom:10px;">Heading — leave blank to use “এই কোর্সে কি কি থাকছে…”.</span>
+            <label>What's included <span class="hint">the checklist inside the price card, under the buy button — remove every line and the card shrinks to just the price and the button</span></label>
             <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
             <button type="button" class="btn btn-ghost btn-sm" id="addLearnBtn">+ Add point</button>
           </div>
@@ -325,15 +323,11 @@
             <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.</span>
             <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
             <p class="hint" style="margin-top:8px;">
-              Video files are uploaded to your own storage, so keep them small — a YouTube link costs you nothing
-              and streams better. To remove the video, clear the box above and save.
+              <strong>A YouTube link has no size limit and is the better choice for anything long.</strong>
+              Uploaded files go to your own Supabase storage, which caps a single file at 50 MB on the free plan —
+              roughly a couple of minutes of phone video. Over that, the upload is refused. To remove the video,
+              clear the box above and save.
             </p>
-          </div>
-
-          <div class="form-field full">
-            <label>What's included <span class="hint">the checklist shown on the buy card, e.g. "4 weeks on-demand video" — add as many lines as you like</span></label>
-            <div id="includesList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
-            <button type="button" class="btn btn-ghost btn-sm" id="addIncludeBtn">+ Add line</button>
           </div>
 
           <div class="form-field full">
@@ -381,11 +375,9 @@
     (course?.content_blocks || []).forEach((b) => addContentBlock(b.type, b));
 
     (course?.learn_points || []).forEach((item) => addLearnItem(item));
+    if (!course) addLearnItem(); // a new course opens with one empty line to fill in
     document.getElementById("addLearnBtn").addEventListener("click", () => addLearnItem());
 
-    (course?.includes || []).forEach((item) => addIncludeItem(item));
-    if (!course) addIncludeItem(); // start a new course with one empty line to fill in
-    document.getElementById("addIncludeBtn").addEventListener("click", () => addIncludeItem());
 
     (course?.faqs || []).forEach((item) => addFaqItem(item));
     document.getElementById("addFaqBtn").addEventListener("click", () => addFaqItem());
@@ -431,24 +423,6 @@
   }
 
   /* ---------- "What's included" checklist editor ---------- */
-
-  function addIncludeItem(existing) {
-    const wrap = document.getElementById("includesList");
-    const row = document.createElement("div");
-    row.style.cssText = "display:flex; gap:8px; align-items:center;";
-    row.innerHTML = `
-      <input type="text" class="include-text" placeholder="e.g. 4 weeks on-demand video" value="${Admin.escapeHtml(existing?.text || "")}" style="flex:1; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
-      <button type="button" class="icon-btn remove-include" title="Remove">✕</button>`;
-    wrap.appendChild(row);
-    row.querySelector(".remove-include").addEventListener("click", () => row.remove());
-  }
-
-  function collectIncludes() {
-    return Array.from(document.querySelectorAll("#includesList > div"))
-      .map((row) => row.querySelector(".include-text").value.trim())
-      .filter((text) => text)
-      .map((text) => ({ text }));
-  }
 
   /* ---------- FAQ editor ---------- */
 
@@ -648,7 +622,7 @@
       // Blank is valid and means "no trailer". Anything else has to be a
       // real address, or the hero would hold a player pointing nowhere.
       message: "Enter a full video link starting with https:// — or leave it blank for no preview video.",
-      test: (v) => v.trim() === "" || /^https?://S+$/i.test(v.trim()),
+      test: (v) => v.trim() === "" || /^https?:\/\/\S+$/i.test(v.trim()),
     },
     {
       id: "f_purchase_url",
@@ -662,20 +636,25 @@
 
   async function saveCourse(e) {
     e.preventDefault();
-
-    // Validated before the button locks or any image uploads, so a rejected
-    // save never leaves an orphaned file in storage.
-    const missing = Admin.validateFields(document.getElementById("courseForm"), COURSE_RULES);
-    if (missing.length) {
-      Admin.toast(Admin.missingSummary(missing), true);
-      return;
-    }
-
     const btn = document.getElementById("saveCourseBtn");
-    btn.disabled = true;
-    btn.textContent = "Saving…";
 
+    /* Everything from here down is inside one try/finally, validation
+       included. It used to start below the validate call, so anything that
+       threw on the way in -- a helper that had moved, a field the markup no
+       longer had -- escaped with no toast, nothing in the console and the
+       button still reading "Save changes". Clicking Save then genuinely did
+       nothing, which is indistinguishable from a dead button. A save can
+       fail, but it must never fail silently. */
     try {
+      const missing = Admin.validateFields(document.getElementById("courseForm"), COURSE_RULES);
+      if (missing.length) {
+        Admin.toast(Admin.missingSummary(missing), true);
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Saving…";
+
       let thumbnail_url = editingId ? courses.find((x) => x.id === editingId)?.thumbnail_url || null : null;
       const fileInput = document.getElementById("f_image");
       if (fileInput.files[0]) {
@@ -721,10 +700,11 @@
         sort_order: parseInt(document.getElementById("f_sort").value || "0", 10),
         is_published: document.getElementById("f_published").checked,
         content_blocks: collectContentBlocks(),
-        learn_title: document.getElementById("f_learn_title").value.trim() || null,
+        // The buy card's checklist. `includes` is deliberately NOT written any
+        // more: it holds a frozen copy of the pre-consolidation list that
+        // nothing renders, so overwriting it would destroy that fallback.
         learn_points: collectLearnPoints(),
         preview_video_url,
-        includes: collectIncludes(),
         faqs: collectFaqs(),
         mentor: {
           name: document.getElementById("f_mentor_name").value.trim(),
@@ -771,8 +751,18 @@
         Admin.toast("This database is missing a column the form saves. Run the latest schema.sql (sections 22–25) in the Supabase SQL editor, then try again.", true);
         handled = true;
       }
-      if (!handled) Admin.toast("Couldn't save: " + (err.message || err), true);
+      // Logged as well as toasted: a Supabase error can carry an empty
+      // .message, and "Couldn't save: undefined" tells nobody anything.
+      console.error("Shahedin admin: course save failed.", err);
+      if (!handled) {
+        Admin.toast("Couldn't save: " + (err.message || err.error_description || err.hint || "see the browser console for details"), true);
+      }
 
+    } finally {
+      /* Always, on every exit path -- success, validation bail, thrown
+         error. Previously the reset lived only in catch, so a `return`
+         from the try left the button disabled and reading "Saving…"
+         forever, and the next click did nothing. */
       btn.disabled = false;
       btn.textContent = editingId ? "Save changes" : "Create course";
     }

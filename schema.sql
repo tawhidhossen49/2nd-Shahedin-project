@@ -1862,3 +1862,32 @@ alter function public.strip_blank_settings(jsonb) set search_path = public, pg_t
 --     dashboard toggle -- Authentication > Policies > enable the
 --     HaveIBeenPwned check. Worth turning on; costs nothing.
 -- -------------------------------------------------------------------------
+
+
+-- =========================================================================
+-- 27. ONE CHECKLIST, NOT TWO  (already applied — this is the record)
+--     Safe to re-run.
+--
+--     The buy card and the "what you'll learn" section had grown into two
+--     separate admin fields that both rendered the same shape of bullet list,
+--     which is one field too many to keep straight. The card now renders
+--     learn_points and the standalone section is gone.
+--
+--     A course whose list only ever lived in `includes` would have gone blank,
+--     so it is copied across -- but only where learn_points is empty, so a
+--     course that already had its own points keeps them.
+-- =========================================================================
+
+update courses
+   set learn_points = includes
+ where coalesce(jsonb_array_length(learn_points), 0) = 0
+   and coalesce(jsonb_array_length(includes), 0) > 0;
+
+-- The section that carried this heading no longer exists.
+update courses set learn_title = null where learn_title is not null;
+
+-- `includes` and `learn_title` are deliberately NOT dropped. `includes` now
+-- holds a frozen copy of every list as it stood before the consolidation, and
+-- the admin panel no longer writes to it, so it stays readable as a fallback
+-- if a list is ever lost. Dropping the columns would throw that away for no
+-- gain -- two unused columns cost nothing.

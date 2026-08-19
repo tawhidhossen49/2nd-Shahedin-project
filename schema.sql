@@ -1740,3 +1740,125 @@ from courses c
 where c.is_published = true or auth.uid() in (select id from admins);
 
 grant select on courses_safe to anon, authenticated;
+
+
+-- =========================================================================
+-- 26. SECURITY HARDENING
+--     Safe to re-run.
+--
+--     Prompted by the Supabase advisor flagging courses_safe / products_safe
+--     as SECURITY DEFINER views. Investigating that surfaced a real hole the
+--     advisor did NOT flag -- (a) below -- which matters far more than the
+--     two findings that prompted the look.
+-- =========================================================================
+
+-- -------------------------------------------------------------------------
+-- (a) THE ACTUAL LEAK: the raw products table was publicly readable.
+--
+--     products_safe exists to hide delivery_url / delivery_note -- the paid
+--     download link -- from anyone who has not completed an order for that
+--     product. But `products` still carried an "anyone can read published
+--     products" policy, so the anon key (which ships in public JavaScript on
+--     every page) could skip the view entirely:
+--
+--       GET /rest/v1/products?select=delivery_url
+--
+--     and read every digital product's download link without paying. Nothing
+--     has leaked yet only because no product has a delivery_url set; the day
+--     one is added, it is public.
+--
+--     courses closed this exact hole in section 2 -- its comment there spells
+--     out the reasoning -- and products was simply never given the same
+--     treatment. This is that fix.
+--
+--     Verified safe before dropping: the public site reads products_safe and
+--     never `products` (js/data-loader.js, js/dashboard.js); every direct read
+--     of `products` is in admin/js/, which is covered by the "admins can read
+--     all products" policy below; no other table's RLS policy references
+--     products; and the two triggers on products are write-side only.
+--
+--     products_safe fully replaces this policy: it filters rows with
+--     `where is_published = true or <admin>` AND masks the delivery columns.
+-- -------------------------------------------------------------------------
+drop policy if exists "anyone can read published products" on products;
+
+-- -------------------------------------------------------------------------
+-- (b) Pin search_path on the functions that lacked it.
+--
+--     log_activity is SECURITY DEFINER with no fixed search_path, which is
+--     the classic privilege-escalation shape: whatever schema happens to sit
+--     first on the caller's search_path can shadow a table or function name
+--     the body references, and the shadowed object then runs with the
+--     definer's rights. Pinning the path removes the lever.
+--
+--     set_updated_at and strip_blank_settings are SECURITY INVOKER, so they
+--     carry no escalation risk -- pinned anyway so no future edit to either
+--     one turns a hardening question into a live vulnerability.
+--
+--     pg_temp is listed last deliberately: leaving it off entirely would let
+--     a temp table shadow a public one, since pg_temp is searched first by
+--     default when it is not named explicitly.
+-- -------------------------------------------------------------------------
+alter function public.log_activity() set search_path = public, pg_temp;
+alter function public.set_updated_at() set search_path = public, pg_temp;
+alter function public.strip_blank_settings(jsonb) set search_path = public, pg_temp;
+
+-- -------------------------------------------------------------------------
+-- (c) NOT CHANGED, and why -- the two ERROR-level advisor findings.
+--
+--     "View public.courses_safe is defined with the SECURITY DEFINER property"
+--     "View public.products_safe is defined with the SECURITY DEFINER property"
+--
+--     The advisor's remedy is `security_invoker = true`. That cannot be used
+--     here, and the reason is structural rather than a matter of preference:
+--
+--     Both views exist to mask a COLUMN -- content_blocks on a course the
+--     visitor has not enrolled in, delivery_url on a product they have not
+--     bought. Row Level Security cannot restrict columns; it only filters
+--     rows. So the masking has to happen in a view, and to decide what to
+--     mask the view must first READ the column it is hiding.
+--
+--     Under security_invoker the view reads as the caller, and the caller is
+--     precisely the person who must not see that column. The view would
+--     either error on a permission denial or return nothing at all, and with
+--     (a) applied the public site would show an empty catalogue and an empty
+--     store.
+--
+--     So the definer property is doing real work: it is what lets an
+--     untrusted caller receive a filtered subset of a table it cannot read.
+--     The guard is the view's own WHERE clause plus its CASE expressions,
+--     which is why those are written out explicitly instead of leaning on the
+--     base table's RLS.
+--
+--     Both findings can be dismissed in the Supabase dashboard.
+-- -------------------------------------------------------------------------
+
+-- -------------------------------------------------------------------------
+-- (d) ALSO NOT CHANGED: "Public/Signed-In Users Can Execute SECURITY DEFINER
+--     Function" (13 WARN findings).
+--
+--     Eleven of them name TRIGGER functions -- handle_new_user,
+--     handle_user_meta_update, log_activity, sync_course_students_count,
+--     bump_coupon_usage, course_reviews_reset_approval. Tested against the
+--     live API with the anon key, all of them answer:
+--
+--       {"code":"PGRST202", ... "no matches were found in the schema cache"}
+--
+--     PostgREST does not expose functions that return `trigger`, so there is
+--     no reachable endpoint behind these warnings. The advisor sees the
+--     EXECUTE grant and stops there.
+--
+--     The revoke that would silence them is not free: EXECUTE on
+--     handle_new_user sits in the signup path, and the remaining two findings
+--     name functions that ARE meant to be public -- validate_coupon (checkout
+--     needs it before a user has signed in) and get_partner_traffic (returns
+--     two aggregate page-view integers for the portfolio page, no per-user
+--     data). Trading a working signup against a warning with no exploit path
+--     behind it is a bad trade, so these are left alone deliberately.
+--
+--     Revisit if any of these ever stops returning `trigger`.
+--
+-- (e) Not fixable in SQL: "Leaked Password Protection Disabled" is a
+--     dashboard toggle -- Authentication > Policies > enable the
+--     HaveIBeenPwned check. Worth turning on; costs nothing.
+-- -------------------------------------------------------------------------

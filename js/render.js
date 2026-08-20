@@ -163,9 +163,25 @@
     </div>`;
   }
 
+  /* A Shorts URL is the one case where YouTube tells us the shape of the
+     video before it loads: /shorts/ is only ever vertical. An iframe is
+     cross-origin so its content cannot be measured, and the oEmbed lookup that
+     would report real dimensions is a network round trip on first paint --
+     neither is worth it when the path segment already says so.
+
+     A Short pasted as youtu.be/<id> is indistinguishable from a normal video
+     and falls back to 16:9; the admin hint asks for the /shorts/ form. */
+  function isYouTubeShort(url) {
+    return String(url || "").toLowerCase().indexOf("youtube.com/shorts/") !== -1;
+  }
+
+  /* Case-insensitive: a domain is, and a pasted "WWW.YouTube.com/SHORTS/…"
+     used to miss this match entirely and fall through to the uploaded-file
+     branch, which put a YouTube page URL inside a <video> tag. The captured
+     id keeps its own casing -- the i flag does not fold the capture. */
   function youtubeEmbedId(url) {
     if (!url) return "";
-    const m = (url || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{6,15})/);
+    const m = (url || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{6,15})/i);
     return m ? m[1] : "";
   }
 
@@ -410,10 +426,14 @@
                  allowfullscreen></iframe>`
       : `<video controls playsinline preload="metadata" src="${escapeHtml(url)}">আপনার ব্রাউজারে ভিডিওটি চালানো যাচ্ছে না।</video>`;
 
-    /* is-embed / is-file: the two are shaped by completely different CSS.
-       A YouTube embed is reliably 16/9; an uploaded file is whatever the admin
-       filmed, very often a portrait phone clip, and must keep its own shape. */
-    return `<div class="preview-frame ${vid ? "is-embed" : "is-file"}">${body}</div>`;
+    /* Three shapes, not two.
+         is-embed            a normal YouTube video, 16:9
+         is-embed is-portrait a Short, 9:16
+         is-file             an upload, whatever shape it actually is
+       An upload needs no orientation flag: .preview-frame.is-file sizes from
+       the file's own intrinsic dimensions, so a phone clip is already tall. */
+    const cls = vid ? (isYouTubeShort(url) ? "is-embed is-portrait" : "is-embed") : "is-file";
+    return `<div class="preview-frame ${cls}">${body}</div>`;
   }
 
   const DEFAULT_MENTOR = {

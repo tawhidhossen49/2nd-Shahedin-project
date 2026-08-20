@@ -355,7 +355,13 @@
                <b>কনটেন্টগুলো লক করা আছে</b>
                <p>সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।</p>
              </div>
-             <a href="#course-buy" class="btn btn-primary btn-sm">কোর্সে ভর্তি হোন</a>
+             <!-- A real trigger, not a jump link. data-enroll-cta is picked up
+                  by course-progress.js alongside the price card button and runs
+                  the identical enrolment flow, so this no longer just scrolls
+                  the visitor to a second button they have to press. A <button>
+                  rather than an <a> because it performs an action and because
+                  the flow sets .disabled on whatever was clicked. -->
+             <button type="button" class="btn btn-primary btn-sm" data-enroll-cta>কোর্সে ভর্তি হোন</button>
            </div>`
         : "";
       return `<div data-mount="course-progress-summary"></div><div class="content-blocks curriculum-accordion">${c.contentBlocks.map(contentBlockHTML).join("")}</div>${lockedNote}`;

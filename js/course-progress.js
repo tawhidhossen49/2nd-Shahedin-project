@@ -11,6 +11,7 @@
   "use strict";
 
   let enrollment = null; // the student's enrollments row for this course, if any
+  let enrollBtn = null;  // the price card's button — the one .is-enrolled transforms
 
   function escapeHtml(str) {
     return (str == null ? "" : String(str)).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
@@ -18,16 +19,26 @@
 
   async function init() {
     const course = window.SHAHEDIN_CURRENT_COURSE;
-    const enrollBtn = document.querySelector("[data-enroll]");
+    enrollBtn = document.querySelector("[data-enroll]");
     if (!course || !enrollBtn) return;
+
+    /* Every control that means "enrol me": the price card's button and the
+       CTA in the locked-curriculum notice. They run the SAME function rather
+       than each carrying a copy of the flow -- the notice's button used to be
+       an <a href="#course-buy"> that only scrolled, which left the visitor
+       looking at the price card having to click a second button to do the
+       thing they had already asked for. */
+    const triggers = () => Array.from(document.querySelectorAll("[data-enroll], [data-enroll-cta]"));
 
     if (!course.dbId) {
       // Site isn't connected to Supabase yet, or this course only exists in the
       // static sample data — enrollment can't be tracked for real.
-      enrollBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        window.showToast && window.showToast("এই কোর্সে ভর্তি হতে সাইটটিকে Supabase-এর সাথে সংযুক্ত হতে হবে।");
-      });
+      triggers().forEach((el) =>
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          window.showToast && window.showToast("এই কোর্সে ভর্তি হতে সাইটটিকে Supabase-এর সাথে সংযুক্ত হতে হবে।");
+        })
+      );
       return;
     }
 
@@ -37,69 +48,90 @@
     paintProgress(course);
     wireVideoProgress(course);
 
-    enrollBtn.addEventListener("click", async () => {
-      if (enrollment) return; // already enrolled, button is disabled anyway
-      enrollBtn.disabled = true;
-      const originalText = enrollBtn.textContent;
-      enrollBtn.textContent = "একটু অপেক্ষা করুন…";
-
-      const authedUser = await window.ShahedinAuth.requireAuth();
-      if (!authedUser) {
-        enrollBtn.disabled = false;
-        enrollBtn.textContent = originalText;
-        return;
-      }
-
-      /* Paid course. There is no payment gateway, so buying does not happen on
-         this site at all. The student is sent to an external enrolment form
-         (a Google Form), which carries the payment instructions; they send the
-         money off-site and the admin grants access from Admin -> Students once
-         the payment is verified.
-
-         requireAuth() above is what makes the "log in first, then the form"
-         order work: an anonymous visitor gets the login modal and only lands
-         on the form once there is an account for the admin to grant access to.
-
-         Free courses never reach this branch, and products still go through
-         checkout.html untouched. */
-      if (!course.free) {
-        const form = await enrollmentFormUrl(course);
-        if (form) {
-          window.location.href = form;
-          return;
-        }
-        /* Nothing configured anywhere. Previously this fell through to
-           checkout.html, which offered a bKash payment that cannot be
-           completed — a dead end dressed up as a purchase. Say so instead. */
-        enrollBtn.disabled = false;
-        enrollBtn.textContent = originalText;
-        window.showToast && window.showToast("এই কোর্সের ভর্তি ফর্ম এখনো যুক্ত করা হয়নি। অনুগ্রহ করে আমাদের সাথে যোগাযোগ করুন।");
-        return;
-      }
-
-      try {
-        const c = window.ShahedinAuth.client();
-        const { data, error } = await c
-          .from("enrollments")
-          .upsert({ user_id: authedUser.id, course_id: course.dbId }, { onConflict: "user_id,course_id" })
-          .select()
-          .single();
-        if (error) throw error;
-        enrollment = data;
-        paintEnrollButton(enrollBtn, course, true);
-        paintProgress(course);
-        window.showToast && window.showToast("ভর্তি সম্পন্ন হয়েছে! এখন আপনি কোর্সের অগ্রগতি ট্র্যাক করতে পারবেন।");
-      } catch (err) {
-        enrollBtn.disabled = false;
-        enrollBtn.textContent = originalText;
-        window.showToast && window.showToast("ভর্তি হতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
-      }
-    });
+    triggers().forEach((el) =>
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        startEnrollment(course, el);
+      })
+    );
 
     document.addEventListener("quiz-checked", async (e) => {
       if (!enrollment || !e.detail || !e.detail.blockId) return;
       await markComplete(course, e.detail.blockId, true);
     });
+  }
+
+  /* The enrolment flow, shared by every trigger.
+
+     `trigger` is only the element that shows progress -- whichever button was
+     actually clicked gets the "একটু অপেক্ষা করুন…" state and gets restored on
+     every failure path. The success repaint still targets the price card,
+     because that is the card .is-enrolled transforms. */
+  async function startEnrollment(course, trigger) {
+    if (enrollment) return; // already enrolled
+
+    const originalText = trigger.textContent;
+    trigger.disabled = true;
+    trigger.setAttribute("aria-busy", "true");
+    trigger.textContent = "একটু অপেক্ষা করুন…";
+    const restore = () => {
+      trigger.disabled = false;
+      trigger.removeAttribute("aria-busy");
+      trigger.textContent = originalText;
+    };
+
+    const authedUser = await window.ShahedinAuth.requireAuth();
+    if (!authedUser) {
+      restore();
+      return;
+    }
+
+    /* Paid course. There is no payment gateway, so buying does not happen on
+       this site at all. The student is sent to an external enrolment form
+       (a Google Form), which carries the payment instructions; they send the
+       money off-site and the admin grants access from Admin -> Students once
+       the payment is verified.
+
+       requireAuth() above is what makes the "log in first, then the form"
+       order work: an anonymous visitor gets the login modal and only lands
+       on the form once there is an account for the admin to grant access to.
+
+       Free courses never reach this branch, and products still go through
+       checkout.html untouched. */
+    if (!course.free) {
+      const form = await enrollmentFormUrl(course);
+      if (form) {
+        window.location.href = form;
+        return;
+      }
+      /* Nothing configured anywhere. Previously this fell through to
+         checkout.html, which offered a bKash payment that cannot be
+         completed — a dead end dressed up as a purchase. Say so instead. */
+      restore();
+      window.showToast && window.showToast("এই কোর্সের ভর্তি ফর্ম এখনো যুক্ত করা হয়নি। অনুগ্রহ করে আমাদের সাথে যোগাযোগ করুন।");
+      return;
+    }
+
+    try {
+      const c = window.ShahedinAuth.client();
+      const { data, error } = await c
+        .from("enrollments")
+        .upsert({ user_id: authedUser.id, course_id: course.dbId }, { onConflict: "user_id,course_id" })
+        .select()
+        .single();
+      if (error) throw error;
+      enrollment = data;
+      paintEnrollButton(enrollBtn, course, true);
+      paintProgress(course);
+      /* The curriculum was rendered from server data that marked the blocks
+         locked, and nothing re-fetches it, so the notice would otherwise sit
+         there telling a freshly enrolled student to enrol. */
+      document.querySelectorAll(".curriculum-locked-note").forEach((el) => el.remove());
+      window.showToast && window.showToast("ভর্তি সম্পন্ন হয়েছে! এখন আপনি কোর্সের অগ্রগতি ট্র্যাক করতে পারবেন।");
+    } catch (err) {
+      restore();
+      window.showToast && window.showToast("ভর্তি হতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
+    }
   }
 
   /* Where the buy button sends a student for a paid course.

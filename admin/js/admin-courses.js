@@ -320,7 +320,10 @@
           <div class="form-field full">
             <label>Course preview video <span class="hint">plays in the top-right of the course page — leave both boxes empty and nothing is shown, exactly as now</span></label>
             <input type="url" id="f_preview_url" placeholder="https://www.youtube.com/watch?v=..." value="${Admin.escapeHtml(course?.preview_video_url || "")}">
-            <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.</span>
+            <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.
+              A normal video is shown wide (16:9) and a <strong>Short is shown tall (9:16)</strong> — copy the link straight from the Short so it still says
+              <code>/shorts/</code>, because a Short shared as a <code>youtu.be/…</code> link is indistinguishable from a normal video and will be shown wide.
+              An uploaded file always keeps its own shape, portrait or landscape.</span>
             <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
             <p class="hint" style="margin-top:8px;">
               <strong>A YouTube link has no size limit and is the better choice for anything long.</strong>

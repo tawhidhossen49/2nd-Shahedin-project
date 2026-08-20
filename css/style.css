@@ -2522,6 +2522,17 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
 /* YouTube: fixed ratio, iframe pinned to fill it. */
 .preview-frame.is-embed{position:relative; aspect-ratio:16/9;}
+/* A Short is 9:16. The cap is a width, not a height, because this is a block
+   element: with width:auto it fills the column and aspect-ratio derives the
+   height from it, so constraining the height instead would just break the
+   ratio. Three-way min() -- 100% keeps it inside a narrow column, 300px stops
+   it dominating a wide one, and 34svh ties it to viewport HEIGHT so a tall
+   9:16 box can never run past the fold on a short screen. */
+.preview-frame.is-embed.is-portrait{
+  aspect-ratio:9/16;
+  max-inline-size:min(100%, 300px, 34svh);
+  margin-inline:auto;
+}
 .preview-frame.is-embed iframe{
   position:absolute; inset:0;
   inline-size:100%; block-size:100%;

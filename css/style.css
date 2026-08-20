@@ -554,6 +554,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 /* Section titles on the inner pages, replacing per-page inline margins. */
 .section-title{margin-block-end:var(--space-6);}
 .section-title-spaced{margin-block-start:var(--space-9);}
+/* A step down from the bare h2 (--step-4). The course page headings are full
+   sentences rather than the two-word labels the display size was built for,
+   and at --step-4 "এই কোর্সে কি কি থাকছে…" reads as a page title competing
+   with the course name in the hero. Applied to every heading on that page
+   together: shrinking only one would leave the rail's রিভিউ louder than the
+   main column's heading, which inverts the hierarchy. */
+.section-title-sm{font-size:var(--step-3);}
 
 /* Chips / filters  (.chip.active = LOAD-BEARING) */
 .filter-bar{
@@ -1303,52 +1310,37 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
 .progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
 
-/* ---------- Instructor card (in the rail, under the checklist) ----------
-   A compact identity row that expands to the full description. It is an
-   .accordion-item so it inherits the open/close animation and the delegated
-   click handler in js/main.js -- the same mechanism the curriculum and the FAQ
-   already use, rather than a second one invented for this card.
+/* ---------- Instructor band (curriculum -> instructor -> FAQ) ----------
+   Reuses .about-grid / .about-portrait / .about-copy, the same pair the
+   homepage story section is built from, so the two read as one design rather
+   than two takes on the same idea -- and the responsive collapse at 1080px is
+   already written for them.
 
-   Everything here is sized for a ~340px column, which is why the avatar is
-   56px and the row is allowed to wrap: at 64px the Bangla role line was
-   breaking into four-word ribbons beside it. */
-/* Without a description there is nothing to open, so the card is a plain box:
-   no button, no chevron, no pointer. */
-.mentor-static{
-  border:1px solid var(--line); border-radius:var(--radius-m);
-  background:var(--surface-1); padding:var(--space-5);
-}
-/* Tighter than the default accordion head: in a narrow column the standard
-   padding leaves the name almost no room before it wraps. */
-.mentor-acc .accordion-head{padding:var(--space-4) var(--space-5);}
-.mentor-acc:hover{border-color:var(--line-strong);}
-
-.mentor-id{display:flex; align-items:center; gap:var(--space-4); min-inline-size:0;}
-.mentor-avatar{
-  inline-size:56px; block-size:56px; flex:0 0 auto; border-radius:50%; overflow:hidden;
-  position:relative; border:1px solid var(--line-strong);
-  background:
-    radial-gradient(120% 100% at 50% 0%, rgba(193,18,47,.34), transparent 70%),
-    linear-gradient(165deg,var(--surface-4),var(--surface-1));
+   The portrait cap matters: .about-portrait is 4:5, so across a 1fr column of
+   a 1112px container it would stand ~470px wide and nearly 590px tall and
+   dominate the band. Capped and pushed to the inline end, it sits beside the
+   copy at a readable size instead. */
+.mentor-feature{align-items:center;}
+.mentor-feature .about-portrait{
+  inline-size:100%; max-inline-size:340px;
+  margin-inline-start:auto;
+  /* centres the monogram fallback; an <img> fills the box and ignores this */
   display:flex; align-items:center; justify-content:center;
 }
-/* Oversized and pulled up: see the ASSET NOTE in js/render.js. */
-.mentor-avatar img{
-  inline-size:150%; block-size:150%; max-inline-size:none;
-  object-fit:cover; object-position:50% 8%;
+.mentor-name-lg{
+  font-size:var(--step-3);
+  margin-block-end:var(--space-5);
 }
-.mentor-monogram{font-family:var(--font-display); font-size:var(--step-2); font-weight:700; color:var(--text-1);}
-.mentor-text{display:flex; flex-direction:column; gap:2px; min-inline-size:0;}
-.mentor-name{font-size:var(--step-0); font-weight:600; color:var(--text-1);}
-/* Not inherited: .accordion-head is 600 weight and --text-1, which would make
-   the role line shout as loudly as the name. */
-.mentor-role{font-size:var(--step--1); font-weight:500; color:var(--text-2); line-height:1.45;}
+.mentor-monogram{
+  font-family:var(--font-display); font-size:var(--step-5);
+  font-weight:700; color:var(--text-2); line-height:1;
+}
 
-.mentor-desc{
-  padding:var(--space-5); border-block-start:1px solid var(--line);
-  color:var(--text-2); font-size:var(--step--1); line-height:1.7;
+@media (max-width:1080px){
+  /* Stacked, the portrait has no column to sit at the end of, and a 340px box
+     shoved against one edge reads as a mistake. */
+  .mentor-feature .about-portrait{margin-inline:auto;}
 }
-.mentor-desc p + p{margin-block-start:var(--space-4);}
 
 
 

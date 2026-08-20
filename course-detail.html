@@ -90,40 +90,45 @@
   <section class="section-pad container" id="course-curriculum">
     <div class="course-body-grid">
       <div class="course-main-col reveal">
-        <h2 class="section-title">এই কোর্সে কি কি থাকছে…</h2>
+        <h2 class="section-title section-title-sm">এই কোর্সে কি কি থাকছে…</h2>
         <div data-mount="course-curriculum"></div>
       </div>
       <aside class="course-aside reveal reveal-delay-1">
         <!-- What the course covers. render.js writes "" here when the admin
              has removed every point, and :empty collapses the card so the rail
-             starts at the instructor instead of showing an empty box. -->
+             starts at the reviews instead of showing an empty box. -->
         <div class="course-includes-card" data-mount="course-includes"></div>
 
-        <!-- Compact identity row; render.js makes it an .accordion-item that
-             expands to the description, or a plain card when there is none. -->
-        <h2 class="section-title section-title-spaced">আপনার প্রশিক্ষক</h2>
-        <div data-mount="course-mentor"></div>
 
         <!-- The three review nodes are marked so course-reviews.js can hide
              them together when the admin has switched reviews off for this
              course. The heading is static markup, so hiding only the mounts
              would leave a "রিভিউ" title with nothing under it. -->
-        <h2 class="section-title section-title-spaced" data-review-part>রিভিউ</h2>
+        <h2 class="section-title section-title-sm" data-review-part>রিভিউ</h2>
         <div data-mount="course-review-form" data-review-part></div>
         <div data-mount="course-reviews" data-review-part></div>
       </aside>
     </div>
   </section>
 
+  <!-- Instructor. Its own full-width band because a portrait and several
+       paragraphs cannot breathe in a 340px rail. .reveal lives here, on static
+       markup that exists in time for main.js to observe it -- the mounted
+       card deliberately carries no animation classes. -->
+  <section class="section-pad container reveal" data-mentor-section>
+    <h2 class="section-title section-title-sm">আপনার প্রশিক্ষক</h2>
+    <div data-mount="course-mentor"></div>
+  </section>
+
   <section class="section-pad surface-raised">
     <div class="container container-text">
-      <h2 class="section-title reveal">সাধারণ জিজ্ঞাসা</h2>
+      <h2 class="section-title section-title-sm reveal">সাধারণ জিজ্ঞাসা</h2>
       <div class="reveal" data-mount="course-faq"></div>
     </div>
   </section>
 
   <section class="section-pad container">
-    <h2 class="section-title reveal">আপনার আরও পছন্দ হতে পারে</h2>
+    <h2 class="section-title section-title-sm reveal">আপনার আরও পছন্দ হতে পারে</h2>
     <div class="grid grid-3 reveal-stagger" data-mount="related-courses"></div>
   </section>
   </main>

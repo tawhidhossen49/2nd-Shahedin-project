@@ -448,11 +448,11 @@
     avatar_url: "assets/img/shahedin-cutout.webp",
   };
 
-  /* ASSET NOTE (mentor avatar): a 64px circle, so the crop is tight. The
-     default falls back to the full-body footer cutout, which in a plain circle
-     lands on a forehead -- .mentor-avatar therefore uses an oversized
-     top-weighted crop on a gradient bed so it reads as a portrait medallion.
-     Proper replacement: square head-and-shoulders, >=256px, face centred. */
+  /* ASSET NOTE (mentor portrait): framed 4:5 by .about-portrait and cropped
+     from the top, so a head-and-shoulders shot keeps the face. A course with
+     no photo draws a monogram rather than leaving a hole in the layout.
+     Ideal replacement: portrait orientation, >=800px tall, face in the upper
+     third, warm key light. */
   function courseMentorHTML(c) {
     const m = c.mentor && c.mentor.name ? c.mentor : DEFAULT_MENTOR;
     const name = String(m.name || "").trim();
@@ -463,45 +463,33 @@
        fall back to single newlines so a list typed line-by-line still reads as
        paragraphs instead of one run-on block. */
     const raw = String(m.description || "").replace(/\r\n/g, "\n").trim();
-    const paras = raw
+    const chunks = raw
       ? (raw.indexOf("\n\n") !== -1 ? raw.split(/\n{2,}/) : raw.split("\n"))
           .map((t) => t.trim())
           .filter(Boolean)
       : [];
 
-    const face = m.avatar_url
+    /* role first so it takes .about-copy p:first-of-type -- the larger
+       standfirst treatment. With no role the first real paragraph takes it. */
+    const paras = [role, ...chunks].filter(Boolean);
+    const copy = paras.length
+      ? `<div>${paras.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>`
+      : "";
+
+    const portrait = m.avatar_url
       ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
       : `<span class="mentor-monogram">${escapeHtml((name || "?").slice(0, 1))}</span>`;
 
-    const identity =
-      `<span class="mentor-id">
-         <span class="mentor-avatar">${face}</span>
-         <span class="mentor-text">
-           <span class="mentor-name">${escapeHtml(name)}</span>
-           ${role ? `<span class="mentor-role">${escapeHtml(role)}</span>` : ""}
-         </span>
-       </span>`;
-
-    /* No description means nothing to expand, so the card is not a control at
-       all: no button, no chevron, no pointer. A disclosure that opens onto
-       nothing is worse than a plain card. */
-    if (!paras.length) return `<div class="mentor-card mentor-static">${identity}</div>`;
-
-    /* Built on .accordion-item because js/main.js delegates its click handler
-       on document, so markup mounted this late is wired with no extra code and
-       animates exactly like the curriculum and the FAQ.
-
-       data-no-autoopen for two reasons: the card should start closed, and
-       openFirstAccordion() opens the first accordion on the page that has not
-       opted out -- without this the instructor would steal the FAQ's
-       first-answer-open behaviour, since it comes earlier in the document. */
-    return `<div class="accordion-item mentor-card mentor-acc" data-no-autoopen>
-      <button type="button" class="accordion-head mentor-head" aria-expanded="false">
-        ${identity}
-        ${ICON.chevron}
-      </button>
-      <div class="accordion-body">
-        <div class="mentor-desc">${paras.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>
+    /* No .reveal anywhere in here. js/main.js queries .reveal once at load and
+       observes what it finds; markup mounted afterwards is never observed, so
+       it would sit at opacity:0 permanently -- invisible while still taking
+       its full height. The entrance lives on the static section wrapper in
+       course-detail.html, which exists in time to be seen. */
+    return `<div class="about-grid mentor-feature">
+      <div class="about-portrait">${portrait}</div>
+      <div class="about-copy">
+        ${name ? `<h3 class="mentor-name-lg">${escapeHtml(name)}</h3>` : ""}
+        ${copy}
       </div>
     </div>`;
   }

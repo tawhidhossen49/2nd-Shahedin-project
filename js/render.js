@@ -385,7 +385,7 @@
         )
         .join("");
     }
-    return `<p class="small-note">কারিকুলাম শীঘ্রই আসছে।</p>`;
+    return `<p class="small-note">কনটেন্ট শীঘ্রই যুক্ত করা হবে।</p>`;
   }
 
   /* ---------- Course hero backdrop ----------

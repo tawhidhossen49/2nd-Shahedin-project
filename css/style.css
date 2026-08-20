@@ -1198,12 +1198,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   gap:clamp(32px,4.5vw,64px);
   align-items:start;
 }
-/* Reviews off AND no checklist points leaves the rail holding nothing. An
-   empty grid column is still a column, so the curriculum would sit in 1.35fr
-   of the width next to a void. js/course-reviews.js measures the rail after
-   removing the review nodes and sets this. */
-.course-body-grid.no-aside{grid-template-columns:minmax(0,1fr);}
-.course-body-grid.no-aside .course-aside{display:none;}
 
 /* Not sticky. The rail carries the checklist and the whole
    review list; once that stack is taller than the viewport, a sticky element
@@ -1309,28 +1303,29 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
 .progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
 
-/* ---------- Instructor card (its own band, curriculum -> FAQ) ----------
+/* ---------- Instructor card (in the rail, under the checklist) ----------
    A compact identity row that expands to the full description. It is an
    .accordion-item so it inherits the open/close animation and the delegated
    click handler in js/main.js -- the same mechanism the curriculum and the FAQ
    already use, rather than a second one invented for this card.
 
-   Capped rather than full-bleed: the section is a 1112px container, and a
-   64px avatar with two short lines stranded across all of it reads as an
-   accident. 720px also keeps the expanded prose at a readable measure. */
-.mentor-card{max-inline-size:min(100%, 720px);}
+   Everything here is sized for a ~340px column, which is why the avatar is
+   56px and the row is allowed to wrap: at 64px the Bangla role line was
+   breaking into four-word ribbons beside it. */
 /* Without a description there is nothing to open, so the card is a plain box:
    no button, no chevron, no pointer. */
 .mentor-static{
   border:1px solid var(--line); border-radius:var(--radius-m);
   background:var(--surface-1); padding:var(--space-5);
 }
-.mentor-acc .accordion-head{padding:var(--space-5);}
+/* Tighter than the default accordion head: in a narrow column the standard
+   padding leaves the name almost no room before it wraps. */
+.mentor-acc .accordion-head{padding:var(--space-4) var(--space-5);}
 .mentor-acc:hover{border-color:var(--line-strong);}
 
-.mentor-id{display:flex; align-items:center; gap:var(--space-5); min-inline-size:0;}
+.mentor-id{display:flex; align-items:center; gap:var(--space-4); min-inline-size:0;}
 .mentor-avatar{
-  inline-size:64px; block-size:64px; flex:0 0 auto; border-radius:50%; overflow:hidden;
+  inline-size:56px; block-size:56px; flex:0 0 auto; border-radius:50%; overflow:hidden;
   position:relative; border:1px solid var(--line-strong);
   background:
     radial-gradient(120% 100% at 50% 0%, rgba(193,18,47,.34), transparent 70%),
@@ -1355,12 +1350,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .mentor-desc p + p{margin-block-start:var(--space-4);}
 
-@media (max-width:560px){
-  /* Side by side, a 64px circle plus two lines of Bangla leaves the role
-     wrapping to four words a line. */
-  .mentor-id{align-items:flex-start; gap:var(--space-4);}
-  .mentor-avatar{inline-size:52px; block-size:52px;}
-}
+
 
 /* Loading placeholder cards keep the grid from jumping when data lands. */
 .skeleton-video{pointer-events:none;}

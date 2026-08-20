@@ -448,23 +448,46 @@
     avatar_url: "assets/img/shahedin-cutout.webp",
   };
 
-  /* ASSET NOTE (mentor avatar): the default falls back to
-     shahedin-cutout.webp, which is a full-body footer cutout — inside a 64px
-     circle it crops to a forehead. `.mentor-avatar` therefore frames it with
-     a wide top-weighted crop and a gradient bed so it reads as a portrait
-     medallion rather than a mis-cropped photo. A proper replacement is a
-     square head-and-shoulders crop, >=256px, face centred.
-     If there is no avatar at all we draw a monogram instead of a hole. */
+  /* ASSET NOTE (mentor portrait): framed 4:5 by .about-portrait, cropped from
+     the top so a head-and-shoulders shot keeps the face. A course with no
+     photo draws a monogram rather than leaving a hole in the layout.
+     Ideal replacement: portrait orientation, >=800px tall, face in the upper
+     third, warm key light. */
   function courseMentorHTML(c) {
     const m = c.mentor && c.mentor.name ? c.mentor : DEFAULT_MENTOR;
-    const avatarInner = m.avatar_url
-      ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(m.name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
-      : `<span class="mentor-monogram">${escapeHtml((m.name || "?").slice(0, 1))}</span>`;
-    return `<div class="mentor-card">
-      <div class="mentor-avatar">${avatarInner}</div>
-      <div class="mentor-body">
-        <h3>${escapeHtml(m.name || "")}</h3>
-        ${m.bio ? `<p>${escapeHtml(m.bio)}</p>` : ""}
+    const name = String(m.name || "").trim();
+    const role = String(m.bio || "").trim();
+
+    /* The description is one textarea in the admin panel, so paragraph breaks
+       arrive as newlines. Split on blank lines first (the way anyone writing
+       prose separates paragraphs); if there are none, fall back to single
+       newlines so a list typed line-by-line still reads as paragraphs rather
+       than one run-on wall. */
+    const raw = String(m.description || "").replace(/\r\n/g, "\n").trim();
+    const chunks = raw
+      ? (raw.indexOf("\n\n") !== -1 ? raw.split(/\n{2,}/) : raw.split("\n"))
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : [];
+
+    /* role first so it picks up .about-copy p:first-of-type -- the larger
+       display treatment that makes the lead line read as a standfirst. With
+       no role, the first real paragraph takes that role instead. */
+    const paras = [role, ...chunks].filter(Boolean);
+    const copy = paras.length
+      ? `<div>${paras.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>`
+      : "";
+
+    const portrait = m.avatar_url
+      ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
+      : `<span class="mentor-monogram">${escapeHtml((name || "?").slice(0, 1))}</span>`;
+
+    return `<div class="about-grid mentor-feature">
+      <div class="about-portrait reveal">${portrait}</div>
+      <div class="about-copy reveal reveal-delay-1">
+        <span class="eyebrow">আপনার প্রশিক্ষক</span>
+        ${name ? `<h2>${escapeHtml(name)}</h2>` : ""}
+        ${copy}
       </div>
     </div>`;
   }

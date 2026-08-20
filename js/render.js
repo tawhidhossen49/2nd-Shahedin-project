@@ -764,11 +764,16 @@
 
       /* "" when the admin has removed every point, so :empty collapses the
          card and the rail starts at the instructor instead of an empty box.
-         No heading: the ticks read as "what you get" without one. */
+
+         The heading is optional and rides on the points: a title with no
+         points under it would be a card announcing nothing, so an empty list
+         drops both. Left blank, the ticks stand on their own exactly as
+         before -- adding this cannot change a course that has no title set. */
+      const includesTitle = String(c.learnTitle || "").trim();
       mount(
         "[data-mount='course-includes']",
         buyPoints.length
-          ? `<ul>${buyPoints.map((t) => `<li>${ICON.check} <span>${escapeHtml(t)}</span></li>`).join("")}</ul>`
+          ? `${includesTitle ? `<h2 class="ic-title">${escapeHtml(includesTitle)}</h2>` : ""}<ul>${buyPoints.map((t) => `<li>${ICON.check} <span>${escapeHtml(t)}</span></li>`).join("")}</ul>`
           : ""
       );
       /* Related — this used to be "the first three other courses", which

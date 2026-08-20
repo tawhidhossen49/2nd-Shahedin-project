@@ -312,7 +312,9 @@
           </div>
 
           <div class="form-field full">
-            <label>What's included <span class="hint">the checklist inside the price card, under the buy button — remove every line and the card shrinks to just the price and the button</span></label>
+            <label>What's included <span class="hint">the ticked list on the course page, above "আপনার প্রশিক্ষক" — remove every line and the whole card disappears</span></label>
+            <input type="text" id="f_learn_title" placeholder="যেমন: এই কোর্সে যা যা থাকছে" value="${Admin.escapeHtml(course?.learn_title || "")}">
+            <span class="hint" style="display:block; margin:6px 0 12px;">Optional heading for that card. Leave it blank and the ticks stand on their own, exactly as they do now.</span>
             <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
             <button type="button" class="btn btn-ghost btn-sm" id="addLearnBtn">+ Add point</button>
           </div>
@@ -706,6 +708,7 @@
         // The buy card's checklist. `includes` is deliberately NOT written any
         // more: it holds a frozen copy of the pre-consolidation list that
         // nothing renders, so overwriting it would destroy that fallback.
+        learn_title: document.getElementById("f_learn_title").value.trim() || null,
         learn_points: collectLearnPoints(),
         preview_video_url,
         faqs: collectFaqs(),

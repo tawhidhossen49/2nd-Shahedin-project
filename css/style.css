@@ -1143,6 +1143,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   padding:var(--space-6);
   margin-block-end:var(--space-7);
 }
+/* The bare h2 rule is --step-4, which beside "আপনার প্রশিক্ষক" (also --step-4,
+   also an h2) would read as a second section heading rather than a label on
+   this card. --step-1 keeps the hierarchy: section title, then card title,
+   then the ticks. Still an h2 so the aside's outline stays flat and correct. */
+.course-includes-card .ic-title{
+  font-size:var(--step-1);
+  line-height:1.35;
+  margin-block-end:var(--space-5);
+}
 .course-includes-card ul{display:flex; flex-direction:column; gap:var(--space-3); font-size:var(--step--1);}
 .course-includes-card li{display:flex; gap:var(--space-3); align-items:flex-start; color:var(--text-2); line-height:1.5;}
 .course-includes-card li svg{inline-size:16px; block-size:16px; flex:none; color:var(--accent-ink); margin-block-start:3px;}

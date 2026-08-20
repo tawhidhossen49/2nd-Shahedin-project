@@ -24,6 +24,20 @@
     return "★".repeat(full) + "☆".repeat(5 - full);
   }
 
+  /* The rail holds the checklist and the reviews. The checklist collapses
+     itself when the admin removes every point, so with reviews switched off
+     too the rail can end up holding nothing at all -- and an empty grid
+     column is still a column, leaving the curriculum squeezed into 1.35fr
+     of the width beside a void. Measuring the rendered height rather than
+     counting child nodes is what catches it: the empty checklist is still a
+     child, it is just display:none. */
+  function collapseAsideIfEmpty() {
+    const aside = document.querySelector(".course-aside");
+    const grid = aside && aside.closest(".course-body-grid");
+    if (!aside || !grid) return;
+    if (aside.getBoundingClientRect().height < 1) grid.classList.add("no-aside");
+  }
+
   async function init() {
     const course = window.SHAHEDIN_CURRENT_COURSE;
     const reviewsMount = document.querySelector("[data-mount='course-reviews']");
@@ -36,6 +50,7 @@
        no review fetch, no eligibility check. */
     if (course.reviewsEnabled === false) {
       document.querySelectorAll("[data-review-part]").forEach((el) => el.remove());
+      collapseAsideIfEmpty();
       return;
     }
 

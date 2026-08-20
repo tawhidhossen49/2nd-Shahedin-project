@@ -303,10 +303,13 @@
                 <input type="text" id="f_mentor_name" value="${Admin.escapeHtml(course?.mentor?.name || "")}" placeholder="Shahedin">
               </div>
               <div class="form-field">
-                <label>Bio</label>
+                <label>One-line role <span class="hint">the standfirst under the name</span></label>
                 <input type="text" id="f_mentor_bio" value="${Admin.escapeHtml(course?.mentor?.bio || "")}" placeholder="ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক">
               </div>
             </div>
+            <label style="margin-top:14px;">About the instructor <span class="hint">the paragraphs beside the photo — leave blank and only the name and role are shown</span></label>
+            <textarea id="f_mentor_desc" rows="7" placeholder="প্রশিক্ষক সম্পর্কে বিস্তারিত লিখুন…">${Admin.escapeHtml(course?.mentor?.description || "")}</textarea>
+            <span class="hint" style="display:block; margin-top:6px;">Press Enter twice between paragraphs. Each paragraph becomes its own block on the course page; the first line is shown larger, as a lead.</span>
             <input type="file" id="f_mentor_avatar" accept="image/*" style="margin-top:6px;">
             ${course?.mentor?.avatar_url ? `<div class="hint">Current: <a href="${course.mentor.avatar_url}" target="_blank">view image</a></div>` : `<div class="hint">Leave blank to use the default Shahedin photo</div>`}
           </div>
@@ -715,6 +718,7 @@
         mentor: {
           name: document.getElementById("f_mentor_name").value.trim(),
           bio: document.getElementById("f_mentor_bio").value.trim(),
+          description: document.getElementById("f_mentor_desc").value.trim(),
           avatar_url: mentor_avatar_url,
         },
       };

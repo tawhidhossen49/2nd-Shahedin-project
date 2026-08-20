@@ -94,24 +94,28 @@
         <div data-mount="course-curriculum"></div>
       </div>
       <aside class="course-aside reveal reveal-delay-1">
-        <!-- What the course covers, on its own surface above the instructor.
-             render.js writes "" here when the admin has removed every point,
-             and :empty collapses the card so the rail starts at the
-             instructor instead of showing an empty box. -->
+        <!-- What the course covers. render.js writes "" here when the admin
+             has removed every point, and :empty collapses the card so the rail
+             starts at the reviews instead of showing an empty box. -->
         <div class="course-includes-card" data-mount="course-includes"></div>
-
-        <h2 class="section-title">আপনার প্রশিক্ষক</h2>
-        <div data-mount="course-mentor"></div>
 
         <!-- The three review nodes are marked so course-reviews.js can hide
              them together when the admin has switched reviews off for this
              course. The heading is static markup, so hiding only the mounts
              would leave a "রিভিউ" title with nothing under it. -->
-        <h2 class="section-title section-title-spaced" data-review-part>রিভিউ</h2>
+        <h2 class="section-title" data-review-part>রিভিউ</h2>
         <div data-mount="course-review-form" data-review-part></div>
         <div data-mount="course-reviews" data-review-part></div>
       </aside>
     </div>
+  </section>
+
+  <!-- The instructor gets the whole width here rather than a slot in the
+       rail: a portrait and a few paragraphs cannot breathe in a 340px column.
+       Plain surface on purpose — the FAQ below is .surface-raised, so two
+       tinted bands would run together into one. -->
+  <section class="section-pad container" data-mentor-section>
+    <div data-mount="course-mentor"></div>
   </section>
 
   <section class="section-pad surface-raised">

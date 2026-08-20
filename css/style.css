@@ -1186,7 +1186,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 
 /* Curriculum + rail. Deliberately not a 1:1 split — the curriculum is the
-   page's substance and the "what you get" / mentor / reviews rail supports it.
+   page's substance and the "what you get" / reviews rail supports it. The
+   instructor is no longer in here; it has its own full-width band below.
 
    Plain source order: the price card used to live in this grid and needed
    explicit placement to stay in the right column while sitting first in the
@@ -1197,7 +1198,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   gap:clamp(32px,4.5vw,64px);
   align-items:start;
 }
-/* Not sticky. The rail now carries the price card, the mentor and the whole
+/* Reviews off AND no checklist points leaves the rail holding nothing. An
+   empty grid column is still a column, so the curriculum would sit in 1.35fr
+   of the width next to a void. js/course-reviews.js measures the rail after
+   removing the review nodes and sets this. */
+.course-body-grid.no-aside{grid-template-columns:minmax(0,1fr);}
+.course-body-grid.no-aside .course-aside{display:none;}
+
+/* Not sticky. The rail carries the checklist and the whole
    review list; once that stack is taller than the viewport, a sticky element
    pins its top and the bottom of it can never be scrolled to. */
 
@@ -1301,34 +1309,34 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
 .progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
 
-/* Mentor card.
-   ASSET NOTE: the default avatar is the full-body footer cutout, which in a
-   plain circle crops to a forehead. The frame below uses a wide top-weighted
-   crop plus a gradient bed so it reads as an intentional portrait medallion.
-   Replacement asset: square head-and-shoulders crop, >=256px, face centred. */
-.mentor-card{
-  display:flex; align-items:center; gap:var(--space-5);
-  padding:var(--space-6); border:1px solid var(--line); border-radius:var(--radius-m);
-  background:var(--surface-1);
-  transition:border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
-}
-.mentor-card:hover{border-color:var(--line-strong); background:var(--surface-2);}
-.mentor-avatar{
-  inline-size:72px; block-size:72px; flex:0 0 auto; border-radius:50%; overflow:hidden;
-  position:relative; border:1px solid var(--line-strong);
-  background:
-    radial-gradient(120% 100% at 50% 0%, rgba(193,18,47,.34), transparent 70%),
-    linear-gradient(165deg,var(--surface-4),var(--surface-1));
+/* ---------- Instructor feature (its own band, curriculum -> FAQ) ----------
+   Reuses .about-grid / .about-portrait / .about-copy, the same pair the
+   homepage story section is built from, so the two read as one design rather
+   than two takes on the same idea -- and the responsive collapse at 1080px
+   is already written for them.
+
+   The portrait cap matters: .about-portrait is 4:5, so across a 1fr column of
+   a 1112px container it would stand ~470px wide and nearly 590px tall and
+   dominate the band. Capped and pushed to the inline end, it sits beside the
+   copy at a readable size instead. */
+.mentor-feature{align-items:center;}
+.mentor-feature .about-portrait{
+  inline-size:100%; max-inline-size:340px;
+  margin-inline-start:auto;
+  /* the monogram fallback needs centring; an <img> ignores this */
   display:flex; align-items:center; justify-content:center;
 }
-.mentor-avatar img{
-  inline-size:150%; block-size:150%; max-inline-size:none;
-  object-fit:cover; object-position:50% 8%;
+.mentor-feature .about-copy h2{margin-block:var(--space-3) var(--space-5);}
+.mentor-monogram{
+  font-family:var(--font-display); font-size:var(--step-5);
+  font-weight:700; color:var(--text-2); line-height:1;
 }
-.mentor-monogram{font-family:var(--font-display); font-size:var(--step-2); font-weight:700; color:var(--text-1);}
-.mentor-body{min-inline-size:0;}
-.mentor-body h3{font-family:var(--font-body); font-size:var(--step-0); font-weight:600; margin-block-end:4px;}
-.mentor-body p{font-size:var(--step--1); color:var(--text-2);}
+
+@media (max-width:1080px){
+  /* Stacked, the portrait no longer has a column to sit at the end of, and a
+     340px box shoved against one edge reads as a mistake. */
+  .mentor-feature .about-portrait{margin-inline:auto;}
+}
 
 /* Loading placeholder cards keep the grid from jumping when data lands. */
 .skeleton-video{pointer-events:none;}

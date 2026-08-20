@@ -1309,33 +1309,57 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .progress-track{inline-size:100%; block-size:6px; border-radius:99px; background:var(--surface-3); overflow:hidden;}
 .progress-fill{block-size:100%; border-radius:99px; background:linear-gradient(90deg,var(--accent-fill),var(--accent-ink)); transform-origin:left; transition:width var(--dur-5) var(--ease-out);}
 
-/* ---------- Instructor feature (its own band, curriculum -> FAQ) ----------
-   Reuses .about-grid / .about-portrait / .about-copy, the same pair the
-   homepage story section is built from, so the two read as one design rather
-   than two takes on the same idea -- and the responsive collapse at 1080px
-   is already written for them.
+/* ---------- Instructor card (its own band, curriculum -> FAQ) ----------
+   A compact identity row that expands to the full description. It is an
+   .accordion-item so it inherits the open/close animation and the delegated
+   click handler in js/main.js -- the same mechanism the curriculum and the FAQ
+   already use, rather than a second one invented for this card.
 
-   The portrait cap matters: .about-portrait is 4:5, so across a 1fr column of
-   a 1112px container it would stand ~470px wide and nearly 590px tall and
-   dominate the band. Capped and pushed to the inline end, it sits beside the
-   copy at a readable size instead. */
-.mentor-feature{align-items:center;}
-.mentor-feature .about-portrait{
-  inline-size:100%; max-inline-size:340px;
-  margin-inline-start:auto;
-  /* the monogram fallback needs centring; an <img> ignores this */
+   Capped rather than full-bleed: the section is a 1112px container, and a
+   64px avatar with two short lines stranded across all of it reads as an
+   accident. 720px also keeps the expanded prose at a readable measure. */
+.mentor-card{max-inline-size:min(100%, 720px);}
+/* Without a description there is nothing to open, so the card is a plain box:
+   no button, no chevron, no pointer. */
+.mentor-static{
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:var(--surface-1); padding:var(--space-5);
+}
+.mentor-acc .accordion-head{padding:var(--space-5);}
+.mentor-acc:hover{border-color:var(--line-strong);}
+
+.mentor-id{display:flex; align-items:center; gap:var(--space-5); min-inline-size:0;}
+.mentor-avatar{
+  inline-size:64px; block-size:64px; flex:0 0 auto; border-radius:50%; overflow:hidden;
+  position:relative; border:1px solid var(--line-strong);
+  background:
+    radial-gradient(120% 100% at 50% 0%, rgba(193,18,47,.34), transparent 70%),
+    linear-gradient(165deg,var(--surface-4),var(--surface-1));
   display:flex; align-items:center; justify-content:center;
 }
-.mentor-feature .about-copy h2{margin-block:var(--space-3) var(--space-5);}
-.mentor-monogram{
-  font-family:var(--font-display); font-size:var(--step-5);
-  font-weight:700; color:var(--text-2); line-height:1;
+/* Oversized and pulled up: see the ASSET NOTE in js/render.js. */
+.mentor-avatar img{
+  inline-size:150%; block-size:150%; max-inline-size:none;
+  object-fit:cover; object-position:50% 8%;
 }
+.mentor-monogram{font-family:var(--font-display); font-size:var(--step-2); font-weight:700; color:var(--text-1);}
+.mentor-text{display:flex; flex-direction:column; gap:2px; min-inline-size:0;}
+.mentor-name{font-size:var(--step-0); font-weight:600; color:var(--text-1);}
+/* Not inherited: .accordion-head is 600 weight and --text-1, which would make
+   the role line shout as loudly as the name. */
+.mentor-role{font-size:var(--step--1); font-weight:500; color:var(--text-2); line-height:1.45;}
 
-@media (max-width:1080px){
-  /* Stacked, the portrait no longer has a column to sit at the end of, and a
-     340px box shoved against one edge reads as a mistake. */
-  .mentor-feature .about-portrait{margin-inline:auto;}
+.mentor-desc{
+  padding:var(--space-5); border-block-start:1px solid var(--line);
+  color:var(--text-2); font-size:var(--step--1); line-height:1.7;
+}
+.mentor-desc p + p{margin-block-start:var(--space-4);}
+
+@media (max-width:560px){
+  /* Side by side, a 64px circle plus two lines of Bangla leaves the role
+     wrapping to four words a line. */
+  .mentor-id{align-items:flex-start; gap:var(--space-4);}
+  .mentor-avatar{inline-size:52px; block-size:52px;}
 }
 
 /* Loading placeholder cards keep the grid from jumping when data lands. */

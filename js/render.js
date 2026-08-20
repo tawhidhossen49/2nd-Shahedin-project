@@ -448,52 +448,60 @@
     avatar_url: "assets/img/shahedin-cutout.webp",
   };
 
-  /* ASSET NOTE (mentor portrait): framed 4:5 by .about-portrait, cropped from
-     the top so a head-and-shoulders shot keeps the face. A course with no
-     photo draws a monogram rather than leaving a hole in the layout.
-     Ideal replacement: portrait orientation, >=800px tall, face in the upper
-     third, warm key light. */
+  /* ASSET NOTE (mentor avatar): a 64px circle, so the crop is tight. The
+     default falls back to the full-body footer cutout, which in a plain circle
+     lands on a forehead -- .mentor-avatar therefore uses an oversized
+     top-weighted crop on a gradient bed so it reads as a portrait medallion.
+     Proper replacement: square head-and-shoulders, >=256px, face centred. */
   function courseMentorHTML(c) {
     const m = c.mentor && c.mentor.name ? c.mentor : DEFAULT_MENTOR;
     const name = String(m.name || "").trim();
     const role = String(m.bio || "").trim();
 
-    /* The description is one textarea in the admin panel, so paragraph breaks
-       arrive as newlines. Split on blank lines first (the way anyone writing
-       prose separates paragraphs); if there are none, fall back to single
-       newlines so a list typed line-by-line still reads as paragraphs rather
-       than one run-on wall. */
+    /* One textarea in the admin panel, so paragraph breaks arrive as newlines.
+       Split on blank lines first, the way prose is actually written; with none,
+       fall back to single newlines so a list typed line-by-line still reads as
+       paragraphs instead of one run-on block. */
     const raw = String(m.description || "").replace(/\r\n/g, "\n").trim();
-    const chunks = raw
+    const paras = raw
       ? (raw.indexOf("\n\n") !== -1 ? raw.split(/\n{2,}/) : raw.split("\n"))
           .map((t) => t.trim())
           .filter(Boolean)
       : [];
 
-    /* role first so it picks up .about-copy p:first-of-type -- the larger
-       display treatment that makes the lead line read as a standfirst. With
-       no role, the first real paragraph takes that role instead. */
-    const paras = [role, ...chunks].filter(Boolean);
-    const copy = paras.length
-      ? `<div>${paras.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>`
-      : "";
-
-    const portrait = m.avatar_url
+    const face = m.avatar_url
       ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
       : `<span class="mentor-monogram">${escapeHtml((name || "?").slice(0, 1))}</span>`;
 
-    /* No .reveal on any of this. js/main.js queries .reveal once at load
-       and observes what it finds; markup mounted afterwards is never
-       observed, so it would sit at .reveal's opacity:0 permanently --
-       invisible, but still occupying its full height. The entrance is on
-       the static mount in course-detail.html instead, which exists in time
-       to be observed. */
-    return `<div class="about-grid mentor-feature">
-      <div class="about-portrait">${portrait}</div>
-      <div class="about-copy">
-        <span class="eyebrow">আপনার প্রশিক্ষক</span>
-        ${name ? `<h2>${escapeHtml(name)}</h2>` : ""}
-        ${copy}
+    const identity =
+      `<span class="mentor-id">
+         <span class="mentor-avatar">${face}</span>
+         <span class="mentor-text">
+           <span class="mentor-name">${escapeHtml(name)}</span>
+           ${role ? `<span class="mentor-role">${escapeHtml(role)}</span>` : ""}
+         </span>
+       </span>`;
+
+    /* No description means nothing to expand, so the card is not a control at
+       all: no button, no chevron, no pointer. A disclosure that opens onto
+       nothing is worse than a plain card. */
+    if (!paras.length) return `<div class="mentor-card mentor-static">${identity}</div>`;
+
+    /* Built on .accordion-item because js/main.js delegates its click handler
+       on document, so markup mounted this late is wired with no extra code and
+       animates exactly like the curriculum and the FAQ.
+
+       data-no-autoopen for two reasons: the card should start closed, and
+       openFirstAccordion() opens the first accordion on the page that has not
+       opted out -- without this the instructor would steal the FAQ's
+       first-answer-open behaviour, since it comes earlier in the document. */
+    return `<div class="accordion-item mentor-card mentor-acc" data-no-autoopen>
+      <button type="button" class="accordion-head mentor-head" aria-expanded="false">
+        ${identity}
+        ${ICON.chevron}
+      </button>
+      <div class="accordion-body">
+        <div class="mentor-desc">${paras.map((t) => `<p>${escapeHtml(t)}</p>`).join("")}</div>
       </div>
     </div>`;
   }

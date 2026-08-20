@@ -482,9 +482,15 @@
       ? `<img src="${escapeHtml(m.avatar_url)}" alt="${escapeHtml(name || "প্রশিক্ষক")}" loading="lazy" decoding="async">`
       : `<span class="mentor-monogram">${escapeHtml((name || "?").slice(0, 1))}</span>`;
 
+    /* No .reveal on any of this. js/main.js queries .reveal once at load
+       and observes what it finds; markup mounted afterwards is never
+       observed, so it would sit at .reveal's opacity:0 permanently --
+       invisible, but still occupying its full height. The entrance is on
+       the static mount in course-detail.html instead, which exists in time
+       to be observed. */
     return `<div class="about-grid mentor-feature">
-      <div class="about-portrait reveal">${portrait}</div>
-      <div class="about-copy reveal reveal-delay-1">
+      <div class="about-portrait">${portrait}</div>
+      <div class="about-copy">
         <span class="eyebrow">আপনার প্রশিক্ষক</span>
         ${name ? `<h2>${escapeHtml(name)}</h2>` : ""}
         ${copy}

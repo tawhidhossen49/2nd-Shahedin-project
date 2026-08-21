@@ -166,10 +166,10 @@
   }
 
   /* The whole buy card changes state, not just the button.
-     Previously the button said "ভর্তি হয়েছেন ✓" while the price and the
-     "একবার পেমেন্ট, আজীবন অ্যাক্সেস" line sat right above it, still selling
-     a course the visitor had already bought. .is-enrolled hides the price
-     row, swaps the accent for the confirmation green and reveals the
+     Previously the button said "ভর্তি হয়েছেন ✓" while the price still sat
+     right above it, selling a course the visitor had already bought.
+     .is-enrolled hides the price row, swaps the accent for the
+     confirmation green and reveals the
      enrolled banner (see .course-buy-card.is-enrolled in css/style.css). */
   function paintEnrollButton(btn, course, loggedIn) {
     const card = btn.closest(".course-buy-card") || document.querySelector("[data-mount='course-buy']");

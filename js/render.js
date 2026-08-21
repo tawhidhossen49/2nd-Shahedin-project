@@ -777,7 +777,6 @@
         "[data-mount='course-buy']",
         `<div class="buy-price-row">
            <span class="price${c.free ? " price-free" : ""}">${c.free ? "ফ্রি" : "৳" + bnNum(Number(c.price) || 0)}</span>
-           <span class="small-note">${c.free ? "কোনো পেমেন্ট লাগবে না" : "একবার পেমেন্ট, আজীবন অ্যাক্সেস"}</span>
          </div>
          <div class="enrolled-banner">
            <span class="enrolled-check">${ICON.check}</span>

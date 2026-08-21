@@ -1318,12 +1318,28 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
    The portrait cap matters: .about-portrait is 4:5, so across a 1fr column of
    a 1112px container it would stand ~470px wide and nearly 590px tall and
-   dominate the band. Capped and pushed to the inline end, it sits beside the
-   copy at a readable size instead. */
-.mentor-feature{align-items:center;}
+   dominate the band.
+
+   It sits at the START of its column, flush with the heading above it. It
+   used to carry margin-inline-start:auto, which pushed it to the far side of
+   the column -- so the photo began roughly 150px right of "আপনার প্রশিক্ষক"
+   and nothing on the band shared an edge with anything else.
+
+   A hairline separates this band from the curriculum above. It is on the
+   section rather than the container so it runs the full width of the
+   viewport, the same way .surface-raised draws its own edges. */
+[data-mentor-section]{border-block-start:1px solid var(--line);}
+/* The column hugs the portrait. .about-grid is 1fr / 1.12fr, which with the
+   340px cap would leave ~150px of dead space between the photo and the copy
+   -- the portrait pinned left, the text starting nowhere near it. Sizing the
+   track to the cap makes the gap exactly one --space-10, the same as every
+   other two-column band. */
+.mentor-feature{
+  grid-template-columns:minmax(0,340px) minmax(0,1fr);
+  align-items:center;
+}
 .mentor-feature .about-portrait{
   inline-size:100%; max-inline-size:340px;
-  margin-inline-start:auto;
   /* centres the monogram fallback; an <img> fills the box and ignores this */
   display:flex; align-items:center; justify-content:center;
 }
@@ -1336,11 +1352,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   font-weight:700; color:var(--text-2); line-height:1;
 }
 
-@media (max-width:1080px){
-  /* Stacked, the portrait has no column to sit at the end of, and a 340px box
-     shoved against one edge reads as a mistake. */
-  .mentor-feature .about-portrait{margin-inline:auto;}
-}
 
 
 

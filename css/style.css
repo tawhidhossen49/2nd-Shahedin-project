@@ -775,6 +775,20 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .state-error{border-color:var(--line-accent);}
 .state-error .empty-icon{background:var(--accent-dim); color:var(--accent-ink);}
 
+/* The bKash return page (payment-status.html) reuses the empty-state shell for
+   its result card. .state-error had no positive counterpart — a successful
+   payment reported in the same grey as "nothing here" reads as a shrug. */
+.state-good{border-color:rgba(78,195,138,.4);}
+.state-good .empty-icon{background:var(--good-dim); color:var(--good);}
+.payment-status{max-inline-size:560px; margin-inline:auto;}
+.payment-status-meta{margin-block-start:var(--space-3); font-size:var(--step--2); color:var(--text-2);}
+.payment-status-meta strong{color:var(--text-1); font-weight:600;}
+.payment-status-actions{display:flex; flex-wrap:wrap; justify-content:center; gap:var(--space-3); margin-block-start:var(--space-5);}
+.payment-status-actions:empty{display:none;}
+/* .empty-state .btn adds its own top margin; inside a wrapped row that would
+   stagger the buttons against each other. */
+.payment-status-actions .btn{margin-block-start:0;}
+
 /* Skeletons — shown while a mount is waiting on the network. */
 .skeleton{
   position:relative; overflow:hidden; background:var(--surface-2);
@@ -1474,14 +1488,6 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .pay-method .pay-icon{margin:0;}
 .pay-method-label{font-size:var(--step--1); color:var(--text-2); font-family:var(--font-body);}
-
-.co-notice{
-  display:flex; gap:var(--space-3); align-items:flex-start;
-  margin:var(--space-4) 0 0; padding:var(--space-4);
-  border-radius:var(--radius-s); background:var(--surface-2);
-  font-size:var(--step--2); line-height:1.65; color:var(--text-3);
-}
-.co-notice svg{flex:0 0 auto; margin-block-start:2px;}
 
 /* ---- Summary rail ---- */
 .checkout-rail{position:sticky; inset-block-start:calc(var(--nav-h) + 20px); min-inline-size:0;}

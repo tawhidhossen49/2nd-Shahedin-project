@@ -13,6 +13,9 @@
    used_count is maintained by a trigger on `orders`, not by
    the browser, so the tally reflects real purchases and
    can't be inflated by someone hammering the validate call.
+   It counts an order when it is PAID, not when it is started,
+   so an abandoned bKash checkout costs a limited code nothing
+   — and a refund gives the use back.
    ========================================================= */
 (async function () {
   "use strict";

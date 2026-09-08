@@ -6,7 +6,7 @@
 #
 # The site's tables, views, policies and functions are NOT managed from here --
 # they live in schema.sql at the repo root and are applied through the SQL
-# editor. This file exists for the Send SMS Hook.
+# editor. This file exists for the Send SMS Hook and the bKash functions.
 # =============================================================================
 
 # Replace with your project ref (Supabase dashboard -> Settings -> General).
@@ -33,3 +33,21 @@ uri = "https://vkpokhjltfaclyeurxux.supabase.co/functions/v1/send-sms"
 
 # Read from the environment, never written here. See DEPLOY_SMS_HOOK.md.
 secrets = "env(SEND_SMS_HOOK_SECRETS)"
+
+# -----------------------------------------------------------------------------
+# bKash PGW Tokenized Checkout. See DEPLOY_BKASH.md.
+# -----------------------------------------------------------------------------
+
+[functions.bkash-payment]
+# Left ON. Only a signed-in customer may start a payment, and the function
+# checks the JWT again itself to get the actual user id -- the platform's own
+# check would also accept the public anon key, which identifies nobody.
+verify_jwt = true
+
+[functions.bkash-callback]
+# MUST stay false. bKash returns the customer here as an ordinary browser
+# redirect with no Supabase session on the request, so the default would 401
+# every payment on its way back and no order would ever be settled.
+# The request is trusted only as far as the paymentID it carries; the money is
+# confirmed by a server-to-server Execute Payment call, not by this redirect.
+verify_jwt = false

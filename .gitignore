@@ -6,3 +6,11 @@ node_modules/
 *.zip
 supabase/.temp/
 supabase/.branches/
+
+# Payment gateway paperwork. "bkash PGW Documentation (v2).txt" holds live
+# merchant credentials (app key, app secret, username, password) — it must
+# never reach the repo. The credentials belong in Supabase secrets instead;
+# see DEPLOY_BKASH.md. The spec PDF is ignored simply because it is a 1.5 MB
+# vendor document that does not belong in a website's history.
+bkash*.txt
+PGW*.pdf

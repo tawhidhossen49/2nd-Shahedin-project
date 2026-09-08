@@ -33,6 +33,7 @@ course-detail.html     Single course — reads ?id= from the URL
 store.html             Store catalogue (filterable)
 product-detail.html    Single product — reads ?id= from the URL
 checkout.html          Single-item checkout (bKash)
+payment-status.html    Where bKash returns the buyer after paying
 portfolio.html         Media kit / partnership page
 contact.html           Contact form (saves to Admin → Contact Messages)
                         + booking calendar
@@ -41,6 +42,10 @@ dashboard.html         Student dashboard (courses, resources, certificates)
 admin/                 Zero-code admin panel (see ADMIN_SETUP.md)
 schema.sql             Supabase schema — run once when setting up
 js/supabase-config.js  Your Supabase URL + anon key (used by site and admin)
+
+supabase/functions/    Server-side code. bkash-payment and bkash-callback run
+                        the payment gateway; send-sms delivers login OTPs.
+                        Deploying them: DEPLOY_BKASH.md, DEPLOY_SMS_HOOK.md
 
 css/tokens.css         Design tokens. Loaded by the public site AND the admin
                         panel, so the two can never drift apart.
@@ -65,7 +70,10 @@ js/main.js             Nav, mobile menu, reveals, tabs, accordion, filters.
 js/motion.js           Counters, parallax, scroll progress, staggered entrances.
 js/course-progress.js  Enrolment + per-lesson progress.
 js/course-reviews.js   Course reviews.
-js/checkout.js         Order + enrolment writes.
+js/checkout.js         Checkout. Hands the order to the bkash-payment function,
+                        which prices it server-side — the page never sends a
+                        total, only what was chosen.
+js/payment-status.js   Reads the real outcome back from bKash after payment.
 js/dashboard.js        The whole student dashboard UI.
 
 assets/img/shahedin-cutout.png / .webp   Portrait cutout (footer, hero, story)

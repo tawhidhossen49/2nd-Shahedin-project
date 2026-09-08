@@ -228,15 +228,16 @@
             </div>
             <div class="form-field full">
               <label>Purchase / enrollment form URL
-                <span class="hint">where the "এখনই কিনুন" button sends students for this paid course</span>
+                <span class="hint">leave blank — this course is sold through bKash checkout</span>
               </label>
               <input type="url" id="f_purchase_url" placeholder="https://docs.google.com/forms/..."
                      value="${Admin.escapeHtml(course?.purchase_url || "")}">
               <p class="hint" style="margin-top:8px;">
-                Only fill this in if <em>this</em> course needs its own form. Leave it blank and the course uses the
-                site-wide link from <strong>Settings → Course enrollment</strong>, which is the usual setup.
-                Either way: the student logs in, lands on the form, sends the money, and you switch their access on
-                from <strong>Students → a student → কোর্স অ্যাক্সেস</strong> once you have verified the payment.
+                <strong>Blank is normal.</strong> The "এখনই কিনুন" button takes students to checkout, they pay with bKash,
+                and access switches on automatically. Fill this in only to take <em>this one</em> course off the gateway and
+                send its students to a form instead — then they pay you off-site and you grant access by hand from
+                <strong>Students → a student → কোর্স অ্যাক্সেস</strong>. A site-wide version of the same opt-out lives in
+                <strong>Settings → Course enrollment</strong>; this field beats it.
               </p>
             </div>
             <div class="form-field">

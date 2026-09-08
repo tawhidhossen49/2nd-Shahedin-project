@@ -572,11 +572,32 @@
       wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো অর্ডার নেই। <a class="text-link" href="store.html">স্টোর দেখুন →</a></p></div>`;
       return;
     }
+    /* Since bKash checkout went in, an order row is written when a payment
+       STARTS. So these are the states a student can actually see, and an
+       unpaid one must not be dressed in the same green "done" badge as a paid
+       one — that is how someone concludes they have bought something they
+       have not. */
+    const STATUS = {
+      completed: { text: "সম্পন্ন", cls: "badge-live" },
+      pending: { text: "পেমেন্ট অপেক্ষমাণ", cls: "badge-warn" },
+      failed: { text: "ব্যর্থ", cls: "badge-warn" },
+      cancelled: { text: "বাতিল", cls: "badge-warn" },
+      refunded: { text: "ফেরত দেওয়া হয়েছে", cls: "badge-warn" },
+    };
+
     /* The buyer lands on this tab straight after paying, so whatever they just
        bought has to be reachable from here. Digital products get their real
        download; anything else says honestly what is happening instead of
        showing a dead button. */
     function actionCell(o) {
+      /* Unfinished payment. payment-status.html re-checks it against bKash —
+         which settles it if the money did in fact go through — and otherwise
+         offers to start again. */
+      if (o.status !== "completed" && o.status !== "refunded") {
+        return `<a class="btn btn-ghost btn-sm" href="payment-status.html?order=${encodeURIComponent(o.id)}">${
+          o.status === "pending" ? "পেমেন্ট দেখুন" : "আবার চেষ্টা করুন"
+        }</a>`;
+      }
       if (o.kind === "course") return `<a class="text-link" href="#courses">দেখুন</a>`;
       const p = productFor(o);
       if (p && p.delivery_url && o.status === "completed") {
@@ -603,7 +624,7 @@
               <td data-label="পরিমাণ">${o.qty}</td>
               <td data-label="মূল্য">${o.amount_bdt === 0 ? "ফ্রি" : "৳" + o.amount_bdt}</td>
               <td data-label="তারিখ">${new Date(o.created_at).toLocaleDateString("bn-BD")}</td>
-              <td data-label="অবস্থা"><span class="badge badge-live">${o.status === "completed" ? "সম্পন্ন" : o.status === "pending" ? "অপেক্ষমাণ" : "বাতিল"}</span></td>
+              <td data-label="অবস্থা"><span class="badge ${(STATUS[o.status] || STATUS.cancelled).cls}">${(STATUS[o.status] || STATUS.cancelled).text}</span></td>
               <td data-label="">${actionCell(o)}</td>
             </tr>`
             )

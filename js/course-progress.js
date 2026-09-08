@@ -86,29 +86,21 @@
       return;
     }
 
-    /* Paid course. There is no payment gateway, so buying does not happen on
-       this site at all. The student is sent to an external enrolment form
-       (a Google Form), which carries the payment instructions; they send the
-       money off-site and the admin grants access from Admin -> Students once
-       the payment is verified.
+    /* Paid course. bKash checkout is live now (see supabase/functions/
+       bkash-payment), so the default is to sell it here.
 
-       requireAuth() above is what makes the "log in first, then the form"
-       order work: an anonymous visitor gets the login modal and only lands
-       on the form once there is an account for the admin to grant access to.
+       The manual route is kept as a deliberate override, not as a fallback:
+       if the admin has filled in a purchase/enrolment form URL for this
+       course — or a site-wide one in Settings — that is an explicit choice to
+       take this particular course off the gateway, and it still wins. With
+       nothing configured, the student goes to checkout and pays.
 
-       Free courses never reach this branch, and products still go through
-       checkout.html untouched. */
+       requireAuth() above is what makes the ordering work either way: an
+       anonymous visitor gets the login modal first, so the order (or the
+       admin's manual grant) always has an account to attach to. */
     if (!course.free) {
       const form = await enrollmentFormUrl(course);
-      if (form) {
-        window.location.href = form;
-        return;
-      }
-      /* Nothing configured anywhere. Previously this fell through to
-         checkout.html, which offered a bKash payment that cannot be
-         completed — a dead end dressed up as a purchase. Say so instead. */
-      restore();
-      window.showToast && window.showToast("এই কোর্সের ভর্তি ফর্ম এখনো যুক্ত করা হয়নি। অনুগ্রহ করে আমাদের সাথে যোগাযোগ করুন।");
+      window.location.href = form || `checkout.html?course=${encodeURIComponent(course.slug)}`;
       return;
     }
 
@@ -134,14 +126,15 @@
     }
   }
 
-  /* Where the buy button sends a student for a paid course.
+  /* An off-site enrolment form to use INSTEAD of bKash checkout, or "" for
+     the normal thing.
 
      Two levels, so the admin can work either way:
        1. the course's own "Purchase / enrollment form URL" field, and
        2. the site-wide default in Settings -> Course enrollment,
-     with the per-course value winning when both are set. The default is what
-     makes a newly created paid course work without remembering to paste the
-     link again; the override is for a course that needs its own form.
+     with the per-course value winning when both are set. Leave both blank —
+     which is the state of a newly created course — and the student is sent to
+     checkout to pay by bKash.
 
      Only http(s) is accepted. The admin field is free text, and a stray
      "javascript:" in it must not become a live link on the buy button. */

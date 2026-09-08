@@ -3,9 +3,13 @@
    ---------------------------------------------------------
    Single-item checkout. Reads ?course=slug or ?product=slug
    (&qty=N for products) from the URL, requires the student to
-   be logged in, shows a real order summary, and on submit
-   writes a real row to `orders` (and to `enrollments` too, if
-   it's a course) — no more fake "front-end mock" no-op.
+   be logged in, and shows a real order summary.
+
+   Submitting does NOT write the order from here. It calls the
+   bkash-payment Edge Function, which prices the order from the
+   database and hands back a bKash URL to send the customer to.
+   The totals on this page are a preview; the server's are the
+   ones that get charged. See supabase/functions/bkash-payment.
    ========================================================= */
 (function () {
   "use strict";
@@ -234,6 +238,28 @@
     }
   }
 
+  /* Supabase's functions.invoke() reports a non-2xx as a FunctionsHttpError
+     whose message is the useless "Edge Function returned a non-2xx status
+     code" — the body carrying the real reason is left unread on
+     error.context. bKash's own wording is the thing worth showing the
+     customer (the spec asks for exactly that), so dig it out. */
+  async function readError(error) {
+    try {
+      const body = await error.context.json();
+      if (body && body.error) return String(body.error);
+    } catch (err) {
+      // No JSON body — fall through to the generic message.
+    }
+    return "";
+  }
+
+  /* Sends the order to the bkash-payment Edge Function and follows wherever
+     it points.
+
+     Note what is NOT sent: no price, no discount, no total. The server reads
+     the item's price from the database and re-validates the coupon itself, so
+     an edited page can change what it shows but never what it charges. The
+     amounts rendered above are for the customer's benefit only. */
   async function handleSubmit(e) {
     e.preventDefault();
     if (!item || !item.dbId) return;
@@ -242,9 +268,14 @@
     btn.disabled = true;
     btn.textContent = "প্রসেস হচ্ছে…";
 
+    const restore = () => {
+      btn.disabled = false;
+      btn.textContent = original;
+    };
+
     try {
       const user = await window.ShahedinAuth.requireAuth();
-      if (!user) { btn.disabled = false; btn.textContent = original; return; }
+      if (!user) { restore(); return; }
 
       const c = window.ShahedinAuth.client();
       const form = document.getElementById("checkoutForm");
@@ -253,58 +284,51 @@
         return el ? el.value.trim() : "";
       };
 
-      /* The buyer's details used to be collected and then dropped on the
-         floor — only the item, quantity and amount were saved, so a physical
-         order reached the admin with no name, phone or address on it. They
-         are part of the order row now, and visible in Admin → Orders. */
-      const base = {
-        user_id: user.id,
-        kind: item.kind,
-        item_id: item.dbId,
-        item_title: item.title,
-        qty: item.qty,
-        amount_bdt: total(),
-        payment_method: form.payment_method.value,
-        status: "completed",
-      };
-      const withDetails = Object.assign({}, base, {
-        subtotal_bdt: subtotal(),
-        discount_bdt: discount(),
-        coupon_code: coupon ? coupon.code : null,
-        buyer_name: field("name") || null,
-        buyer_phone: field("phone") || null,
-        buyer_email: field("email") || null,
-        shipping_address: field("address") || null,
+      const { data, error } = await c.functions.invoke("bkash-payment", {
+        body: {
+          action: "create",
+          kind: item.kind,
+          slug: item.slug,
+          qty: item.qty,
+          coupon_code: coupon ? coupon.code : null,
+          buyer: {
+            name: field("name"),
+            phone: field("phone"),
+            email: field("email"),
+            address: field("address"),
+          },
+        },
       });
 
-      let { error: orderErr } = await c.from("orders").insert(withDetails);
-
-      /* If section 17 of schema.sql hasn't been run yet those columns don't
-         exist, and the whole order would fail. Better to save the sale and
-         lose the extra detail than to lose the customer's purchase — but say
-         so loudly in the console so it gets fixed. */
-      if (orderErr && /column .* does not exist|could not find/i.test(orderErr.message || "")) {
-        console.warn(
-          "Shahedin checkout: the orders table is missing the buyer-detail columns, so this order was saved " +
-          "without the buyer's name, phone, email, address or coupon. Run section 17 of schema.sql in the " +
-          "Supabase SQL editor to fix this.",
-          orderErr
-        );
-        ({ error: orderErr } = await c.from("orders").insert(base));
-      }
-      if (orderErr) throw orderErr;
-
-      if (item.kind === "course") {
-        const { error: enrollErr } = await c.from("enrollments").upsert({ user_id: user.id, course_id: item.dbId }, { onConflict: "user_id,course_id" });
-        if (enrollErr) throw enrollErr;
+      if (error) {
+        const message = await readError(error);
+        restore();
+        window.showToast && window.showToast(message || "অর্ডার শুরু করা যায়নি, আবার চেষ্টা করুন।");
+        return;
       }
 
-      sessionStorage.setItem("shahedin_purchase_success", item.kind === "course" ? "course" : "product");
-      window.location.href = "dashboard.html";
+      /* Nothing to pay — a free course, or a coupon that covered the whole
+         price. The server has already completed the order and granted access,
+         so there is no gateway trip to make. */
+      if (data && data.free) {
+        sessionStorage.setItem("shahedin_purchase_success", item.kind === "course" ? "course" : "product");
+        window.location.href = "dashboard.html";
+        return;
+      }
+
+      if (data && data.bkashURL) {
+        btn.textContent = "bKash-এ নিয়ে যাওয়া হচ্ছে…";
+        // bKash's own hosted page takes it from here: wallet number, OTP and
+        // PIN are entered there and never touch this site.
+        window.location.href = data.bkashURL;
+        return;
+      }
+
+      restore();
+      window.showToast && window.showToast("পেমেন্ট শুরু করা যায়নি, আবার চেষ্টা করুন।");
     } catch (err) {
+      restore();
       window.showToast && window.showToast("অর্ডার সম্পন্ন করা যায়নি, আবার চেষ্টা করুন।");
-      btn.disabled = false;
-      btn.textContent = original;
     }
   }
 

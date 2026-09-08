@@ -69,16 +69,17 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><div><h2>Course enrollment</h2><p>There is no payment gateway on the site, so a paid course sends the student to a form instead. They log in first, fill the form, send the money, and you switch their access on from <strong>Students → a student → কোর্স অ্যাক্সেস</strong>.</p></div></div>
+        <div class="panel-head"><div><h2>Course enrollment</h2><p>Paid courses are sold through bKash checkout on the site — you do not need to do anything here. This box is the <strong>opt-out</strong>: fill it in and paid courses skip the gateway and go to a form you handle by hand instead.</p></div></div>
         <div class="form-grid">
           <div class="form-field full">
-            <label>Enrollment form link <span class="hint">used by every paid course that doesn't have its own link</span></label>
+            <label>Enrollment form link <span class="hint">leave blank to sell through bKash checkout</span></label>
             <input type="url" id="s_enroll_form" placeholder="https://docs.google.com/forms/d/e/.../viewform" value="${Admin.escapeHtml(enrollment.form_url || "")}">
             <p class="hint" style="margin-top:8px;">
-              Paste your Google Form link here once and every paid course uses it. To send one particular course
-              somewhere else, put that link in <strong>Courses → edit the course → Purchase / enrollment form URL</strong>;
-              a link set there beats this one. Leave both blank and the buy button tells the student to get in touch
-              rather than sending them nowhere.
+              <strong>Blank is the normal setting.</strong> A student clicks buy, pays with bKash, and their course access
+              switches on by itself. Put a link here and every paid course sends students to that form instead — they pay
+              you off-site and you grant access from <strong>Students → a student → কোর্স অ্যাক্সেস</strong>. To take just one
+              course off the gateway, use <strong>Courses → edit the course → Purchase / enrollment form URL</strong>;
+              a link set there beats this one.
             </p>
           </div>
         </div>

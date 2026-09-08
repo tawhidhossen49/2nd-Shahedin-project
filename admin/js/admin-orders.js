@@ -4,11 +4,15 @@
    Every purchase, with the details the buyer actually typed
    at checkout — name, phone, email and delivery address.
 
-   Those four used to be collected by checkout.html and then
-   discarded: only the item, quantity and amount were written
-   to `orders`, so a physical order arrived with nowhere to
-   ship it. They are real columns now (see section 17 of
-   schema.sql) and this is where you read them.
+   Read the status column, not just the total. Since bKash
+   checkout went in, a row is created when someone STARTS a
+   payment, so "Awaiting payment" and "Failed" rows are normal
+   and are not money you have. Only "Paid" and "Refunded" ones
+   count towards revenue, which is what the stat cards do.
+
+   Refunds are issued from here too, straight through bKash —
+   see section 28 of schema.sql and supabase/functions/
+   bkash-payment.
    ========================================================= */
 (async function () {
   "use strict";
@@ -34,42 +38,72 @@
   if (error) {
     content.innerHTML = `<div class="notice">Couldn't load orders: ${Admin.escapeHtml(error.message)}<br><br>
       If this says the column doesn't exist, re-run <code>schema.sql</code> in the Supabase SQL editor —
-      section 17 adds the buyer detail columns this page reads.</div>`;
+      sections 17 and 28 add the columns this page reads.</div>`;
     return;
   }
   orders = data || [];
+
+  /* Each leg of a refund, so the bKash refund transaction ids are readable
+     here rather than only in the bKash portal — those are what you match a
+     statement against. An order can have up to 10 of them. */
+  const refundsByOrder = {};
+  const { data: refundRows } = await c
+    .from("order_refunds")
+    .select("order_id, refund_trx_id, amount_bdt, created_at")
+    .order("created_at", { ascending: true });
+  (refundRows || []).forEach((r) => {
+    (refundsByOrder[r.order_id] = refundsByOrder[r.order_id] || []).push(r);
+  });
 
   const money = (n) => "৳" + Number(n || 0).toLocaleString("en-US");
   // A product order with an address is the one that needs a human to act.
   const needsShipping = (o) => o.kind === "product" && !!(o.shipping_address || "").trim();
 
+  /* Money actually taken. Orders are written BEFORE the customer pays now, so
+     the table holds abandoned attempts too — summing every row would report
+     revenue that never arrived. A refund comes straight back off the top. */
+  const paid = (o) => o.status === "completed" || o.status === "refunded";
+  const netPaid = (o) => (paid(o) ? (Number(o.amount_bdt) || 0) - (Number(o.refunded_bdt) || 0) : 0);
+  const unpaid = (o) => o.status === "pending" || o.status === "failed" || o.status === "cancelled";
+  const refundable = (o) => o.status === "completed" && !!o.bkash_trx_id && netPaid(o) > 0;
+
+  const STATUS_BADGE = {
+    completed: ["badge-live", "Paid"],
+    refunded: ["badge-draft", "Refunded"],
+    pending: ["badge-draft", "Awaiting payment"],
+    failed: ["badge-draft", "Failed"],
+    cancelled: ["badge-draft", "Cancelled"],
+  };
+
   function matches(o) {
     if (filter === "course" && o.kind !== "course") return false;
     if (filter === "product" && o.kind !== "product") return false;
     if (filter === "needs_shipping" && !needsShipping(o)) return false;
+    if (filter === "unpaid" && !unpaid(o)) return false;
     if (!search) return true;
-    const hay = [o.item_title, o.buyer_name, o.buyer_phone, o.buyer_email, o.shipping_address, o.coupon_code]
+    const hay = [o.item_title, o.buyer_name, o.buyer_phone, o.buyer_email, o.shipping_address, o.coupon_code, o.bkash_trx_id]
       .filter(Boolean).join(" ").toLowerCase();
     return hay.includes(search);
   }
 
   function render() {
-    const revenue = orders.reduce((s, o) => s + (Number(o.amount_bdt) || 0), 0);
-    const discounted = orders.filter((o) => Number(o.discount_bdt) > 0).length;
-    const shipping = orders.filter(needsShipping).length;
+    const revenue = orders.reduce((s, o) => s + netPaid(o), 0);
+    const refunded = orders.reduce((s, o) => s + (Number(o.refunded_bdt) || 0), 0);
+    const shipping = orders.filter((o) => needsShipping(o) && paid(o)).length;
+    const waiting = orders.filter((o) => o.status === "pending").length;
 
     content.innerHTML = `
       <div class="stat-grid">
-        <div class="stat-card"><div class="label">Orders</div><div class="value">${orders.length}</div></div>
-        <div class="stat-card"><div class="label">Revenue</div><div class="value">${money(revenue)}</div><div class="sub">after discounts</div></div>
-        <div class="stat-card"><div class="label">Used a coupon</div><div class="value">${discounted}</div></div>
-        <div class="stat-card"><div class="label">To ship</div><div class="value">${shipping}</div><div class="sub">physical, has an address</div></div>
+        <div class="stat-card"><div class="label">Paid orders</div><div class="value">${orders.filter(paid).length}</div><div class="sub">of ${orders.length} started</div></div>
+        <div class="stat-card"><div class="label">Revenue</div><div class="value">${money(revenue)}</div><div class="sub">${refunded > 0 ? `after ${money(refunded)} refunded` : "paid orders only"}</div></div>
+        <div class="stat-card"><div class="label">Awaiting payment</div><div class="value">${waiting}</div><div class="sub">started, never finished</div></div>
+        <div class="stat-card"><div class="label">To ship</div><div class="value">${shipping}</div><div class="sub">paid, physical, has an address</div></div>
       </div>
 
       <div class="panel">
         <div class="sub-toolbar">
           <div class="filter-tabs">
-            ${[["all", "All"], ["course", "Courses"], ["product", "Products"], ["needs_shipping", "To ship"]]
+            ${[["all", "All"], ["course", "Courses"], ["product", "Products"], ["needs_shipping", "To ship"], ["unpaid", "Unpaid"]]
               .map(([id, label]) => `<button type="button" class="btn btn-sm ${filter === id ? "btn-primary" : "btn-ghost"}" data-filter="${id}">${label}</button>`)
               .join("")}
           </div>
@@ -103,21 +137,27 @@
       }
       list.innerHTML = `
         <table class="admin-table">
-          <thead><tr><th>Item</th><th>Buyer</th><th>Delivery</th><th>Paid</th><th>When</th></tr></thead>
+          <thead><tr><th>Item</th><th>Buyer</th><th>Delivery</th><th>Payment</th><th>When</th><th></th></tr></thead>
           <tbody>${shown.map(rowHtml).join("")}</tbody>
         </table>`;
+
+      list.querySelectorAll("[data-refund]").forEach((btn) =>
+        btn.addEventListener("click", () => refund(btn.dataset.refund, btn))
+      );
     }
   }
 
   function rowHtml(o) {
     const discount = Number(o.discount_bdt) || 0;
     const sub = o.subtotal_bdt == null ? o.amount_bdt : o.subtotal_bdt;
+    const refundedSoFar = Number(o.refunded_bdt) || 0;
+    const [badgeClass, badgeText] = STATUS_BADGE[o.status] || ["badge-draft", o.status || "unknown"];
+
     return `
       <tr>
         <td>
           <div class="row-title">${Admin.escapeHtml(o.item_title || "(untitled)")}</div>
-          <div class="row-sub">${o.kind === "course" ? "Course" : "Product"}${o.qty > 1 ? ` · ×${o.qty}` : ""}
-            ${o.status && o.status !== "completed" ? ` · <strong>${Admin.escapeHtml(o.status)}</strong>` : ""}</div>
+          <div class="row-sub">${o.kind === "course" ? "Course" : "Product"}${o.qty > 1 ? ` · ×${o.qty}` : ""}</div>
         </td>
         <td>
           <div>${Admin.escapeHtml(o.buyer_name || "—")}</div>
@@ -133,26 +173,112 @@
             : `<span class="row-sub">—</span>`
         }</td>
         <td>
-          <div>${money(o.amount_bdt)}</div>
+          <div>${money(o.amount_bdt)} <span class="badge ${badgeClass}">${Admin.escapeHtml(badgeText)}</span></div>
           ${discount > 0
             ? `<div class="row-sub">${money(sub)} − ${money(discount)}${o.coupon_code ? ` (${Admin.escapeHtml(o.coupon_code)})` : ""}</div>`
             : ""}
-          ${o.payment_method ? `<div class="row-sub">${Admin.escapeHtml(o.payment_method)}</div>` : ""}
+          ${refundedSoFar > 0
+            ? `<div class="row-sub">${money(refundedSoFar)} refunded${
+                (refundsByOrder[o.id] || [])
+                  .filter((r) => r.refund_trx_id)
+                  .map((r) => ` · <code>${Admin.escapeHtml(r.refund_trx_id)}</code>`)
+                  .join("")
+              }</div>`
+            : ""}
+          <div class="row-sub">${Admin.escapeHtml(o.payment_method || "—")}${
+            /* The bKash transaction id is what the customer quotes and what
+               you search for in the bKash merchant portal, so it belongs on
+               the row rather than one click away. */
+            o.bkash_trx_id ? ` · <code>${Admin.escapeHtml(o.bkash_trx_id)}</code>` : ""
+          }</div>
+          ${o.failure_reason ? `<div class="row-sub">${Admin.escapeHtml(o.failure_reason)}</div>` : ""}
         </td>
         <td class="row-sub">${Admin.timeAgo(o.created_at)}</td>
+        <td>
+          <div class="row-actions">${
+            refundable(o)
+              ? `<button type="button" class="btn btn-ghost btn-sm" data-refund="${o.id}">Refund</button>`
+              : ""
+          }</div>
+        </td>
       </tr>`;
+  }
+
+  /* Refunds go through the bkash-payment Edge Function, never straight to the
+     table: the money has to actually leave the merchant wallet before the row
+     is allowed to say it did. bKash permits up to 10 partial refunds per
+     transaction, within 60 days, capped at what was paid. */
+  async function refund(orderId, btn) {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    const remaining = netPaid(order);
+    const typed = window.prompt(
+      `Refund how much of “${order.item_title}”?\n\nUp to ৳${remaining} can still be refunded. This sends the money back through bKash immediately.`,
+      String(remaining)
+    );
+    if (typed === null) return;
+
+    const amount = Math.floor(Number(typed));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > remaining) {
+      Admin.toast(`Enter an amount between 1 and ${remaining}.`, true);
+      return;
+    }
+
+    const reason = (window.prompt("Reason for the refund (the customer does not see this):", "Refunded by merchant") || "").trim();
+    if (!reason) return;
+
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Refunding…";
+
+    try {
+      const { data, error } = await Admin.client().functions.invoke("bkash-payment", {
+        body: { action: "refund", orderId, amount, reason },
+      });
+      if (error) {
+        let message = "";
+        try {
+          const body = await error.context.json();
+          message = body && body.error;
+        } catch (err) {
+          message = "";
+        }
+        throw new Error(message || "bKash refused the refund.");
+      }
+
+      order.refunded_bdt = Number(data.refunded) || amount;
+      if (order.refunded_bdt >= Number(order.amount_bdt)) order.status = "refunded";
+      // Mirror what was just written server-side so the new refund's trx id
+      // shows without a reload.
+      (refundsByOrder[orderId] = refundsByOrder[orderId] || []).push({
+        order_id: orderId,
+        refund_trx_id: data.refundTrxId,
+        amount_bdt: amount,
+        created_at: new Date().toISOString(),
+      });
+      Admin.toast(`Refunded ${money(amount)}${data.refundTrxId ? ` · ${data.refundTrxId}` : ""}`);
+      render();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = original;
+      Admin.toast(err.message, true);
+    }
   }
 
   function exportCsv() {
     const shown = orders.filter(matches);
-    const head = ["Date", "Kind", "Item", "Qty", "Subtotal", "Discount", "Coupon", "Paid", "Payment", "Status", "Name", "Phone", "Email", "Address"];
+    const head = ["Date", "Kind", "Item", "Qty", "Subtotal", "Discount", "Coupon", "Paid", "Refunded", "Payment", "Status", "bKash trx", "bKash payment id", "Paid at", "Name", "Phone", "Email", "Address"];
     const cell = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
     const csv = [head.map(cell).join(",")]
       .concat(shown.map((o) => [
         o.created_at, o.kind, o.item_title, o.qty,
         o.subtotal_bdt == null ? o.amount_bdt : o.subtotal_bdt,
-        o.discount_bdt || 0, o.coupon_code || "", o.amount_bdt,
+        o.discount_bdt || 0, o.coupon_code || "", o.amount_bdt, o.refunded_bdt || 0,
         o.payment_method || "", o.status || "",
+        // Both ids are here because reconciling against a bKash statement
+        // needs the trx id, and chasing a stuck payment needs the payment id.
+        o.bkash_trx_id || "", o.bkash_payment_id || "", o.paid_at || "",
         o.buyer_name || "", o.buyer_phone || "", o.buyer_email || "",
         (o.shipping_address || "").replace(/\r?\n/g, " "),
       ].map(cell).join(",")))

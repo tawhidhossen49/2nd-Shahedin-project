@@ -1891,3 +1891,303 @@ update courses set learn_title = null where learn_title is not null;
 -- the admin panel no longer writes to it, so it stays readable as a fallback
 -- if a list is ever lost. Dropping the columns would throw that away for no
 -- gain -- two unused columns cost nothing.
+
+
+-- =========================================================================
+-- 28. bKash PAYMENT GATEWAY (PGW Tokenized Checkout v2)
+--     Safe to re-run.
+--
+--     Section 22 said "no payment gateway yet" and routed every paid course
+--     to an off-site Google Form that a human then reconciled by hand. There
+--     is a gateway now: bKash Tokenized Checkout, driven by the two Edge
+--     Functions in supabase/functions/bkash-payment and .../bkash-callback.
+--
+--     What changes here, and why each piece is necessary:
+--
+--     (a) An order is now written BEFORE the money moves, so it needs
+--         somewhere to keep the gateway's identifiers and a status that can
+--         say "started but never paid".
+--     (b) Refunds are part of the gateway, and bKash allows up to 10 partial
+--         refunds per transaction, so one order maps to many refunds.
+--     (c) Coupon usage was counted the moment an order row appeared. With a
+--         real gateway that would burn a use on every abandoned payment.
+--     (d) Two policies made paying optional. They are the whole point of the
+--         section: without them the gateway is decorative.
+-- =========================================================================
+
+-- ---------- (a) The gateway's side of an order --------------------------
+alter table orders add column if not exists bkash_payment_id    text;
+alter table orders add column if not exists bkash_trx_id        text;
+alter table orders add column if not exists bkash_invoice       text;
+alter table orders add column if not exists bkash_payer_account text;
+-- Echoed back on the redirect from bKash. Stored at create time and compared
+-- on the way back, so a hand-typed callback URL cannot claim someone's order.
+alter table orders add column if not exists bkash_signature     text;
+alter table orders add column if not exists paid_at             timestamptz;
+-- The message bKash gave for a payment that did not go through, kept verbatim
+-- so Admin -> Orders can show why rather than a bare "failed".
+alter table orders add column if not exists failure_reason      text;
+alter table orders add column if not exists refunded_bdt        integer not null default 0;
+
+-- One bKash payment belongs to exactly one order. The unique index is what
+-- makes the callback safe to replay: a second execute for the same payment
+-- can only ever land on the row that started it.
+create unique index if not exists orders_bkash_payment_id_idx
+  on orders (bkash_payment_id) where bkash_payment_id is not null;
+create unique index if not exists orders_bkash_invoice_idx
+  on orders (bkash_invoice) where bkash_invoice is not null;
+
+-- 'pending' now means "sent to bKash, not paid yet" rather than "awaiting a
+-- human", and two states that could not be expressed before can be now:
+-- 'failed'   - bKash declined it (wrong PIN, insufficient balance, timeout)
+-- 'refunded' - the full amount has been sent back
+alter table orders drop constraint if exists orders_status_check;
+alter table orders add constraint orders_status_check
+  check (status in ('pending', 'completed', 'cancelled', 'failed', 'refunded'));
+
+-- ---------- (b) Refund history ------------------------------------------
+create table if not exists order_refunds (
+  id            uuid primary key default gen_random_uuid(),
+  order_id      uuid not null references orders(id) on delete cascade,
+  refund_trx_id text,                     -- bKash's id for this refund leg
+  amount_bdt    integer not null check (amount_bdt > 0),
+  reason        text,
+  sku           text,
+  status        text not null default 'Completed',
+  created_by    uuid references auth.users(id) on delete set null,
+  created_at    timestamptz not null default now()
+);
+
+create index if not exists order_refunds_order_idx on order_refunds (order_id);
+
+alter table order_refunds enable row level security;
+
+-- Refunds are issued by the bkash-payment Edge Function using the service
+-- role, which bypasses RLS. Read-only on purpose: Admin -> Orders lists each
+-- refund's bKash transaction id under the order, and nothing writes here from
+-- a browser.
+drop policy if exists "admins can read refunds" on order_refunds;
+create policy "admins can read refunds"
+  on order_refunds for select
+  using (auth.uid() in (select id from admins));
+
+-- ---------- (b2) Let the Edge Function price a coupon ---------------------
+-- Sections 17 and 18 revoke validate_coupon() from public and grant it to
+-- anon and authenticated only. bkash-payment calls it as service_role, to
+-- recompute the discount server-side instead of trusting the browser's figure,
+-- and would otherwise be leaning on Supabase's default function privileges to
+-- get in. Say it outright.
+--
+-- Not cosmetic: if that call fails, checkout refuses the order rather than
+-- quietly charging the full price to someone who was just shown a discount.
+grant execute on function validate_coupon(text, integer, text) to service_role;
+
+-- ---------- (c) Count a coupon when it is PAID, not when it is offered ---
+-- The old trigger fired on insert. Orders are now inserted as 'pending' the
+-- moment the customer is sent to bKash, so an abandoned checkout would have
+-- consumed a use of a limited code and nobody would ever get it back.
+create or replace function bump_coupon_usage()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_code text;
+  v_step integer := 0;   -- +1 to count a use, -1 to give one back, 0 to do nothing
+begin
+  v_code := upper(trim(coalesce(new.coupon_code, '')));
+  if v_code = '' then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    -- A ৳0 order (free course, or a coupon that covers the whole price) never
+    -- reaches bKash and is written as 'completed' outright, so the insert
+    -- branch still has to count.
+    if new.status = 'completed' then
+      v_step := 1;
+    end if;
+  elsif tg_op = 'UPDATE' then
+    if new.status = 'completed' and old.status is distinct from 'completed' then
+      v_step := 1;
+    elsif old.status = 'completed' and new.status is distinct from 'completed' then
+      -- Refunded or cancelled after the fact: hand the use back rather than
+      -- letting a limited code silently shrink.
+      v_step := -1;
+    end if;
+  end if;
+
+  if v_step <> 0 then
+    update coupons
+       set used_count = greatest(0, used_count + v_step)
+     where code = v_code;
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists orders_bump_coupon on orders;
+create trigger orders_bump_coupon
+  after insert or update on orders
+  for each row execute function bump_coupon_usage();
+
+-- ---------- (d) Make paying non-optional --------------------------------
+--
+-- Both of these were open because there was nothing to protect: with no
+-- gateway, access was granted by hand anyway. Now they are the difference
+-- between a checkout and an honour system.
+
+-- (d1) "students can create their own orders" let anyone POST an order row
+--      with status='completed' and any amount they liked, straight from the
+--      browser with the public anon key. Orders are written only by the
+--      bkash-payment Edge Function now (service role, price read from the
+--      database), so the policy has no legitimate caller left.
+drop policy if exists "students can create their own orders" on orders;
+
+-- (d2) The real hole. "students can create their own enrollments" checked
+--      only that the row was about yourself -- not that the course was free
+--      or paid for. One REST call granted access to any paid course without
+--      a payment ever happening, which made the gateway above pointless.
+--
+--      Free courses still self-enrol from the course page (js/course-progress.js).
+--      A paid enrolment is written by the Edge Function after bKash confirms
+--      the money, and an admin can still grant one by hand (the "admins can
+--      insert enrollments" policy from section 22).
+--
+--      course_is_free() is SECURITY DEFINER because `courses` has no public
+--      read policy at all (see section 2) -- a plain subquery inside the
+--      policy would see zero rows and lock free courses out too.
+create or replace function course_is_free(p_course_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select coalesce((select c.is_free or c.price_bdt <= 0 from courses c where c.id = p_course_id), false);
+$$;
+
+revoke all on function course_is_free(uuid) from public;
+grant execute on function course_is_free(uuid) to authenticated;
+
+drop policy if exists "students can create their own enrollments" on enrollments;
+create policy "students can enrol themselves in free courses"
+  on enrollments for insert
+  with check (auth.uid() = user_id and course_is_free(course_id));
+
+
+-- =========================================================================
+-- 29. bKash TOKEN STORE (required by bKash technical validation)
+--     Safe to re-run.
+--
+--     bKash's integration review is explicit: the Grant Token API may be
+--     called ONCE per hour, and the id_token it returns must be stored and
+--     reused for that hour by every request, for every customer. Exceeding it
+--     gets the merchant account blocked for an hour.
+--
+--     Section 28 shipped with the token cached in the Edge Function's module
+--     scope, which does not satisfy that. Supabase runs functions as isolates
+--     that are created and discarded on demand, so every cold start would have
+--     asked bKash for a new token — and bkash-payment and bkash-callback each
+--     had their own separate copy of the cache. Under real traffic that is
+--     many grants an hour, not one.
+--
+--     One row in Postgres is what makes the token genuinely shared: across
+--     isolates, across both functions, and across all customers.
+-- =========================================================================
+
+create table if not exists bkash_token (
+  -- Single-row table. The check constraint is what keeps it that way.
+  id           smallint primary key default 1 check (id = 1),
+  id_token     text        not null,
+  expires_at   timestamptz not null,
+  obtained_at  timestamptz not null default now(),
+  -- Held briefly by whichever instance is currently calling Grant Token, so
+  -- a burst of checkouts on a cold start produces one call and not twenty.
+  locked_until timestamptz
+);
+
+/* Seeded here, already expired, so the row always exists at runtime. Without
+   it the very first two checkouts could both find nothing, both insert, and
+   both call Grant Token — SELECT ... FOR UPDATE cannot lock a row that is not
+   there yet. With the row present from the start, the lock always applies. */
+insert into bkash_token (id, id_token, expires_at)
+values (1, '', now() - interval '1 second')
+on conflict (id) do nothing;
+
+alter table bkash_token enable row level security;
+
+-- Deliberately NO policies. This row is a live bKash credential: it must be
+-- unreachable with the anon key that ships in the site's JavaScript, and
+-- unreachable for logged-in students too. The Edge Functions read it with the
+-- service role, which bypasses RLS. RLS with zero policies denies everyone
+-- else, which is exactly the intent.
+revoke all on table bkash_token from anon, authenticated;
+
+-- ---------- Claim the right to refresh, or take the cached token ---------
+-- Returns one of three answers:
+--   {token: "...", expires_at: ..., refresh: false}  cached and valid — use it
+--   {token: null,  refresh: true }   you hold the lease, call Grant Token now
+--   {token: null,  refresh: false}   another instance is calling it, retry
+--
+-- SELECT ... FOR UPDATE serialises concurrent callers on the single row, so
+-- exactly one of them is ever told to refresh.
+create or replace function bkash_token_claim()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v bkash_token%rowtype;
+begin
+  select * into v from bkash_token where id = 1 for update;
+
+  if not found then
+    -- First ever call. Seed an already-expired row so the logic below has
+    -- something to lock, then take the lease.
+    insert into bkash_token (id, id_token, expires_at, locked_until)
+    values (1, '', now() - interval '1 second', now() + interval '60 seconds')
+    on conflict (id) do nothing;
+    return jsonb_build_object('token', null, 'refresh', true);
+  end if;
+
+  if v.expires_at > now() then
+    return jsonb_build_object('token', v.id_token, 'expires_at', v.expires_at, 'refresh', false);
+  end if;
+
+  -- Expired. Whoever gets here first takes a 60-second lease; the lease also
+  -- expires, so a crashed instance cannot wedge the token permanently.
+  if v.locked_until is null or v.locked_until < now() then
+    update bkash_token set locked_until = now() + interval '60 seconds' where id = 1;
+    return jsonb_build_object('token', null, 'refresh', true);
+  end if;
+
+  return jsonb_build_object('token', null, 'refresh', false);
+end;
+$$;
+
+create or replace function bkash_token_store(p_token text, p_expires_at timestamptz)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  insert into bkash_token (id, id_token, expires_at, obtained_at, locked_until)
+  values (1, p_token, p_expires_at, now(), null)
+  on conflict (id) do update
+     set id_token    = excluded.id_token,
+         expires_at  = excluded.expires_at,
+         obtained_at = now(),
+         locked_until = null;
+$$;
+
+-- Only the Edge Functions may touch these. service_role gets execute through
+-- Supabase's default privileges; the revoke is what stops the public roles
+-- reaching a function that hands out a live bKash credential.
+revoke all on function bkash_token_claim() from public, anon, authenticated;
+revoke all on function bkash_token_store(text, timestamptz) from public, anon, authenticated;
+grant execute on function bkash_token_claim() to service_role;
+grant execute on function bkash_token_store(text, timestamptz) to service_role;

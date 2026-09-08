@@ -169,13 +169,14 @@
 
         <h3 style="font-size:.95rem; margin-bottom:10px;">কোর্স অ্যাক্সেস (${s.enrollments.length})</h3>
 
-        <!-- Manual grant. There is no payment gateway: the student pays by
-             bKash send-money after filling in the course's enrolment form, and
-             access is handed over here once the payment has been verified. -->
+        <!-- Manual grant. A bKash checkout switches access on by itself, so
+             this is for the exceptions: a course taken off the gateway and
+             sold through a form, a payment made off-site, or a complimentary
+             seat. -->
         <div class="panel" style="padding:16px; margin-bottom:16px;">
           <div class="form-field" style="margin-bottom:10px;">
             <label for="grantCourse">নতুন কোর্সে অ্যাক্সেস দিন
-              <span class="hint">পেমেন্ট যাচাই করার পরেই দিন</span>
+              <span class="hint">bKash-এ কেনা কোর্স নিজে থেকেই যুক্ত হয় — এটি শুধু হাতে দেওয়ার জন্য</span>
             </label>
             <select id="grantCourse">
               <option value="">— কোর্স বেছে নিন —</option>
@@ -223,7 +224,13 @@
                 <td>${Admin.escapeHtml(o.item_title)}</td>
                 <td>${o.amount_bdt === 0 ? "Free" : "৳" + o.amount_bdt.toLocaleString()}</td>
                 <td class="row-sub">${new Date(o.created_at).toLocaleDateString()}</td>
-                <td>${o.status === "completed" ? '<span class="badge badge-live">Completed</span>' : Admin.escapeHtml(o.status)}</td>
+                <!-- Anything other than "Paid" is an attempt, not income:
+                     orders are created when a bKash payment starts. -->
+                <td>${
+                  o.status === "completed"
+                    ? '<span class="badge badge-live">Paid</span>'
+                    : `<span class="badge badge-draft">${Admin.escapeHtml(o.status || "unknown")}</span>`
+                }</td>
               </tr>`
               )
               .join("")}

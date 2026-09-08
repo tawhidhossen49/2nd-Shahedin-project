@@ -12,11 +12,17 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 > columns on `orders` plus the `coupons` table, and (section 18) coupon
 > scoping so a code can be limited to courses or to store products, and
 > (section 19) digital product delivery plus the `products_safe` view, and
-> (section 20) the extra student profile fields. Re-running
+> (section 20) the extra student profile fields, and (sections 28 and 29)
+> everything bKash checkout needs. Re-running
 > is safe — it never duplicates data and never overwrites anything you've
 > already typed into the admin panel. Until you do, the contact form won't be
 > able to save messages, the coupon box on checkout won't work, and orders
 > will save without the buyer's name, phone and delivery address.
+
+> **Taking payments?** The database half is sections 28 and 29 of `schema.sql`.
+> The other half is deploying two small server functions and pasting in your
+> bKash merchant credentials — that is a separate ten-minute job, written up in
+> **DEPLOY_BKASH.md**. Until it is done, checkout cannot take money.
 
 ---
 
@@ -132,6 +138,21 @@ and Step 3 (create your login).
   and store purchase, newest first, with the name, phone, email and delivery
   address the buyer typed at checkout. Filter to "To ship" to see just the
   physical orders waiting to go out, and export the list as CSV.
+
+  **Read the badge on each row, not just the amount.** A row appears the moment
+  someone *starts* a bKash payment, so the list also contains attempts that
+  never finished:
+
+  - **Paid** — the money arrived. Only these count towards Revenue.
+  - **Awaiting payment** — they went to bKash and never came back. Normal; no
+    money, no access granted. It settles itself if the payment does land.
+  - **Failed** / **Cancelled** — no money taken.
+  - **Refunded** — you sent it all back.
+
+  To refund a paid order, press **Refund** on its row and enter an amount. The
+  money goes back through bKash straight away. You can refund part of an order
+  (up to 10 times, within 60 days); a partial refund leaves the buyer's access
+  in place, and refunding the full amount does not.
 - **Run a discount** → Admin panel → **Coupons**. Codes are grouped by what
   they apply to, each with its own button:
   - **Course coupons** work only when someone is buying a course.

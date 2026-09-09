@@ -9,6 +9,10 @@
    is read from the bkash-payment Edge Function, which asks
    bKash directly when the order is still unsettled.
 
+   That check runs ONCE per page load. See the note in run():
+   automatic retries turn into repeated Query Payment calls,
+   which is the one thing bKash's review does not allow.
+
    That also covers the case this page exists for: the customer
    closed the bKash tab, the callback never ran, and the money
    left their wallet anyway. Opening this page settles it.
@@ -34,12 +38,6 @@
     wait: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
   };
 
-  /* How long to keep asking before giving up. bKash occasionally settles a
-     payment a few seconds after the customer is redirected back, so a single
-     check would tell some buyers their successful payment had failed. */
-  const RETRIES = 5;
-  const RETRY_MS = 4000;
-
   function paint(opts) {
     mount.innerHTML = `
       <div class="empty-state${opts.variant === "error" ? " state-error" : ""}${opts.variant === "good" ? " state-good" : ""}">
@@ -53,10 +51,6 @@
             .join("")}
         </div>
       </div>`;
-  }
-
-  function waiting(message) {
-    mount.innerHTML = `<div class="loading-row"><div class="spinner"></div> ${escapeHtml(message)}</div>`;
   }
 
   // Where "try again" should send someone whose payment did not go through.
@@ -175,41 +169,47 @@
 
     const client = window.ShahedinAuth.client();
 
-    for (let attempt = 0; attempt <= RETRIES; attempt++) {
-      let order;
-      try {
-        order = await fetchStatus(client);
-      } catch (err) {
-        showUnsettled(null);
-        return;
-      }
+    /* EXACTLY ONE server check per page load, and no automatic retry.
 
-      if (!order) {
-        showUnknown();
-        return;
-      }
+       This used to poll six times at four-second intervals while an order
+       stayed pending. Each of those became a Query Payment call to bKash, and
+       a customer who reloaded turned one abandoned checkout into twelve
+       queries in under a minute. bKash allow Query only as a fallback for an
+       Execute that gave no answer, and grade the call sequence during their
+       review — a burst like that reads as polling in the normal flow, whatever
+       the intent behind it.
 
-      if (order.status === "completed" || order.status === "refunded") {
-        showCompleted(order);
-        return;
-      }
-      if (order.status === "cancelled") {
-        showFailed(order, true);
-        return;
-      }
-      if (order.status === "failed") {
-        showFailed(order, false);
-        return;
-      }
-
-      // Still pending. Give bKash a moment and ask again.
-      if (attempt < RETRIES) {
-        waiting("bKash-এর কাছ থেকে নিশ্চিতকরণের অপেক্ষা করা হচ্ছে…");
-        await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
-      } else {
-        showUnsettled(order);
-      }
+       Nothing is lost by asking once. In a normal successful payment the
+       callback has already settled the order, so no query happens at all. When
+       the callback did not run, one query finds the answer. And if bKash
+       genuinely has not settled yet, the customer gets an explicit "আবার
+       দেখুন" button — a person choosing to check again, which is a defensible
+       thing to see in a log, rather than a script hammering the endpoint. */
+    let order;
+    try {
+      order = await fetchStatus(client);
+    } catch (err) {
+      showUnsettled(null);
+      return;
     }
+
+    if (!order) {
+      showUnknown();
+      return;
+    }
+    if (order.status === "completed" || order.status === "refunded") {
+      showCompleted(order);
+      return;
+    }
+    if (order.status === "cancelled") {
+      showFailed(order, true);
+      return;
+    }
+    if (order.status === "failed") {
+      showFailed(order, false);
+      return;
+    }
+    showUnsettled(order);
   }
 
   run();

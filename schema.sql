@@ -2247,4 +2247,19 @@ create policy "admins can read the bkash api log"
   on bkash_api_log for select
   using (auth.uid() in (select id from admins));
 
-revoke all on table bkash_api_log from anon, authenticated;
+/* Two separate gates, and BOTH have to be open.
+
+   The RLS policy above decides which ROWS a caller may see. The table grant
+   below decides whether the caller's role may look at the table at all.
+
+   This section originally revoked the grant from `authenticated` as well,
+   which looked like tightening and was in fact a bug: everyone signed in to
+   the site -- admins included -- talks to PostgREST as `authenticated`, so
+   the revoke made the policy unreachable and Admin -> Orders downloaded an
+   empty log. Every other table here (orders, enrollments, profiles) keeps the
+   grant and lets RLS do the filtering; this now matches.
+
+   anon stays revoked. It has no policy either, so an unauthenticated visitor
+   is refused twice over. */
+revoke all on table bkash_api_log from anon;
+grant select on table bkash_api_log to authenticated;

@@ -2191,3 +2191,60 @@ revoke all on function bkash_token_claim() from public, anon, authenticated;
 revoke all on function bkash_token_store(text, timestamptz) from public, anon, authenticated;
 grant execute on function bkash_token_claim() to service_role;
 grant execute on function bkash_token_store(text, timestamptz) to service_role;
+
+
+-- =========================================================================
+-- 30. bKash API CALL LOG (evidence for bKash's UAT review)
+--     Safe to re-run.
+--
+--     bKash ask the merchant to hand over the request and response of every
+--     API call made during test payments, so they can confirm the integration
+--     calls the right endpoints in the right order. console.error() cannot
+--     serve that: it only fires on failure, Edge Function logs expire, and
+--     they cannot be exported as a file.
+--
+--     Every call this integration makes to bKash is written here instead --
+--     Grant Token, Create Payment, Execute Payment, Query Payment, Refund --
+--     whether it succeeded or failed, with timing. Export it with
+--     tools/export-bkash-log.ps1.
+--
+--     CREDENTIALS ARE REDACTED BEFORE THEY REACH THIS TABLE. The redaction
+--     happens in supabase/functions/_shared/bkash.ts, not here, so nothing
+--     secret is ever written in the first place -- app_secret, the merchant
+--     password, id_token, refresh_token and the Authorization header are all
+--     replaced with a placeholder. The log is meant to be emailed to bKash;
+--     it must stay safe to email.
+-- =========================================================================
+
+create table if not exists bkash_api_log (
+  id            bigserial primary key,
+  created_at    timestamptz not null default now(),
+  -- "grant-token", "create-payment", "execute-payment", "query-payment", "refund"
+  api           text not null,
+  url           text not null,
+  http_status   integer,
+  -- bKash's own code: "0000" on success, e.g. "2023" for insufficient balance.
+  response_code text,
+  error_message text,
+  duration_ms   integer,
+  -- Correlation, so a reviewer can follow one payment across several calls.
+  payment_id    text,
+  order_id      uuid,
+  request_body  jsonb,
+  response_body jsonb
+);
+
+create index if not exists bkash_api_log_created_idx on bkash_api_log (created_at desc);
+create index if not exists bkash_api_log_payment_idx on bkash_api_log (payment_id) where payment_id is not null;
+
+alter table bkash_api_log enable row level security;
+
+-- Written by the Edge Functions with the service role, which bypasses RLS.
+-- Readable by admins so the log can be exported from the panel or the CLI.
+-- No policy for anon or authenticated: a payment log is not public.
+drop policy if exists "admins can read the bkash api log" on bkash_api_log;
+create policy "admins can read the bkash api log"
+  on bkash_api_log for select
+  using (auth.uid() in (select id from admins));
+
+revoke all on table bkash_api_log from anon, authenticated;

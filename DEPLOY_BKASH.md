@@ -230,6 +230,41 @@ row, so it is read from there.
 
 ---
 
+## Giving bKash the call log
+
+bKash ask for the request and response of every API call made during test
+payments, so they can confirm the integration calls the right endpoints in the
+right order. Every call is recorded automatically — Grant Token, Create
+Payment, Execute Payment, Query Payment and Refund, successes and failures
+alike, with timings and bKash's own response codes.
+
+After the test payments are done, export it:
+
+```powershell
+.\tools\export-bkash-log.ps1
+```
+
+Two files land on your Desktop — a readable `.txt` (one block per call) and a
+`.json` of the same rows. Send those to bKash.
+
+```powershell
+.\tools\export-bkash-log.ps1 -SinceHours 6    # just this afternoon's testing
+```
+
+**The files are safe to email.** `app_secret`, the merchant password,
+`id_token`, `refresh_token` and the `Authorization` header are replaced with
+`[redacted]` *before the row is written*, so no secret is ever in the database
+to leak in the first place. `app_key` and `username` are kept on purpose —
+bKash need them to identify which merchant and application the log belongs to,
+and neither is usable without the secret and password that are stripped.
+
+The log lives in the `bkash_api_log` table (schema.sql section 30), readable
+only by admins. It grows by roughly two rows per payment, so it needs no
+routine pruning; clear it between test rounds with
+`delete from bkash_api_log;` if you want a clean file for a specific session.
+
+---
+
 ## Refunds
 
 Admin → Orders → **Refund** on any paid bKash order. It asks for an amount

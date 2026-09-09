@@ -109,6 +109,8 @@
           </div>
           <input type="search" class="sub-search" id="orderSearch" placeholder="Search name, phone, item, address…" value="${Admin.escapeHtml(search)}">
           <button type="button" class="btn btn-ghost btn-sm" id="exportBtn">Export CSV</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="bkashLogTxtBtn" title="Every bKash API request and response, for bKash's UAT review">bKash log .txt</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="bkashLogJsonBtn" title="The same calls as raw JSON">.json</button>
         </div>
         <div id="orderList"></div>
       </div>`;
@@ -123,6 +125,8 @@
       // Re-rendering the whole panel would steal focus mid-typing.
     });
     document.getElementById("exportBtn").addEventListener("click", exportCsv);
+    document.getElementById("bkashLogTxtBtn").addEventListener("click", () => exportBkashLog("txt"));
+    document.getElementById("bkashLogJsonBtn").addEventListener("click", () => exportBkashLog("json"));
 
     renderList();
 
@@ -263,6 +267,88 @@
       btn.disabled = false;
       btn.textContent = original;
       Admin.toast(err.message, true);
+    }
+  }
+
+  /* ---------- bKash API call log ----------------------------------------
+     bKash ask for the request and response of every API call made during test
+     payments before they approve a live integration. Whoever is running that
+     testing needs the file themselves rather than asking someone else to pull
+     it off the command line, so it downloads from here.
+
+     Readable by any admin through the "admins can read the bkash api log"
+     policy (schema.sql section 30). Credentials were already stripped before
+     the rows were written, so the file is safe to send to bKash as-is. */
+  function downloadFile(name, text, mime) {
+    const url = URL.createObjectURL(new Blob(["﻿" + text], { type: mime + ";charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportBkashLog(format) {
+    const btn = document.getElementById(format === "txt" ? "bkashLogTxtBtn" : "bkashLogJsonBtn");
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Loading…";
+
+    try {
+      const { data, error } = await c
+        .from("bkash_api_log")
+        .select("id, created_at, api, url, http_status, response_code, error_message, duration_ms, payment_id, request_body, response_body")
+        .order("id", { ascending: true })
+        .limit(5000);
+
+      if (error) throw error;
+      if (!data || !data.length) {
+        Admin.toast("No bKash API calls logged yet. Run a test payment first.", true);
+        return;
+      }
+
+      const stamp = new Date().toISOString().slice(0, 16).replace("T", "_").replace(":", "");
+
+      if (format === "json") {
+        downloadFile(`bkash-api-log-${stamp}.json`, JSON.stringify(data, null, 2), "application/json");
+      } else {
+        const lines = [
+          "bKash API call log - Shahedin",
+          "Exported: " + new Date().toString(),
+          "Calls:    " + data.length,
+          "Note:     app_secret, password, id_token, refresh_token and the",
+          "          Authorization header are redacted by design.",
+          "=".repeat(78),
+          "",
+        ];
+        data.forEach((r) => {
+          lines.push(`[${r.id}] ${r.api}  -  ${r.response_code === "0000" ? "SUCCESS" : "FAILED (" + r.response_code + ")"}`);
+          lines.push("  Time        : " + r.created_at);
+          lines.push("  URL         : POST " + r.url);
+          lines.push("  HTTP status : " + (r.http_status == null ? "(no response)" : r.http_status));
+          lines.push("  bKash code  : " + (r.response_code || ""));
+          if (r.error_message) lines.push("  Message     : " + r.error_message);
+          if (r.payment_id) lines.push("  paymentID   : " + r.payment_id);
+          lines.push("  Duration    : " + r.duration_ms + " ms");
+          lines.push("  Request  --> " + JSON.stringify(r.request_body));
+          lines.push("  Response <-- " + JSON.stringify(r.response_body));
+          lines.push("-".repeat(78));
+        });
+        downloadFile(`bkash-api-log-${stamp}.txt`, lines.join("\r\n"), "text/plain");
+      }
+
+      Admin.toast(`Exported ${data.length} API call(s).`);
+    } catch (err) {
+      /* A missing table means section 30 of schema.sql has not been run on
+         this database yet - worth saying, because the button otherwise just
+         looks broken. */
+      const message = /does not exist|could not find/i.test(err.message || "")
+        ? "The bkash_api_log table is missing. Run section 30 of schema.sql."
+        : err.message || "Could not read the log.";
+      Admin.toast(message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
     }
   }
 

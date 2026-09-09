@@ -238,18 +238,23 @@ right order. Every call is recorded automatically — Grant Token, Create
 Payment, Execute Payment, Query Payment and Refund, successes and failures
 alike, with timings and bKash's own response codes.
 
-After the test payments are done, export it:
+There are two ways to get the file out, and they produce the same thing.
+
+**From the admin panel — no command line, no Supabase account.** Whoever ran
+the testing can collect their own evidence: log in to `/admin` → **Orders** →
+**bKash log .txt** (or **.json**). Any admin can do this; nobody has to ask the
+person who set the integration up. This is the route to give a colleague who is
+doing UAT on your behalf.
+
+**From the command line**, if you already have the repo and the Supabase CLI:
 
 ```powershell
 .\tools\export-bkash-log.ps1
+.\tools\export-bkash-log.ps1 -SinceHours 6    # just this afternoon's testing
 ```
 
 Two files land on your Desktop — a readable `.txt` (one block per call) and a
 `.json` of the same rows. Send those to bKash.
-
-```powershell
-.\tools\export-bkash-log.ps1 -SinceHours 6    # just this afternoon's testing
-```
 
 **The files are safe to email.** `app_secret`, the merchant password,
 `id_token`, `refresh_token` and the `Authorization` header are replaced with

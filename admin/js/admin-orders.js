@@ -225,12 +225,18 @@
 
     const amount = Math.floor(Number(typed));
     if (!Number.isFinite(amount) || amount <= 0 || amount > remaining) {
-      Admin.toast(`Enter an amount between 1 and ${remaining}.`, true);
+      window.alert(`That amount does not work.\n\nEnter a whole number between 1 and ${remaining}.\n\nNothing has been refunded.`);
       return;
     }
 
-    const reason = (window.prompt("Reason for the refund (the customer does not see this):", "Refunded by merchant") || "").trim();
-    if (!reason) return;
+    /* Cancel and "OK with the box emptied" are different intentions and used
+       to be treated the same: both returned silently, so clearing the reason
+       aborted the whole refund with no message at all. The button simply reset
+       and you were left unable to tell whether the money had moved. Cancel
+       still stops; an empty box just falls back to the default reason. */
+    const typedReason = window.prompt("Reason for the refund (bKash records this; the customer does not see it):", "Refunded by merchant");
+    if (typedReason === null) return;
+    const reason = typedReason.trim() || "Refunded by merchant";
 
     const original = btn.textContent;
     btn.disabled = true;
@@ -252,7 +258,8 @@
       }
 
       order.refunded_bdt = Number(data.refunded) || amount;
-      if (order.refunded_bdt >= Number(order.amount_bdt)) order.status = "refunded";
+      const fully = order.refunded_bdt >= Number(order.amount_bdt);
+      if (fully) order.status = "refunded";
       // Mirror what was just written server-side so the new refund's trx id
       // shows without a reload.
       (refundsByOrder[orderId] = refundsByOrder[orderId] || []).push({
@@ -261,12 +268,42 @@
         amount_bdt: amount,
         created_at: new Date().toISOString(),
       });
-      Admin.toast(`Refunded ${money(amount)}${data.refundTrxId ? ` · ${data.refundTrxId}` : ""}`);
       render();
+
+      /* Deliberately a blocking alert rather than a toast. Money has just left
+         the merchant wallet, and a notice that fades after four seconds -- at
+         the end of two dialogs and a round trip to bKash -- is how someone ends
+         up not knowing whether it worked. This waits to be acknowledged, and
+         carries the refund transaction id, which is the receipt bKash and the
+         customer will both quote. */
+      window.alert(
+        [
+          "Refund complete.",
+          "",
+          `Item:             ${order.item_title}`,
+          `Refunded now:     ${money(amount)}`,
+          `bKash refund ID:  ${data.refundTrxId || "(not returned)"}`,
+          `Original trx ID:  ${order.bkash_trx_id || "-"}`,
+          "",
+          fully
+            ? "That was the full amount. The order now shows as Refunded."
+            : `${money(order.refunded_bdt)} of ${money(order.amount_bdt)} refunded so far. ${money(Number(order.amount_bdt) - order.refunded_bdt)} can still be refunded.`,
+          /* A refunded product loses its download automatically -- products_safe
+             only hands the delivery URL to a *completed* order. A course does
+             not: access comes from the enrollments row, which a refund does not
+             touch. Said out loud rather than deleting the enrolment here,
+             because that would also destroy the student's lesson progress and
+             is not something to do behind the admin's back. */
+          fully && order.kind === "course"
+            ? "\nNote: the student still has access to this course. Remove it from Students -> the student -> কোর্স অ্যাক্সেস if that is what you want."
+            : "",
+        ].join("\n")
+      );
     } catch (err) {
       btn.disabled = false;
       btn.textContent = original;
-      Admin.toast(err.message, true);
+      // Same reasoning: a failed refund must not scroll past unnoticed.
+      window.alert(`The refund did NOT go through.\n\n${err.message}\n\nNo money has been sent back. You can try again.`);
     }
   }
 

@@ -270,6 +270,24 @@
       });
       render();
 
+      /* bKash paid the customer but our own row did not save. Refunding again
+         would be the natural next move and exactly the wrong one, so this says
+         so before anything else. */
+      if (data.recordFailed) {
+        window.alert(
+          [
+            "The refund WENT THROUGH at bKash, but this site could not record it.",
+            "",
+            `bKash refund ID:  ${data.refundTrxId || "(not returned)"}`,
+            `Amount:           ${money(amount)}`,
+            "",
+            "DO NOT refund this order again — the customer has already been paid.",
+            "Write the refund ID down and reload the page.",
+          ].join("\n")
+        );
+        return;
+      }
+
       /* Deliberately a blocking alert rather than a toast. Money has just left
          the merchant wallet, and a notice that fades after four seconds -- at
          the end of two dialogs and a round trip to bKash -- is how someone ends

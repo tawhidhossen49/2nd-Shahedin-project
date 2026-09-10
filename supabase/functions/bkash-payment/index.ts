@@ -350,8 +350,13 @@ async function handleRefund(db: SupabaseClient, userId: string, body: Body): Pro
       sku: String(body.sku ?? "").trim() || order.item_title.slice(0, 40),
     });
 
+    /* Past this point the money has already left the merchant wallet. Nothing
+       below can undo that, so a failure here is reported rather than thrown —
+       telling the admin "the refund failed" when bKash has paid the customer
+       would be the worst possible answer. */
     const refundedTotal = alreadyRefunded + amount;
-    await db.from("order_refunds").insert({
+
+    const { error: historyError } = await db.from("order_refunds").insert({
       order_id: order.id,
       refund_trx_id: result.refundTrxId || null,
       amount_bdt: amount,
@@ -360,8 +365,11 @@ async function handleRefund(db: SupabaseClient, userId: string, body: Body): Pro
       status: result.status || "Completed",
       created_by: userId,
     });
+    if (historyError) {
+      console.error("bkash-payment: refund succeeded but the history row failed.", historyError.message);
+    }
 
-    await db
+    const { error: recordError } = await db
       .from("orders")
       .update({
         refunded_bdt: refundedTotal,
@@ -370,6 +378,17 @@ async function handleRefund(db: SupabaseClient, userId: string, body: Body): Pro
         status: refundedTotal >= Number(order.amount_bdt) ? "refunded" : "completed",
       })
       .eq("id", order.id);
+
+    if (recordError) {
+      /* The dangerous case: bKash paid the customer but the order still reads
+         as fully refundable, so the panel would offer the Refund button again
+         and an admin could reasonably press it twice. Say so explicitly. */
+      console.error(
+        `bkash-payment: REFUND ${result.refundTrxId} SUCCEEDED AT BKASH but order ${order.id} was not updated.`,
+        recordError.message,
+      );
+      return json({ refundTrxId: result.refundTrxId, refunded: refundedTotal, recordFailed: true });
+    }
 
     return json({ refundTrxId: result.refundTrxId, refunded: refundedTotal });
   } catch (err) {

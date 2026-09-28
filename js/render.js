@@ -719,7 +719,7 @@
       const id = qs("id") || data.courses[0].id;
       const c = data.courses.find((x) => x.id === id) || data.courses[0];
       document.title = c.title + " — Shahedin";
-      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price, purchaseUrl: c.purchaseUrl || null, reviewsEnabled: c.reviewsEnabled !== false };
+      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price, reviewsEnabled: c.reviewsEnabled !== false };
       const durationLabel = durationBn(c.duration);
       mount(
         "[data-mount='course-detail']",

@@ -35,10 +35,6 @@
       category: row.category || "general",
       desc: row.description_bn || row.description_en || "",
       image: row.thumbnail_url || null,
-      /* Where the buy button sends a student for a paid course. Blank falls
-         back to the site-wide form in Settings — see enrollmentFormUrl() in
-         js/course-progress.js. */
-      purchaseUrl: row.purchase_url || null,
       /* Whether the course page shows its reviews block at all. Anything other
          than an explicit false counts as on, so a database still missing the
          column (section 23 of schema.sql) keeps showing reviews as before. */

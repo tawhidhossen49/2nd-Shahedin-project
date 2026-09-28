@@ -86,21 +86,12 @@
       return;
     }
 
-    /* Paid course. bKash checkout is live now (see supabase/functions/
-       bkash-payment), so the default is to sell it here.
-
-       The manual route is kept as a deliberate override, not as a fallback:
-       if the admin has filled in a purchase/enrolment form URL for this
-       course — or a site-wide one in Settings — that is an explicit choice to
-       take this particular course off the gateway, and it still wins. With
-       nothing configured, the student goes to checkout and pays.
-
-       requireAuth() above is what makes the ordering work either way: an
-       anonymous visitor gets the login modal first, so the order (or the
-       admin's manual grant) always has an account to attach to. */
+    /* Paid course: always bKash checkout, with no per-course override. The
+       callback grants the enrolment the moment bKash confirms the money.
+       requireAuth() above runs first, so the order always has an account to
+       attach to. */
     if (!course.free) {
-      const form = await enrollmentFormUrl(course);
-      window.location.href = form || `checkout.html?course=${encodeURIComponent(course.slug)}`;
+      window.location.href = `checkout.html?course=${encodeURIComponent(course.slug)}`;
       return;
     }
 
@@ -124,32 +115,6 @@
       restore();
       window.showToast && window.showToast("ভর্তি হতে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
     }
-  }
-
-  /* An off-site enrolment form to use INSTEAD of bKash checkout, or "" for
-     the normal thing.
-
-     Two levels, so the admin can work either way:
-       1. the course's own "Purchase / enrollment form URL" field, and
-       2. the site-wide default in Settings -> Course enrollment,
-     with the per-course value winning when both are set. Leave both blank —
-     which is the state of a newly created course — and the student is sent to
-     checkout to pay by bKash.
-
-     Only http(s) is accepted. The admin field is free text, and a stray
-     "javascript:" in it must not become a live link on the buy button. */
-  async function enrollmentFormUrl(course) {
-    const own = String(course.purchaseUrl || "").trim();
-    if (/^https?:\/\/\S+$/i.test(own)) return own;
-
-    let fallback = "";
-    try {
-      const settings = window.SiteSettings ? await window.SiteSettings.ready() : null;
-      fallback = String((settings && settings.enrollment && settings.enrollment.form_url) || "").trim();
-    } catch (err) {
-      fallback = ""; // settings unreachable — treated as "not configured"
-    }
-    return /^https?:\/\/\S+$/i.test(fallback) ? fallback : "";
   }
 
   async function loadEnrollment(user, course) {

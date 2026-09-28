@@ -226,20 +226,6 @@
               <label>&nbsp;</label>
               <label class="form-check"><input type="checkbox" id="f_free" ${course?.is_free ? "checked" : ""}> This course is free</label>
             </div>
-            <div class="form-field full">
-              <label>Purchase / enrollment form URL
-                <span class="hint">leave blank — this course is sold through bKash checkout</span>
-              </label>
-              <input type="url" id="f_purchase_url" placeholder="https://docs.google.com/forms/..."
-                     value="${Admin.escapeHtml(course?.purchase_url || "")}">
-              <p class="hint" style="margin-top:8px;">
-                <strong>Blank is normal.</strong> The "এখনই কিনুন" button takes students to checkout, they pay with bKash,
-                and access switches on automatically. Fill this in only to take <em>this one</em> course off the gateway and
-                send its students to a form instead — then they pay you off-site and you grant access by hand from
-                <strong>Students → a student → কোর্স অ্যাক্সেস</strong>. A site-wide version of the same opt-out lives in
-                <strong>Settings → Course enrollment</strong>; this field beats it.
-              </p>
-            </div>
             <div class="form-field">
               <label>Rating <span class="hint">0–5</span></label>
               <input type="number" id="f_rating" min="0" max="5" step="0.1" value="${course?.rating ?? 4.8}">
@@ -633,14 +619,6 @@
       message: "Enter a full video link starting with https:// — or leave it blank for no preview video.",
       test: (v) => v.trim() === "" || /^https?:\/\/\S+$/i.test(v.trim()),
     },
-    {
-      id: "f_purchase_url",
-      label: "Purchase form URL",
-      // Blank is valid and meaningful: it falls back to the site-wide form. A
-      // half-typed URL is not, and would send buyers nowhere.
-      message: "Enter the full link, starting with https:// — or leave it blank to use the site-wide enrollment form.",
-      test: (v) => v.trim() === "" || /^https?:\/\/\S+$/i.test(v.trim()),
-    },
   ];
 
   async function saveCourse(e) {
@@ -698,9 +676,6 @@
         duration_en: document.getElementById("f_duration").value.trim(),
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
         is_free: document.getElementById("f_free").checked,
-        // Blank saves as null, which is what makes the front end fall back to
-        // the site-wide enrollment form rather than linking nowhere.
-        purchase_url: document.getElementById("f_purchase_url").value.trim() || null,
         // Every switch from PAGE_FLAGS, so adding one there is enough.
         ...Object.fromEntries(PAGE_FLAGS.map((flag) => [flag.column, document.getElementById(flag.fieldId).checked])),
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
@@ -754,8 +729,8 @@
           handled = true;
         }
       }
-      // A database still on an older schema has no purchase_url /
-      // reviews_enabled column, and Postgres only says "column not found" —
+      // A database still on an older schema has no reviews_enabled /
+      // show_students_count column, and Postgres only says "column not found" —
       // which reads like a bug in the panel rather than a migration you
       // haven't run yet.
       if (!handled && (err.code === "42703" || err.code === "PGRST204")) {

@@ -20,7 +20,6 @@
   const contact = settings.contact || {};
   const social = settings.social || {};
   const announcement = settings.announcement || {};
-  const enrollment = settings.enrollment || {};
 
   content.innerHTML = `
     <form id="settingsForm">
@@ -69,23 +68,6 @@
       </div>
 
       <div class="panel">
-        <div class="panel-head"><div><h2>Course enrollment</h2><p>Paid courses are sold through bKash checkout on the site — you do not need to do anything here. This box is the <strong>opt-out</strong>: fill it in and paid courses skip the gateway and go to a form you handle by hand instead.</p></div></div>
-        <div class="form-grid">
-          <div class="form-field full">
-            <label>Enrollment form link <span class="hint">leave blank to sell through bKash checkout</span></label>
-            <input type="url" id="s_enroll_form" placeholder="https://docs.google.com/forms/d/e/.../viewform" value="${Admin.escapeHtml(enrollment.form_url || "")}">
-            <p class="hint" style="margin-top:8px;">
-              <strong>Blank is the normal setting.</strong> A student clicks buy, pays with bKash, and their course access
-              switches on by itself. Put a link here and every paid course sends students to that form instead — they pay
-              you off-site and you grant access from <strong>Students → a student → কোর্স অ্যাক্সেস</strong>. To take just one
-              course off the gateway, use <strong>Courses → edit the course → Purchase / enrollment form URL</strong>;
-              a link set there beats this one.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
         <div class="panel-head"><div><h2>Site announcement</h2><p>A banner you can turn on for sales, new courses, etc. (Requires a small one-time code addition to display — see README.)</p></div></div>
         <label class="form-check" style="margin-bottom:16px;"><input type="checkbox" id="s_announce_on" ${announcement.enabled ? "checked" : ""}> Show announcement banner</label>
         <div class="form-grid">
@@ -127,9 +109,6 @@
         facebook_profile_label: val("s_facebook_profile_label"),
         instagram: val("s_instagram"),
         linkedin: val("s_linkedin"),
-      }},
-      { key: "enrollment", value: {
-        form_url: val("s_enroll_form"),
       }},
       { key: "announcement", value: {
         enabled: document.getElementById("s_announce_on").checked,

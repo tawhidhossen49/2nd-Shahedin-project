@@ -170,9 +170,8 @@
         <h3 style="font-size:.95rem; margin-bottom:10px;">কোর্স অ্যাক্সেস (${s.enrollments.length})</h3>
 
         <!-- Manual grant. A bKash checkout switches access on by itself, so
-             this is for the exceptions: a course taken off the gateway and
-             sold through a form, a payment made off-site, or a complimentary
-             seat. -->
+             this is for the exceptions: a payment made off-site, or a
+             complimentary seat. -->
         <div class="panel" style="padding:16px; margin-bottom:16px;">
           <div class="form-field" style="margin-bottom:10px;">
             <label for="grantCourse">নতুন কোর্সে অ্যাক্সেস দিন

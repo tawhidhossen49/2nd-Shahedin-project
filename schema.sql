@@ -2374,3 +2374,27 @@ update orders
    set bkash_env = 'sandbox'
  where bkash_payment_id is not null
    and bkash_env is null;
+
+
+-- =========================================================================
+-- 32. COURSES SELL THROUGH bKASH ONLY
+--     Safe to re-run.
+--
+--     Section 22 routed paid courses to an off-site Google Form, with a
+--     per-course link (courses.purchase_url) and a site-wide one (the
+--     'enrollment' row in site_settings). Section 28 kept both as an
+--     opt-out from bKash. In practice every paid course had its form link
+--     filled in, so no course ever reached bKash checkout at all.
+--
+--     The override is removed from the site and the admin panel; this clears
+--     the data behind it so nothing can resurrect it.
+--
+--     The purchase_url COLUMN is deliberately kept, as section 27 did for
+--     `includes`: courses_safe selects it, and rebuilding the view that gates
+--     paid lesson content to drop one always-null column is not a trade worth
+--     making. Nothing reads or writes it any more.
+-- =========================================================================
+
+update courses set purchase_url = null where purchase_url is not null;
+
+delete from site_settings where key = 'enrollment';

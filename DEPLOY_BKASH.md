@@ -160,22 +160,65 @@ supabase functions logs bkash-callback
 
 ## 7. Go live
 
-Re-run **only** the base URL secret with the production host, then redeploy
+**Status: done.** The site runs on the live bKash account as of 2026-09-28.
+This section is the record, and the procedure for rotating credentials later.
+
+> ⚠️ **Use `/v2`, whatever the credential sheet says.** bKash's production
+> credential sheet lists the API root as
+> `https://tokenized.pay.bka.sh/v1.2.0-beta`. That is a *different API* with
+> different endpoint paths — this integration speaks v2 only, and every call
+> to the v1.2.0-beta root would 404. The live credentials were verified working
+> against `https://tokenized.pay.bka.sh/v2` before switching.
+>
+> The functions now refuse to start with anything else: `BKASH_BASE_URL` must be
+> `https://` on a `bka.sh` host and end in `/v2`, or `readConfig` throws with
+> the reason. The host is pinned for a second reason too — Grant Token sends the
+> merchant password and app secret to whatever that URL names, so a tampered
+> secret must not be able to point them at someone else's server.
+
+Run section 31 of `schema.sql` first. Then set the five secrets and redeploy
 (secrets reach a function on its *next* deploy):
 
 ```bash
 supabase secrets set BKASH_BASE_URL='https://tokenized.pay.bka.sh/v2'
-supabase secrets set BKASH_APP_KEY='live_app_key'
-supabase secrets set BKASH_APP_SECRET='live_app_secret'
-supabase secrets set BKASH_USERNAME='live_username'
-supabase secrets set BKASH_PASSWORD='live_password'
+supabase secrets set BKASH_APP_KEY='...'
+supabase secrets set BKASH_APP_SECRET='...'
+supabase secrets set BKASH_USERNAME='...'
+supabase secrets set BKASH_PASSWORD='...'
 supabase functions deploy bkash-payment
 supabase functions deploy bkash-callback --no-verify-jwt
 ```
 
+Single quotes matter: the live password contains `^` and `%`. Check they
+landed intact without revealing them — `supabase secrets list` shows SHA-256
+digests, so hash what you meant to set and compare.
+
+**No token clean-up is needed when switching.** Every stored token carries a
+fingerprint of the account that issued it (section 31), so a sandbox token is
+never handed to production and the first live call simply grants a fresh one.
+
 Then buy one real thing for the smallest price you sell, confirm it arrives in
 the merchant wallet, and refund it from Admin → Orders. That last part tests
 the refund path while the amount is still trivial.
+
+### What changes once you are live
+
+- **Sandbox orders are kept but set aside.** Every order taken before the
+  switch is tagged `sandbox`: badged in Admin → Orders, left out of revenue, and
+  not refundable — the server refuses, since a sandbox payment ID means nothing
+  to the live account.
+- **The callback demands its signature.** It used to compare the signature only
+  when one was supplied, so omitting it let anyone who knew a payment ID mark
+  that customer's order cancelled. A missing or wrong signature now changes
+  nothing; the customer is sent to the status page, which asks bKash directly.
+- **Payment starts are rate-limited** to 5 per account per 10 minutes, so a
+  script cannot hammer the live merchant account into being throttled by bKash.
+
+### Rotating credentials
+
+If a credential is ever exposed, ask bKash to reissue it, set the new values as
+above, and redeploy. The account fingerprint changes with the app key, so every
+token issued under the old one becomes unreachable immediately.
 
 ---
 

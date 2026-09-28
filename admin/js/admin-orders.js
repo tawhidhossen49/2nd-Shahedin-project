@@ -62,10 +62,17 @@
   /* Money actually taken. Orders are written BEFORE the customer pays now, so
      the table holds abandoned attempts too — summing every row would report
      revenue that never arrived. A refund comes straight back off the top. */
-  const paid = (o) => o.status === "completed" || o.status === "refunded";
+  /* Sandbox payments were tests against bKash's play-money wallets. They keep
+     their rows as a record of the testing, but they are not income: counting
+     them would open the live store with a revenue figure made of test runs.
+     Each one is badged, left out of every total, and cannot be refunded --
+     the server refuses that too, since a sandbox payment ID means nothing to
+     the live account. */
+  const isTest = (o) => o.bkash_env === "sandbox";
+  const paid = (o) => !isTest(o) && (o.status === "completed" || o.status === "refunded");
   const netPaid = (o) => (paid(o) ? (Number(o.amount_bdt) || 0) - (Number(o.refunded_bdt) || 0) : 0);
   const unpaid = (o) => o.status === "pending" || o.status === "failed" || o.status === "cancelled";
-  const refundable = (o) => o.status === "completed" && !!o.bkash_trx_id && netPaid(o) > 0;
+  const refundable = (o) => !isTest(o) && o.status === "completed" && !!o.bkash_trx_id && netPaid(o) > 0;
 
   const STATUS_BADGE = {
     completed: ["badge-live", "Paid"],
@@ -87,14 +94,16 @@
   }
 
   function render() {
-    const revenue = orders.reduce((s, o) => s + netPaid(o), 0);
-    const refunded = orders.reduce((s, o) => s + (Number(o.refunded_bdt) || 0), 0);
-    const shipping = orders.filter((o) => needsShipping(o) && paid(o)).length;
-    const waiting = orders.filter((o) => o.status === "pending").length;
+    const live = orders.filter((o) => !isTest(o));
+    const revenue = live.reduce((s, o) => s + netPaid(o), 0);
+    const refunded = live.reduce((s, o) => s + (Number(o.refunded_bdt) || 0), 0);
+    const shipping = live.filter((o) => needsShipping(o) && paid(o)).length;
+    const waiting = live.filter((o) => o.status === "pending").length;
+    const tests = orders.length - live.length;
 
     content.innerHTML = `
       <div class="stat-grid">
-        <div class="stat-card"><div class="label">Paid orders</div><div class="value">${orders.filter(paid).length}</div><div class="sub">of ${orders.length} started</div></div>
+        <div class="stat-card"><div class="label">Paid orders</div><div class="value">${live.filter(paid).length}</div><div class="sub">of ${live.length} started${tests ? ` · ${tests} sandbox test${tests === 1 ? "" : "s"} not counted` : ""}</div></div>
         <div class="stat-card"><div class="label">Revenue</div><div class="value">${money(revenue)}</div><div class="sub">${refunded > 0 ? `after ${money(refunded)} refunded` : "paid orders only"}</div></div>
         <div class="stat-card"><div class="label">Awaiting payment</div><div class="value">${waiting}</div><div class="sub">started, never finished</div></div>
         <div class="stat-card"><div class="label">To ship</div><div class="value">${shipping}</div><div class="sub">paid, physical, has an address</div></div>
@@ -177,7 +186,9 @@
             : `<span class="row-sub">—</span>`
         }</td>
         <td>
-          <div>${money(o.amount_bdt)} <span class="badge ${badgeClass}">${Admin.escapeHtml(badgeText)}</span></div>
+          <div>${money(o.amount_bdt)} <span class="badge ${badgeClass}">${Admin.escapeHtml(badgeText)}</span>${
+            isTest(o) ? ` <span class="badge badge-free" title="Paid with bKash's sandbox test wallet. Not real money; not counted in revenue.">Sandbox</span>` : ""
+          }</div>
           ${discount > 0
             ? `<div class="row-sub">${money(sub)} − ${money(discount)}${o.coupon_code ? ` (${Admin.escapeHtml(o.coupon_code)})` : ""}</div>`
             : ""}

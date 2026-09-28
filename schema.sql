@@ -2263,3 +2263,114 @@ create policy "admins can read the bkash api log"
    is refused twice over. */
 revoke all on table bkash_api_log from anon;
 grant select on table bkash_api_log to authenticated;
+
+
+-- =========================================================================
+-- 31. GOING LIVE: keep sandbox and production apart
+--     Safe to re-run.
+--
+--     Everything before this ran against the bKash sandbox. Switching the
+--     credentials to production is a one-line change to the secrets, and that
+--     is exactly the danger: three things kept working silently across the
+--     switch when they should not.
+--
+--     (a) The token store did not know which environment issued its token.
+--         A sandbox id_token still inside its hour would have been sent to
+--         production. It now carries a fingerprint of the account that
+--         granted it, and a token is only ever handed back to that account.
+--
+--     (b) Orders did not record which environment they were paid in. After
+--         the switch, sandbox test orders would have counted as live revenue,
+--         and a refund or status check on one would have sent a sandbox
+--         payment id to the live bKash account.
+--
+--     (c) Nothing here changes the callback -- that hardening is in
+--         supabase/functions/bkash-callback -- but it is part of the same
+--         go-live and is listed in DEPLOY_BKASH.md.
+-- =========================================================================
+
+-- ---------- (a) Tokens are bound to the account that issued them --------
+-- A SHA-256 of base URL, app_key and username, computed in the Edge Function.
+-- A hash rather than the values themselves: the point is identity, and
+-- nothing about the account needs to be readable from this row.
+alter table bkash_token add column if not exists fingerprint text;
+
+create or replace function bkash_token_claim(p_fingerprint text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public, pg_temp
+as $$
+declare
+  v bkash_token%rowtype;
+begin
+  select * into v from bkash_token where id = 1 for update;
+
+  if not found then
+    insert into bkash_token (id, id_token, expires_at, locked_until)
+    values (1, '', now() - interval '1 second', now() + interval '60 seconds')
+    on conflict (id) do nothing;
+    return jsonb_build_object('token', null, 'refresh', true);
+  end if;
+
+  -- Reused only when it is still in date AND it came from this same account.
+  -- A token from any other environment is treated exactly like an expired
+  -- one: never returned, always replaced.
+  if v.expires_at > now() and v.fingerprint is not distinct from p_fingerprint then
+    return jsonb_build_object('token', v.id_token, 'expires_at', v.expires_at, 'refresh', false);
+  end if;
+
+  if v.locked_until is null or v.locked_until < now() then
+    update bkash_token set locked_until = now() + interval '60 seconds' where id = 1;
+    return jsonb_build_object('token', null, 'refresh', true);
+  end if;
+
+  return jsonb_build_object('token', null, 'refresh', false);
+end;
+$$;
+
+create or replace function bkash_token_store(p_token text, p_expires_at timestamptz, p_fingerprint text)
+returns void
+language sql
+security definer
+set search_path = public, pg_temp
+as $$
+  insert into bkash_token (id, id_token, expires_at, obtained_at, locked_until, fingerprint)
+  values (1, p_token, p_expires_at, now(), null, p_fingerprint)
+  on conflict (id) do update
+     set id_token     = excluded.id_token,
+         expires_at   = excluded.expires_at,
+         obtained_at  = now(),
+         locked_until = null,
+         fingerprint  = excluded.fingerprint;
+$$;
+
+revoke all on function bkash_token_claim(text) from public, anon, authenticated;
+revoke all on function bkash_token_store(text, timestamptz, text) from public, anon, authenticated;
+grant execute on function bkash_token_claim(text) to service_role;
+grant execute on function bkash_token_store(text, timestamptz, text) to service_role;
+
+-- The unfingerprinted versions from section 29. Dropped rather than left
+-- callable: an old code path reaching them would skip the environment check,
+-- which is the whole reason this section exists.
+drop function if exists bkash_token_claim();
+drop function if exists bkash_token_store(text, timestamptz);
+
+-- The row is stale by definition after this migration: it was issued by the
+-- sandbox. Expire it so the next call grants a fresh token for whichever
+-- account is configured, instead of waiting out the clock.
+update bkash_token set expires_at = now() - interval '1 second', locked_until = null where id = 1;
+
+-- ---------- (b) Every bKash order knows which environment paid it --------
+alter table orders add column if not exists bkash_env text;
+alter table orders drop constraint if exists orders_bkash_env_check;
+alter table orders add constraint orders_bkash_env_check
+  check (bkash_env is null or bkash_env in ('sandbox', 'live'));
+
+-- Every bKash order before this section was a sandbox test -- the live
+-- credentials did not exist yet. Only rows that reached bKash are tagged;
+-- free orders never touched a gateway and stay null.
+update orders
+   set bkash_env = 'sandbox'
+ where bkash_payment_id is not null
+   and bkash_env is null;

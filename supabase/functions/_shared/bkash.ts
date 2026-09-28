@@ -16,12 +16,17 @@
 
 import { SupabaseClient } from "npm:@supabase/supabase-js@2";
 
+export type BkashEnv = "sandbox" | "live";
+
 export interface BkashConfig {
   baseUrl: string;
   appKey: string;
   appSecret: string;
   username: string;
   password: string;
+  /* Which bKash this is talking to. Recorded on every order, so a payment
+     taken in one environment is never refunded or queried in the other. */
+  env: BkashEnv;
   /* Service-role client, used only to reach the shared token store in
      `bkash_token`. Every bKash call needs it, so it rides along with the
      credentials rather than being threaded through each function. */
@@ -78,16 +83,54 @@ export function readConfig(db: SupabaseClient): BkashConfig {
     throw new Error(`bKash is not configured: missing ${missing.join(", ")}`);
   }
 
+  // Trailing slashes vary between how the sandbox and production URLs are
+  // written down; normalise once so path joining is predictable.
+  const normalised = baseUrl!.replace(/\/+$/, "");
+
+  /* The base URL is the one place a merchant password and app secret are
+     sent, so it is pinned rather than trusted. Grant Token posts both in the
+     clear to whatever host this names; a tampered or mistyped secret must
+     not be able to redirect them anywhere but bKash.
+
+     /v2 is pinned too. bKash's production credential sheet lists
+     https://tokenized.pay.bka.sh/v1.2.0-beta, but every path in this file is
+     a v2 path -- that URL would 404 on every call. The same credentials were
+     verified working against /v2 before going live. Failing here, at
+     start-up, names the mistake instead of leaving a customer staring at a
+     payment that silently never starts. */
+  let parsed: URL;
+  try {
+    parsed = new URL(normalised);
+  } catch {
+    throw new Error("BKASH_BASE_URL is not a valid URL.");
+  }
+  if (parsed.protocol !== "https:" || !/(^|\.)bka\.sh$/i.test(parsed.hostname)) {
+    throw new Error("BKASH_BASE_URL must be an https:// address on bka.sh.");
+  }
+  if (parsed.pathname.replace(/\/+$/, "") !== "/v2") {
+    throw new Error("BKASH_BASE_URL must end in /v2 (this integration speaks the v2 API).");
+  }
+
   return {
-    // Trailing slashes vary between how the sandbox and production URLs are
-    // written down in the spec; normalise once so path joining is predictable.
-    baseUrl: baseUrl!.replace(/\/+$/, ""),
+    baseUrl: normalised,
     appKey: appKey!,
     appSecret: appSecret!,
     username: username!,
     password: password!,
+    env: /sandbox/i.test(parsed.hostname) ? "sandbox" : "live",
     db,
   };
+}
+
+/* Identity of the account a token belongs to: SHA-256 of base URL, app_key
+   and username. Stored beside the token so the store only ever hands a token
+   back to the account that was granted it -- switching sandbox to live, or
+   rotating the app key, makes every older token unreachable at once. Hashed
+   because identity is all it needs to express. */
+async function accountFingerprint(cfg: BkashConfig): Promise<string> {
+  const bytes = new TextEncoder().encode(`${cfg.baseUrl}|${cfg.appKey}|${cfg.username}`);
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /* ---------- Call log ----------------------------------------------------
@@ -276,13 +319,15 @@ async function postJson(
 
    The in-memory copy below is only a shortcut past a database round trip
    within one isolate. It can never outlive the expiry the database issued,
-   so it cannot serve a token the shared store considers dead. */
+   so it cannot serve a token the shared store considers dead -- and it is
+   keyed by account like the store, so it cannot serve one from the wrong
+   environment either. */
 interface CachedToken {
   value: string;
   expiresAt: number;
 }
 
-let memo: CachedToken | null = null;
+let memo: (CachedToken & { fingerprint: string }) | null = null;
 
 // Ask for a new token a few minutes before the hour is up, so a request that
 // starts just before expiry is never issued a token that dies mid-flight.
@@ -311,17 +356,19 @@ async function grantToken(cfg: BkashConfig): Promise<CachedToken> {
 }
 
 async function token(cfg: BkashConfig): Promise<string> {
-  if (memo && memo.expiresAt > Date.now()) return memo.value;
+  const fingerprint = await accountFingerprint(cfg);
+  if (memo && memo.fingerprint === fingerprint && memo.expiresAt > Date.now()) return memo.value;
 
   for (let attempt = 0; attempt < LEASE_ATTEMPTS; attempt++) {
-    const { data, error } = await cfg.db.rpc("bkash_token_claim");
+    const { data, error } = await cfg.db.rpc("bkash_token_claim", { p_fingerprint: fingerprint });
     if (error) {
       throw new BkashError("Could not read the stored bKash token.", "token_store", 500);
     }
 
     if (data?.token) {
-      // Someone else already granted it — reuse, which is the whole point.
-      memo = { value: String(data.token), expiresAt: Date.parse(String(data.expires_at)) };
+      // Someone else already granted it for this same account — reuse it,
+      // which is the whole point.
+      memo = { value: String(data.token), expiresAt: Date.parse(String(data.expires_at)), fingerprint };
       return memo.value;
     }
 
@@ -330,8 +377,9 @@ async function token(cfg: BkashConfig): Promise<string> {
       await cfg.db.rpc("bkash_token_store", {
         p_token: granted.value,
         p_expires_at: new Date(granted.expiresAt).toISOString(),
+        p_fingerprint: fingerprint,
       });
-      memo = granted;
+      memo = { ...granted, fingerprint };
       return granted.value;
     }
 

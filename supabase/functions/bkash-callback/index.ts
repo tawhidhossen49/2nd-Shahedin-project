@@ -40,6 +40,19 @@ function redirect(to: string): Response {
   return new Response(null, { status: 302, headers: { Location: to } });
 }
 
+/* Constant-time string comparison. A plain !== returns as soon as the first
+   character differs, and the time that takes leaks how much of a guess was
+   right. Over the internet that is a hard signal to read, but this endpoint
+   is public and unauthenticated by necessity, so there is no reason to offer
+   it at all. Length is not secret -- every signature bKash issues is the
+   same length -- so an early length check gives nothing away. */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
 /* Where the customer ends up. Kept to a fixed set of outcomes so the landing
    page never has to interpret anything bKash sent. */
 function landing(orderId: string | null, outcome: "success" | "failed" | "cancelled" | "unknown"): string {
@@ -72,7 +85,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   const { data: order } = await db
     .from("orders")
-    .select("id, user_id, kind, item_id, amount_bdt, status, bkash_signature")
+    .select("id, user_id, kind, item_id, amount_bdt, status, bkash_signature, bkash_env")
     .eq("bkash_payment_id", paymentId)
     .maybeSingle();
 
@@ -81,13 +94,33 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return redirect(landing(null, "unknown"));
   }
 
-  /* The signature bKash handed back at create time, echoed on the way home.
-     Comparing them stops a hand-typed callback URL from settling somebody
-     else's pending order. Only enforced when one was stored, since it is
-     Execute Payment below that provides the real proof either way. */
-  if (order.bkash_signature && signature && signature !== order.bkash_signature) {
-    console.error(`bkash-callback: signature mismatch on order ${order.id}.`);
-    return redirect(landing(order.id, "failed"));
+  /* THE SIGNATURE IS REQUIRED, not merely compared when present.
+
+     bKash hands a signature back at create time and echoes it on every
+     callback URL it builds. This endpoint has to be public -- the customer
+     arrives as a plain redirect with no session -- and a payment ID is not
+     secret: it sits in the customer's address bar and in bKash's page URL.
+     The check used to run only when a signature was supplied, so simply
+     leaving the parameter off skipped it, and anyone holding a payment ID
+     could mark that customer's pending order cancelled or failed.
+
+     A missing or wrong signature changes nothing and is sent to "unknown",
+     never "failed": if it was a genuine customer whose signature went
+     astray, payment-status.html asks bKash directly and settles the order
+     from the real answer. Nobody is told their money was lost on the
+     strength of a URL. */
+  if (order.bkash_signature && (!signature || !safeEqual(signature, order.bkash_signature))) {
+    console.error(`bkash-callback: ${signature ? "wrong" : "missing"} signature on order ${order.id}; nothing changed.`);
+    return redirect(landing(order.id, "unknown"));
+  }
+
+  /* An order paid in the sandbox can only be settled by the sandbox. Once the
+     live credentials are in, a late sandbox callback must not send a sandbox
+     payment ID to the production account. */
+  const cfg = readConfig(db);
+  if ((order.bkash_env ?? "sandbox") !== cfg.env) {
+    console.error(`bkash-callback: order ${order.id} belongs to ${order.bkash_env ?? "sandbox"}, running ${cfg.env}; ignored.`);
+    return redirect(landing(order.id, "unknown"));
   }
 
   /* Only the three outcomes bKash documents are acted on, and each one only
@@ -117,7 +150,6 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return redirect(landing(order.id, "unknown"));
   }
 
-  const cfg = readConfig(db);
   let result: PaymentResult;
 
   try {

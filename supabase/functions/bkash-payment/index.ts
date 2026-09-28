@@ -45,6 +45,7 @@ const MESSAGES = {
   gateway: "পেমেন্ট শুরু করা যায়নি, একটু পরে আবার চেষ্টা করুন।",
   coupon: "কুপনটি যাচাই করা যায়নি, একটু পরে আবার চেষ্টা করুন।",
   notFound: "অর্ডারটি পাওয়া যায়নি।",
+  tooMany: "অল্প সময়ে অনেকবার চেষ্টা করা হয়েছে। কয়েক মিনিট পর আবার চেষ্টা করুন।",
 };
 
 function admin(): SupabaseClient {
@@ -84,7 +85,33 @@ function payerReference(phone: string | undefined, invoice: string): string {
 
 /* ---------- create ---------------------------------------------------- */
 
+/* Per-account ceiling on how fast payments can be started.
+
+   Every checkout is a Create Payment call against the live merchant
+   account. A signed-in script could otherwise fire thousands of them, and
+   the likely consequence is not a bill but bKash throttling or suspending
+   the merchant -- taking checkout down for every real customer. Five in ten
+   minutes is far above what a person paying for things does, and far below
+   what abuse needs. */
+const CREATE_LIMIT = 5;
+const CREATE_WINDOW_MS = 10 * 60 * 1000;
+
+async function tooManyAttempts(db: SupabaseClient, userId: string): Promise<boolean> {
+  const since = new Date(Date.now() - CREATE_WINDOW_MS).toISOString();
+  const { count, error } = await db
+    .from("orders")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", since);
+  // If the count cannot be read, let the order through: refusing every real
+  // customer because a tally query failed is worse than one missed limit.
+  if (error) return false;
+  return (count ?? 0) >= CREATE_LIMIT;
+}
+
 async function handleCreate(db: SupabaseClient, userId: string, body: Body): Promise<Response> {
+  if (await tooManyAttempts(db, userId)) return fail(MESSAGES.tooMany, 429);
+
   const kind = body.kind === "course" ? "course" : "product";
   const slug = String(body.slug ?? "").trim();
   if (!slug) return fail(MESSAGES.item, 404);
@@ -230,7 +257,9 @@ async function handleCreate(db: SupabaseClient, userId: string, body: Body): Pro
 
     await db
       .from("orders")
-      .update({ bkash_payment_id: payment.paymentId, bkash_signature: payment.signature || null })
+      // bkash_env pins the order to the account that took it, so it can never
+      // be refunded or queried against the other one.
+      .update({ bkash_payment_id: payment.paymentId, bkash_signature: payment.signature || null, bkash_env: cfg.env })
       .eq("id", order.id);
 
     return json({ bkashURL: payment.bkashURL, orderId: order.id });
@@ -268,16 +297,21 @@ async function handleStatus(db: SupabaseClient, userId: string, body: Body): Pro
 
   const { data: order } = await db
     .from("orders")
-    .select("id, user_id, kind, item_id, item_title, amount_bdt, status, bkash_trx_id, bkash_payment_id, failure_reason")
+    .select("id, user_id, kind, item_id, item_title, amount_bdt, status, bkash_trx_id, bkash_payment_id, failure_reason, bkash_env")
     .eq("id", orderId)
     .maybeSingle();
 
   // Someone else's order id is simply "not found" — never a hint that it exists.
   if (!order || order.user_id !== userId) return fail(MESSAGES.notFound, 404);
 
-  if (order.status === "pending" && order.bkash_payment_id) {
+  // Only ask the environment that took the payment. A sandbox order left
+  // pending from testing is never queried against the live account -- it
+  // would only return "Invalid Payment ID" and put noise in the log bKash
+  // reviews.
+  const statusCfg = order.status === "pending" && order.bkash_payment_id ? readConfig(db) : null;
+  if (statusCfg && (order.bkash_env ?? "sandbox") === statusCfg.env) {
     try {
-      const result = await queryPayment(readConfig(db), order.bkash_payment_id);
+      const result = await queryPayment(statusCfg, order.bkash_payment_id);
       if (result.transactionStatus === "Completed") {
         await settleOrder(db, order, result.trxId, result.payerAccount);
         order.status = "completed";
@@ -323,7 +357,7 @@ async function handleRefund(db: SupabaseClient, userId: string, body: Body): Pro
   const orderId = String(body.orderId ?? "").trim();
   const { data: order } = await db
     .from("orders")
-    .select("id, amount_bdt, refunded_bdt, status, bkash_payment_id, bkash_trx_id, item_title")
+    .select("id, amount_bdt, refunded_bdt, status, bkash_payment_id, bkash_trx_id, item_title, bkash_env")
     .eq("id", orderId)
     .maybeSingle();
 
@@ -339,10 +373,29 @@ async function handleRefund(db: SupabaseClient, userId: string, body: Body): Pro
     return fail(`Refund must be between 1 and ${remaining} BDT.`, 400);
   }
 
+  let cfg;
+  try {
+    cfg = readConfig(db);
+  } catch (err) {
+    console.error("bkash-payment: refund refused, bKash is misconfigured.", err instanceof Error ? err.message : String(err));
+    return fail("bKash is not configured on the server.", 500);
+  }
+
+  /* A payment is refunded by the account that took it, never the other one.
+     Sandbox test orders stay refundable only while the sandbox credentials
+     are loaded; with live credentials in, sending their IDs to production
+     would at best fail and at worst confuse the merchant's records. */
+  if ((order.bkash_env ?? "sandbox") !== cfg.env) {
+    return fail(
+      `This was a ${order.bkash_env ?? "sandbox"} test payment and cannot be refunded with the ${cfg.env} bKash account.`,
+      409,
+    );
+  }
+
   try {
     /* Same stored id_token as every other call — the token store in
        schema.sql section 29 is shared, so a refund never grants its own. */
-    const result = await refundPayment(readConfig(db), {
+    const result = await refundPayment(cfg, {
       paymentId: order.bkash_payment_id,
       trxId: order.bkash_trx_id,
       amount,

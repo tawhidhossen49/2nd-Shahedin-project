@@ -2398,3 +2398,44 @@ update orders
 update courses set purchase_url = null where purchase_url is not null;
 
 delete from site_settings where key = 'enrollment';
+
+
+-- =========================================================================
+-- 33. NO API ACCESS TO FUNCTIONS THAT WERE NEVER MEANT FOR IT
+--     Safe to re-run.
+--
+--     Supabase's security advisor flagged these as SECURITY DEFINER functions
+--     the public roles could reach through /rest/v1/rpc/. Every one below is a
+--     trigger function: Postgres refuses to run a trigger function outside a
+--     trigger, so none was actually exploitable -- but none belongs on the
+--     API either, and a clean advisor report is what makes a real finding
+--     stand out.
+--
+--     Safe to revoke: a trigger fires without the acting role holding EXECUTE
+--     on its function. Verified before applying, as `authenticated`, with
+--     EXECUTE revoked -- the trigger still ran. Signups (handle_new_user),
+--     coupon counting and the activity log all keep working.
+--
+--     Deliberately LEFT as the advisor reports them:
+--       validate_coupon       checkout calls it from the browser to preview a
+--                             code; it answers about one code at a time.
+--       courses_safe /        SECURITY DEFINER views on purpose: the raw
+--       products_safe         tables have no public read policy, and these
+--                             views are the gate that hides paid lessons and
+--                             download links from anyone who has not paid.
+--       bkash_token           RLS on with zero policies IS the lockdown.
+--       get_partner_traffic   not defined in this file; returns two page-view
+--                             counts for the partner page. Aggregate only.
+-- =========================================================================
+
+revoke execute on function bump_coupon_usage()             from public, anon, authenticated;
+revoke execute on function course_reviews_reset_approval() from public, anon, authenticated;
+revoke execute on function handle_new_user()               from public, anon, authenticated;
+revoke execute on function handle_user_meta_update()       from public, anon, authenticated;
+revoke execute on function log_activity()                  from public, anon, authenticated;
+revoke execute on function sync_course_students_count()    from public, anon, authenticated;
+
+-- course_is_free() backs the "enrol yourself in a free course" policy, which
+-- only a signed-in student can trigger, so it keeps `authenticated`. An
+-- anonymous visitor never needs it.
+revoke execute on function course_is_free(uuid) from anon;

@@ -1,2 +1,20 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Binary files, declared rather than guessed. Git decides text vs binary from
+# the first few KB of a file, and a small or compressed PDF can pass for text --
+# the media kit did, so every Windows checkout (and every zip made from one)
+# had its line-ending bytes rewritten and its cross-reference offsets broken.
+*.pdf   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.mp4   binary
+*.webm  binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.zip   binary

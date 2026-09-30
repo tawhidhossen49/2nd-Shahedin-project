@@ -1110,10 +1110,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .crumb{font-size:var(--step--2); color:var(--text-3); margin-block-end:var(--space-4); display:flex; gap:6px; flex-wrap:wrap;}
 .crumb a{transition:color var(--dur-2);}
 .crumb a:hover{color:var(--text-1);}
-/* pre-line keeps the line breaks and blank lines the admin types into the
-   description; without it HTML folded every line into one paragraph, and a
-   list or a gap written in the panel arrived on the page as a single block. */
-.course-hero .course-desc{font-size:var(--step-0); color:var(--text-2); max-inline-size:52ch; margin-block-start:var(--space-4); white-space:pre-line;}
+/* render.js writes the description one <p> per line, so the line breaks and
+   blank lines the admin types survive. white-space:pre-line did that too,
+   until the browser translated the page: translation rewrites the text and
+   drops the newlines inside it, and the English came out as one block. A gap
+   line holds a non-breaking space from CSS -- one line tall, and nothing for
+   a translator to touch. */
+.course-hero .course-desc{font-size:var(--step-0); color:var(--text-2); max-inline-size:52ch; margin-block-start:var(--space-4);}
+.course-hero .course-desc > p{margin:0;}
+.course-hero .course-desc > .desc-gap::before{content:"\00a0";}
 
 .meta-row{
   display:flex; gap:var(--space-3) var(--space-5); flex-wrap:wrap; align-items:center;

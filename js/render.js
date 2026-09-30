@@ -49,6 +49,19 @@
     return (str || "").toString().replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
+  /* The course description, one <p> per line as the admin typed it, and an
+     empty .desc-gap for each blank line. Separate elements rather than
+     newlines in one paragraph, because browser translation drops newlines
+     and folded the translated description into a single block. */
+  function descLinesHTML(text) {
+    return String(text || "")
+      .replace(/\r\n?/g, "\n")
+      .trim()
+      .split("\n")
+      .map((line) => (line.trim() ? `<p>${escapeHtml(line.trim())}</p>` : `<p class="desc-gap" aria-hidden="true"></p>`))
+      .join("");
+  }
+
   /* Search used to match against the card's visible title only — and since
      titles render in one language, searching in the other found nothing, and
      a word from the description found nothing either. Every card now carries
@@ -731,7 +744,7 @@
            ${c.showStudents === false ? "" : `<span>${ICON.users} ${bnNum(Number(c.students) || 0)} শিক্ষার্থী</span>`}
            ${durationLabel ? `<span>${ICON.clock} ${escapeHtml(durationLabel)}</span>` : ""}
          </div>
-         ${c.desc ? `<p class="course-desc">${escapeHtml(c.desc)}</p>` : ""}`
+         ${c.desc ? `<div class="course-desc">${descLinesHTML(c.desc)}</div>` : ""}`
       );
       courseHeroMedia(c);
       /* Both return "" when unconfigured, so the mounts simply stay empty.

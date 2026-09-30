@@ -1110,7 +1110,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .crumb{font-size:var(--step--2); color:var(--text-3); margin-block-end:var(--space-4); display:flex; gap:6px; flex-wrap:wrap;}
 .crumb a{transition:color var(--dur-2);}
 .crumb a:hover{color:var(--text-1);}
-.course-hero .course-desc{font-size:var(--step-0); color:var(--text-2); max-inline-size:52ch; margin-block-start:var(--space-4);}
+/* pre-line keeps the line breaks and blank lines the admin types into the
+   description; without it HTML folded every line into one paragraph, and a
+   list or a gap written in the panel arrived on the page as a single block. */
+.course-hero .course-desc{font-size:var(--step-0); color:var(--text-2); max-inline-size:52ch; margin-block-start:var(--space-4); white-space:pre-line;}
 
 .meta-row{
   display:flex; gap:var(--space-3) var(--space-5); flex-wrap:wrap; align-items:center;
@@ -1151,12 +1154,26 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   margin-block-start:var(--space-6);
   max-inline-size:min(100%, 420px);
 }
-/* ---------- "What you get" card (rail, above the instructor) ----------
-   Split out of the price card so the price and the button sit in the hero
-   where the decision happens, and the list sits beside the curriculum where
-   the comparing happens. :empty is what lets the admin delete every point and
-   have the card disappear rather than leave an empty box. */
+/* ---------- "What you get" card (hero, between description and price) ------
+   What the course is, then what it includes point by point, then the price:
+   the description stays a few lines and the detail lives in ticks here.
+   :empty is what lets the admin delete every point and have the card
+   disappear rather than leave an empty box. */
 .course-includes-card:empty{display:none;}
+/* In the hero it sits on the photograph like the price card beneath it, so it
+   takes the same glass and the same measure -- the two read as one stack. */
+.course-hero-main > .course-includes-card{
+  margin-block:var(--space-6) 0;
+  max-inline-size:min(100%, 420px);
+  border-color:var(--line-strong);
+  background:linear-gradient(165deg, rgba(34,29,25,.90), rgba(15,12,11,.94));
+  backdrop-filter:blur(20px) saturate(130%);
+  -webkit-backdrop-filter:blur(20px) saturate(130%);
+}
+/* Checklist and price are one unit, so the gap between them is tighter than
+   the gap above the pair. :not(:empty) because an empty checklist is still a
+   sibling in the DOM, and the price card must then keep its full top gap. */
+.course-hero-main > .course-includes-card:not(:empty) + .course-buy-card{margin-block-start:var(--space-4);}
 .course-includes-card{
   background:var(--surface-1);
   border:1px solid var(--line);
@@ -1219,6 +1236,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   gap:clamp(32px,4.5vw,64px);
   align-items:start;
 }
+/* Reviews are the rail's only content, so a course with reviews switched off
+   has no rail at all. course-reviews.js removes it and sets this class, and
+   the curriculum takes the whole width instead of sitting beside a hole. */
+.course-body-grid.no-aside{grid-template-columns:minmax(0,1fr);}
 
 /* Not sticky. The rail carries the checklist and the whole
    review list; once that stack is taller than the viewport, a sticky element
@@ -2215,11 +2236,13 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .course-hero-grid.has-preview .course-preview{order:4; margin-block:var(--space-5) 0;}
   .course-hero-grid.has-preview .meta-row{order:5;}
   .course-hero-grid.has-preview .course-desc{order:6;}
-  /* The price card is a child of .course-hero-main, so display:contents above
-     lifts it into the grid too and it needs a place in the order -- last,
-     right under the description, exactly where it sits on desktop. Without
-     this it defaults to order 0 and jumps above the breadcrumb. */
-  .course-hero-grid.has-preview > .course-hero-main > .course-buy-card{order:7;}
+  /* The checklist and the price card are children of .course-hero-main, so
+     display:contents above lifts them into the grid too and each needs a place
+     in the order -- description, then checklist, then price, exactly as on
+     desktop. Without these they default to order 0 and jump above the
+     breadcrumb. */
+  .course-hero-grid.has-preview > .course-hero-main > .course-includes-card{order:7;}
+  .course-hero-grid.has-preview > .course-hero-main > .course-buy-card{order:8;}
   .about-grid,.about-grid-text-first{gap:var(--space-8);}
 
   /* Stacked, the copy no longer has a column of its own — it runs the full
@@ -2291,7 +2314,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .footer-cols{grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5);}
   .footer-bottom{flex-direction:column; text-align:center;}
   .card-body{padding:var(--space-4) var(--space-4) var(--space-5);}
-  .course-buy-card{padding:var(--space-5);}
+  .course-buy-card,
+  .course-hero-main > .course-includes-card{padding:var(--space-5);}
   .cb-acc .accordion-head{padding-inline:var(--space-4);}
   .cb-head-main{gap:var(--space-3);}
   .cb-body{padding:var(--space-4);}

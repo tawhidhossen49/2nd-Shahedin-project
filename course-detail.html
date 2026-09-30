@@ -72,11 +72,16 @@
     <div class="container course-hero-grid">
       <div class="course-hero-main">
         <div data-mount="course-detail"></div>
-        <!-- The price and the enrol button, directly under the description.
+        <!-- What the course includes, in points, between the short description
+             and the price: what it is, what you get, what it costs. render.js
+             writes "" here when the admin has removed every point, and :empty
+             collapses the card so the price follows the description directly. -->
+        <div class="course-includes-card" data-mount="course-includes"></div>
+        <!-- The price and the enrol button, directly under the checklist.
              Keeps #course-buy and .course-buy-card: course-progress.js finds
              the card with btn.closest('.course-buy-card') to flip it to the
              enrolled state, and both main.js and render.js scroll to
-             #course-buy. Only the checklist moved out of here. -->
+             #course-buy. -->
         <div class="course-buy-card" id="course-buy" data-mount="course-buy"></div>
       </div>
       <!-- Empty unless the admin set a preview video. When it is empty the
@@ -94,16 +99,12 @@
         <div data-mount="course-curriculum"></div>
       </div>
       <aside class="course-aside reveal reveal-delay-1">
-        <!-- What the course covers. render.js writes "" here when the admin
-             has removed every point, and :empty collapses the card so the rail
-             starts at the reviews instead of showing an empty box. -->
-        <div class="course-includes-card" data-mount="course-includes"></div>
-
-
         <!-- The three review nodes are marked so course-reviews.js can hide
              them together when the admin has switched reviews off for this
              course. The heading is static markup, so hiding only the mounts
-             would leave a "রিভিউ" title with nothing under it. -->
+             would leave a "রিভিউ" title with nothing under it. Reviews are the
+             only thing in this rail, so with them off course-reviews.js removes
+             the rail and the curriculum takes the full width. -->
         <h2 class="section-title section-title-sm" data-review-part>রিভিউ</h2>
         <div data-mount="course-review-form" data-review-part></div>
         <div data-mount="course-reviews" data-review-part></div>

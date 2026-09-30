@@ -206,7 +206,7 @@
               <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}">
             </div>
             <div class="form-field full">
-              <label>Description (English)</label>
+              <label>Description (English) <span class="hint">shown under the course title — line breaks and blank lines appear exactly as you type them</span></label>
               <textarea id="f_desc_en">${Admin.escapeHtml(course?.description_en || "")}</textarea>
             </div>
             <div class="form-field">
@@ -302,7 +302,7 @@
           </div>
 
           <div class="form-field full">
-            <label>What's included <span class="hint">the ticked list on the course page, above "আপনার প্রশিক্ষক" — remove every line and the whole card disappears</span></label>
+            <label>What's included <span class="hint">the ticked list at the top of the course page, between the description and the price — remove every line and the whole card disappears</span></label>
             <input type="text" id="f_learn_title" placeholder="যেমন: এই কোর্সে যা যা থাকছে" value="${Admin.escapeHtml(course?.learn_title || "")}">
             <span class="hint" style="display:block; margin:6px 0 12px;">Optional heading for that card. Leave it blank and the ticks stand on their own, exactly as they do now.</span>
             <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>

@@ -36,6 +36,14 @@
        no review fetch, no eligibility check. */
     if (course.reviewsEnabled === false) {
       document.querySelectorAll("[data-review-part]").forEach((el) => el.remove());
+      /* Reviews were the rail's only content, so it is now empty. Drop it and
+         let the curriculum take the full width rather than sit beside a gap. */
+      const aside = document.querySelector(".course-aside");
+      if (aside && !aside.children.length) {
+        const grid = aside.closest(".course-body-grid");
+        aside.remove();
+        if (grid) grid.classList.add("no-aside");
+      }
       return;
     }
 

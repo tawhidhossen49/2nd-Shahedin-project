@@ -748,11 +748,9 @@
       if (curriculumEl) wireQuizzes(curriculumEl);
       mount("[data-mount='course-faq']", courseFaqHTML(c));
       mount("[data-mount='course-mentor']", courseMentorHTML(c));
-      /* Layout note: the price + enrol card is no longer in the hero at all.
-         It is the first thing in the right-hand rail beside the curriculum,
-         directly above "আপনার প্রশিক্ষক" -- see .course-body-grid in
-         css/style.css. `.enrolled-banner` is hidden until course-progress.js
-         adds .is-enrolled to the card (B9). */
+      /* Hero order: description, then the checklist of what the course
+         includes, then the price + enrol card. `.enrolled-banner` is hidden
+         until course-progress.js adds .is-enrolled to the card (B9). */
       /* What the course covers. Admin-authored with no default, because an
          empty list has to be reachable: remove every point and the card is not
          rendered at all. Blank rows are dropped here as well as in the panel,
@@ -762,12 +760,9 @@
         .map((p) => (typeof p === "string" ? p : (p && p.text) || ""))
         .map((t) => String(t).trim())
         .filter(Boolean);
-      /* Two cards, two jobs.
-
-         The price and the button go in the hero under the description, where
-         a visitor decides. The checklist goes in the rail beside the
-         curriculum, where a visitor compares. Split also means the price card
-         no longer changes height with the number of points.
+      /* Two cards, stacked in the hero: the checklist, then the price and the
+         button. Kept as separate cards so the price card never changes height
+         with the number of points.
 
          .buy-price-row and .enrolled-banner stay together in this card on
          purpose: .course-buy-card.is-enrolled hides the first and reveals the
@@ -787,7 +782,7 @@
       );
 
       /* "" when the admin has removed every point, so :empty collapses the
-         card and the rail starts at the instructor instead of an empty box.
+         card and the price follows the description instead of an empty box.
 
          The heading is optional and rides on the points: a title with no
          points under it would be a card announcing nothing, so an empty list

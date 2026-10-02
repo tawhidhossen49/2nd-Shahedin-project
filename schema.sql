@@ -242,16 +242,12 @@ create trigger products_set_updated_at
   for each row execute function set_updated_at();
 
 -- -------------------------------------------------------------------------
--- 7. Seed data (optional) — mirrors the sample cards already on the site
---    so the admin panel isn't empty on first login. Safe to delete these
---    rows from the admin panel once you add real content.
+-- 7. (removed) Seed data
+--    This section used to insert three sample courses. Because this file is
+--    re-run on a live database, every run put them back after an admin had
+--    deleted them, and they showed on the public site. Nothing is seeded now;
+--    add courses from the admin panel.
 -- -------------------------------------------------------------------------
-insert into courses (slug, title_bn, title_en, duration_bn, duration_en, price_bdt, is_free, sort_order)
-values
-  ('geopolitics-101', 'জিওপলিটিক্স ১০১: বিশ্ব রাজনীতি বোঝা', 'Geopolitics 101: Understanding World Politics', '৬ সপ্তাহ', '6 weeks', 0, true, 1),
-  ('bangladesh-political-history', 'বাংলাদেশের রাজনৈতিক ইতিহাস', 'Political History of Bangladesh', '৪ সপ্তাহ', '4 weeks', 1499, false, 2),
-  ('research-fact-checking', 'রিসার্চ ও ফ্যাক্ট-চেকিং শেখা', 'Research & Fact-Checking Skills', '৫ সপ্তাহ', '5 weeks', 2999, false, 3)
-on conflict (slug) do nothing;
 
 -- =========================================================================
 -- 8. ADMIN PANEL EXTENSIONS

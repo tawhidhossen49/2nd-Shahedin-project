@@ -31,8 +31,8 @@
     const triggers = () => Array.from(document.querySelectorAll("[data-enroll], [data-enroll-cta]"));
 
     if (!course.dbId) {
-      // Site isn't connected to Supabase yet, or this course only exists in the
-      // static sample data — enrollment can't be tracked for real.
+      // Site isn't connected to Supabase yet, so there is no database row to
+      // enrol against.
       triggers().forEach((el) =>
         el.addEventListener("click", (e) => {
           e.preventDefault();

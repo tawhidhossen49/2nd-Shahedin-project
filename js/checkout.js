@@ -104,7 +104,13 @@
     if (!mount) return;
 
     if (!item) {
-      mount.innerHTML = `<div class="empty-state"><p>কোনো আইটেম নির্বাচন করা হয়নি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন</a> অথবা <a class="text-link" href="store.html">স্টোর দেখুন</a>।</p></div>`;
+      /* "Not selected" would be the wrong thing to say when the catalogue
+         simply failed to load: the item in the address may well exist. */
+      const failed = (window.SITE_DATA && window.SITE_DATA.failed) || {};
+      const loadFailed = (qs("course") && failed.courses) || (qs("product") && failed.products);
+      mount.innerHTML = loadFailed
+        ? `<div class="empty-state state-error"><p>অর্ডারের তথ্য লোড করা যায়নি। ইন্টারনেট সংযোগ দেখে <a class="text-link" href="${escapeHtml(location.pathname + location.search)}">আবার চেষ্টা করুন</a>।</p></div>`
+        : `<div class="empty-state"><p>কোনো আইটেম নির্বাচন করা হয়নি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন</a> অথবা <a class="text-link" href="store.html">স্টোর দেখুন</a>।</p></div>`;
       setUnavailable(true);
       return;
     }

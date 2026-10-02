@@ -1,15 +1,16 @@
 /* =========================================================
    data-loader.js
    ---------------------------------------------------------
-   If js/supabase-config.js has been filled in, this replaces
-   window.SITE_DATA (originally set by js/data.js) with live
-   content from Supabase, so anything the admin panel adds,
-   edits, or removes shows up on the public site automatically.
+   Fills window.SITE_DATA (the empty shape set by js/data.js)
+   with live content from Supabase, so anything the admin panel
+   adds, edits, or removes shows up on the public site.
 
-   If Supabase isn't configured yet, or the request fails for
-   any reason (offline, wrong keys, etc), the site silently
-   keeps using the sample content from js/data.js — the site
-   never breaks because of this file.
+   There is no sample content to fall back to. A table with no
+   rows renders as an empty state. A table that could not be
+   loaded, after the retries below, is marked in
+   SITE_DATA.failed and renders as "couldn't load, try again".
+   Either way a visitor never sees a course or product that is
+   not in the database.
    ========================================================= */
 (function () {
   "use strict";
@@ -91,48 +92,73 @@
     };
   }
 
-  async function tryLoadFromSupabase() {
-    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return false;
-    if (typeof window.supabase === "undefined") return false;
+  /* render.js has a timer that renders without waiting, for a page that does
+     not include this file. This tells it a loader is present and it must wait
+     for "sitedata-ready" however long that takes. */
+  window.__shahedinDataLoader = true;
 
+  const ATTEMPTS = 3;
+  const ATTEMPT_MS = 8000;
+
+  const QUERIES = {
+    courses: (client) => client.from("courses_safe").select("*").order("sort_order", { ascending: true }),
+    // products_safe, not products: the raw table would hand every visitor
+    // the digital delivery URL whether or not they paid for it.
+    products: (client) => client.from("products_safe").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
+  };
+  const MAPPERS = { courses: mapCourse, products: mapProduct };
+
+  // One query, never rejecting and never hanging: a thrown error or a request
+  // still open after ATTEMPT_MS both come back as { error }.
+  function runQuery(client, key) {
+    const query = Promise.resolve()
+      .then(() => QUERIES[key](client))
+      .catch((err) => ({ error: err }));
+    const timeout = new Promise((resolve) =>
+      setTimeout(() => resolve({ error: { message: "timed out after " + ATTEMPT_MS + "ms" } }), ATTEMPT_MS)
+    );
+    return Promise.race([query, timeout]);
+  }
+
+  async function loadSiteData() {
+    const data = (window.SITE_DATA = window.SITE_DATA || {});
+    data.courses = [];
+    data.products = [];
+    data.failed = { courses: false, products: false };
+
+    // No keys: nothing to load, and the pages show their empty states.
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) return;
+
+    let client = null;
     try {
-      const client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-
-      const [coursesRes, productsRes] = await Promise.all([
-        client.from("courses_safe").select("*").order("sort_order", { ascending: true }),
-        // products_safe, not products: the raw table would hand every visitor
-        // the digital delivery URL whether or not they paid for it.
-        client.from("products_safe").select("*").eq("is_published", true).order("sort_order", { ascending: true }),
-      ]);
-
-      /* Handled independently on purpose. These used to share one failure
-         check, so a problem with the products query threw the courses away
-         too and the whole site dropped to the English sample data. A missing
-         products_safe view should cost you the store, not the catalogue. */
-      if (coursesRes.error) {
-        console.warn("Shahedin: couldn't load courses, using sample data.", coursesRes.error);
-      }
-      if (productsRes.error) {
-        console.warn(
-          "Shahedin: couldn't load products, using sample data. If this says products_safe " +
-          "does not exist, run section 19 of schema.sql in the Supabase SQL editor.",
-          productsRes.error
-        );
-      }
-
-      const courses = coursesRes.error ? [] : (coursesRes.data || []).map(mapCourse);
-      const products = productsRes.error ? [] : (productsRes.data || []).map(mapProduct);
-
-      // Only replace the sample data if Supabase actually returned rows —
-      // an empty database shouldn't blank out the demo content.
-      window.SITE_DATA = window.SITE_DATA || {};
-      if (courses.length) window.SITE_DATA.courses = courses;
-      if (products.length) window.SITE_DATA.products = products;
-      return !(coursesRes.error && productsRes.error);
+      // Undefined when the Supabase script itself failed to download.
+      client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
     } catch (err) {
-      console.warn("Shahedin: Supabase fetch threw an error, using sample data.", err);
-      return false;
+      console.warn("Shahedin: Supabase client unavailable.", err);
+      data.failed = { courses: true, products: true };
+      return;
     }
+
+    /* The two tables are loaded and retried independently, so a problem with
+       one never costs the other. A slow mobile connection gets up to three
+       tries before the page says it could not load. */
+    let pending = Object.keys(QUERIES);
+    for (let attempt = 0; attempt < ATTEMPTS && pending.length; attempt++) {
+      if (attempt) await new Promise((resolve) => setTimeout(resolve, 700));
+      const results = await Promise.all(pending.map((key) => runQuery(client, key)));
+      const retry = [];
+      pending.forEach((key, i) => {
+        const res = results[i];
+        if (res && !res.error) {
+          data[key] = (res.data || []).map(MAPPERS[key]);
+        } else {
+          console.warn("Shahedin: couldn't load " + key + " (try " + (attempt + 1) + " of " + ATTEMPTS + ").", res && res.error);
+          retry.push(key);
+        }
+      });
+      pending = retry;
+    }
+    pending.forEach((key) => { data.failed[key] = true; });
   }
 
   function ready(fn) {
@@ -141,13 +167,16 @@
   }
 
   ready(function () {
-    // Race the Supabase load against a short timeout so a slow/unreachable
-    // network never leaves the page stuck without content.
-    Promise.race([
-      tryLoadFromSupabase(),
-      new Promise((resolve) => setTimeout(() => resolve(false), 4000)),
-    ]).finally(() => {
-      document.dispatchEvent(new Event("sitedata-ready"));
-    });
+    loadSiteData()
+      .catch((err) => {
+        console.warn("Shahedin: loading site data threw.", err);
+        const data = (window.SITE_DATA = window.SITE_DATA || {});
+        data.courses = data.courses || [];
+        data.products = data.products || [];
+        data.failed = { courses: true, products: true };
+      })
+      .finally(() => {
+        document.dispatchEvent(new Event("sitedata-ready"));
+      });
   });
 })();

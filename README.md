@@ -11,8 +11,8 @@ sections from the public, and view analytics — changes show up on the live sit
 immediately. It talks to a free Supabase database.
 
 **If it isn't connected yet**, see `ADMIN_SETUP.md` for a step-by-step guide
-(~15 minutes, no coding). Until then the public website keeps working exactly
-as before, using the sample content in `js/data.js`.
+(~15 minutes, no coding). Until then the public website still opens, but the
+course and store pages are empty: there is no sample content.
 
 ## How to run it
 
@@ -51,9 +51,9 @@ css/tokens.css         Design tokens. Loaded by the public site AND the admin
                         panel, so the two can never drift apart.
 css/style.css          The design system built on those tokens.
 
-js/data.js             Sample course/product content (fallback when Supabase
-                        isn't connected).
-js/data-loader.js      Swaps in live Supabase content when it is.
+js/data.js             The empty courses/products shape. Holds no sample
+                        content, on purpose.
+js/data-loader.js      Fills it with live Supabase content.
 js/render.js           Turns that data into cards and detail pages.
 js/home-content.js     Applies admin-editable copy via data-field / data-repeat.
                         The shared "stats" row means editing a stat once

@@ -1,5 +1,5 @@
 /* =========================================================
-   render.js — turns js/data.js arrays into HTML.
+   render.js — turns the window.SITE_DATA arrays into HTML.
    Detail pages (course-detail / product-detail / blog-post)
    read an ?id= or ?slug= query param so every "View" button
    across the site links somewhere real.
@@ -654,6 +654,20 @@
     if (window.__shahedinRendered) return; // guard against double-render
     window.__shahedinRendered = true;
     const data = D();
+    data.courses = data.courses || [];
+    data.products = data.products || [];
+    /* Set by data-loader.js when a table could not be loaded after its
+       retries. That is a different thing from a table with no rows, and it
+       must not read as "nothing published" or "not found". */
+    const failed = data.failed || {};
+    const loadErrorState = (title) => ({
+      variant: "error",
+      title: title,
+      body: "ইন্টারনেট সংযোগ দেখে আবার চেষ্টা করুন।",
+      // The page's own address: following it reloads and tries again.
+      ctaHref: location.pathname + location.search,
+      ctaText: "আবার চেষ্টা করুন",
+    });
 
     // A grid whose data source is empty gets a designed state, not a blank
     // rectangle. `span` keeps the state centred across the whole grid.
@@ -668,7 +682,7 @@
     if (document.querySelector("[data-mount='featured-courses']")) {
       mount(
         "[data-mount='featured-courses']",
-        gridOrEmpty(data.courses.slice(0, 3), courseCard, {
+        gridOrEmpty(data.courses.slice(0, 3), courseCard, failed.courses ? loadErrorState("কোর্স লোড করা যায়নি") : {
           icon: ICON.book,
           title: "কোর্স শীঘ্রই আসছে",
           body: "প্রথম কোর্সগুলো তৈরি হচ্ছে — ইউটিউব চ্যানেলে চোখ রাখুন।",
@@ -682,7 +696,7 @@
     if (document.querySelector("[data-mount='course-grid']")) {
       mount(
         "[data-mount='course-grid']",
-        gridOrEmpty(data.courses, courseCard, {
+        gridOrEmpty(data.courses, courseCard, failed.courses ? loadErrorState("কোর্স লোড করা যায়নি") : {
           icon: ICON.book,
           title: "এখনো কোনো কোর্স প্রকাশ করা হয়নি",
           body: "নতুন কোর্স যুক্ত হলে এখানেই দেখতে পাবেন।",
@@ -698,7 +712,7 @@
     if (document.querySelector("[data-mount='product-grid']")) {
       mount(
         "[data-mount='product-grid']",
-        gridOrEmpty(data.products, productCard, {
+        gridOrEmpty(data.products, productCard, failed.products ? loadErrorState("প্রোডাক্ট লোড করা যায়নি") : {
           icon: ICON.inbox,
           title: "স্টোর এখন খালি",
           body: "নতুন বই, নোট ও মার্চেন্ডাইজ শীঘ্রই যুক্ত হবে।",
@@ -716,7 +730,7 @@
       // empty array), which killed every later mount on the page. Bail to a
       // real empty state instead.
       if (!data.courses.length) {
-        mount("[data-mount='course-detail']", emptyStateHTML({
+        mount("[data-mount='course-detail']", emptyStateHTML(failed.courses ? loadErrorState("কোর্সটি লোড করা যায়নি") : {
           title: "কোর্সটি খুঁজে পাওয়া যায়নি",
           body: "এই কোর্সটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
           ctaHref: "courses.html",
@@ -838,7 +852,7 @@
     const productMount = document.querySelector("[data-mount='product-detail']");
     if (productMount) {
       if (!data.products.length) {
-        mount("[data-mount='product-detail']", emptyStateHTML({
+        mount("[data-mount='product-detail']", emptyStateHTML(failed.products ? loadErrorState("প্রোডাক্টটি লোড করা যায়নি") : {
           title: "প্রোডাক্টটি খুঁজে পাওয়া যায়নি",
           body: "এই প্রোডাক্টটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
           ctaHref: "store.html",
@@ -918,14 +932,26 @@
     document.dispatchEvent(new Event("contentready"));
   }
 
-  // data-loader.js always fires "sitedata-ready" (whether it loaded from
-  // Supabase or fell back to the sample data in js/data.js), so render.js
-  // waits for that instead of DOMContentLoaded to avoid a flash of sample
-  // content followed by a re-render once real data arrives.
+  // data-loader.js always fires "sitedata-ready", whether the load succeeded,
+  // came back empty or failed, so render.js waits for that.
   document.addEventListener("sitedata-ready", runRender);
-  // Safety net: if data-loader.js is ever missing from a page, still render
-  // using whatever window.SITE_DATA already has.
+
+  /* Safety net for a page that does not include data-loader.js: render with
+     whatever window.SITE_DATA has. It must not fire when the loader IS there.
+     It used to, after 1.5 seconds regardless, and runRender only ever runs
+     once -- so on a slow connection the page was drawn before the real data
+     arrived and the real data was then ignored. */
   document.addEventListener("DOMContentLoaded", () => {
+    if (window.__shahedinDataLoader) {
+      // Loading can take a while on a poor connection; say so in the grids
+      // rather than leave them blank. runRender replaces these.
+      const skeleton = '<div class="skeleton skeleton-card" aria-hidden="true"></div>'.repeat(3);
+      ["featured-courses", "course-grid", "product-grid"].forEach((key) => {
+        const el = document.querySelector(`[data-mount='${key}']`);
+        if (el && !window.__shahedinRendered && !el.children.length) el.innerHTML = skeleton;
+      });
+      return;
+    }
     setTimeout(() => runRender(), 1500);
   });
 

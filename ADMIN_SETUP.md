@@ -294,9 +294,10 @@ quick additions before formalizing them as a real column.
 
 ## Notes
 
-- Until you complete Step 4, the public website keeps working using its
-  original sample content, and `admin/login.html` will show a "not connected"
-  message instead of a login form — nothing breaks in the meantime.
+- Until you complete Step 4, the public website still opens, but its course
+  and store pages are empty (there is no sample content), and
+  `admin/login.html` will show a "not connected" message instead of a login
+  form.
 - Product/course images you upload in the admin panel are stored in
   Supabase's free file storage (created automatically by `schema.sql`).
 - Analytics are cookie-free and only count page visits — no personal data,

@@ -16,9 +16,10 @@
    (to log in and manage content) — so you only edit it once,
    here.
 
-   Until you fill this in, the public website keeps working
-   using the sample content in js/data.js, and the admin panel
-   will show a "not connected" message instead of a login form.
+   Until you fill this in, the public website has no courses
+   or products to show (there is no sample content), and the
+   admin panel will show a "not connected" message instead of
+   a login form.
    ========================================================= */
 window.SUPABASE_URL = "https://vkpokhjltfaclyeurxux.supabase.co";
 window.SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZrcG9raGpsdGZhY2x5ZXVyeHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1Mjk0MjksImV4cCI6MjA5OTEwNTQyOX0.f2OrSByPH4kbXqf6IPzrtL102B5pXk4WMlBZf-oFwV8";

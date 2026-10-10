@@ -55,7 +55,7 @@
       <div class="panel-head">
         <div>
           <h2>All courses</h2>
-          <p>Drag isn't needed — use "Order" to control the sequence shown on the site.</p>
+          <p>Press <strong>Edit</strong> on a course to change its name, price, lessons or anything else. Changes show on the website straight away.</p>
         </div>
         <button class="btn btn-primary" id="addCourseBtn">+ Add course</button>
       </div>
@@ -95,14 +95,15 @@
                   </div>
                 </div>
               </td>
-              <td>${course.is_free ? '<span class="badge badge-free">Free</span>' : "৳" + course.price_bdt}</td>
+              <td>${priceCellHTML(course)}</td>
               <td>${course.is_published ? '<span class="badge badge-live">Live</span>' : '<span class="badge badge-draft">Draft</span>'}</td>
               <td><div class="toggle-chips">${PAGE_FLAGS.map((flag) => pageFlagHTML(course, flag)).join("")}</div></td>
               <td>${course.sort_order}</td>
               <td>
                 <div class="row-actions">
-                  <button class="icon-btn edit-btn" data-id="${course.id}" title="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-                  <button class="icon-btn del-btn" data-id="${course.id}" title="Delete"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>
+                  <a class="btn btn-ghost btn-sm" href="../course-detail.html?id=${encodeURIComponent(course.slug)}" target="_blank" rel="noopener" title="Open this course on the website in a new tab">View</a>
+                  <button class="btn btn-ghost btn-sm edit-btn" data-id="${course.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>
+                  <button class="btn btn-danger btn-sm del-btn" data-id="${course.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>Delete</button>
                 </div>
               </td>
             </tr>`).join("")}
@@ -114,6 +115,15 @@
     wrap.querySelectorAll(".page-flag").forEach((b) => b.addEventListener("click", () => togglePageFlag(b)));
   }
 
+  /* The price as a visitor sees it: the original struck through beside the
+     real one when the course is on offer, the same way the products table
+     shows it. */
+  function priceCellHTML(course) {
+    if (course.is_free) return '<span class="badge badge-free">Free</span>';
+    const old = Number(course.old_price_bdt) || 0;
+    const now = Number(course.price_bdt) || 0;
+    return (old > now ? `<span style="text-decoration:line-through;color:var(--text-3);">৳${old}</span> ` : "") + "৳" + now;
+  }
 
   /* A badge that is also a toggle. The tick/cross carries the state as well as
      the colour does, so it still reads correctly in greyscale and to anyone
@@ -169,7 +179,7 @@
 
   async function deleteCourse(id) {
     const course = courses.find((x) => x.id === id);
-    if (!confirm(`Delete "${course.title_bn || course.title_en}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${course.title_bn || course.title_en}"?\n\nThe course and all its lessons are removed from the website. This cannot be undone.\n\nIf you only want to hide it for now, press Cancel, then Edit the course and untick "Published".`)) return;
     const { error } = await c.from("courses").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Course deleted.");
@@ -190,71 +200,163 @@
           <button class="modal-close" id="closeModal">&times;</button>
         </div>
         <!-- novalidate so the browser's generic bubble can't preempt the
-             specific per-field messages; all checks run in saveCourse. -->
+             specific per-field messages; all checks run in saveCourse.
+
+             The form is one long page in numbered sections, with a row of
+             buttons at the top that jump to each. Every section is always on
+             the page -- nothing is tucked into a tab or a collapsed panel --
+             because saveCourse reads every field by id and scrolls to the
+             first one that fails, and neither works on a field that is not
+             there to read or scroll to. -->
         <form id="courseForm" novalidate>
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Title (Bangla) <span class="req">mandatory</span> <span class="hint">· shown on the site</span></label>
-              <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
+          <nav class="form-steps" aria-label="Sections of this form">
+            <button type="button" data-jump="sec_basics" data-no-dirty>1. Name</button>
+            <button type="button" data-jump="sec_price" data-no-dirty>2. Price</button>
+            <button type="button" data-jump="sec_lessons" data-no-dirty>3. Lessons</button>
+            <button type="button" data-jump="sec_page" data-no-dirty>4. Course page</button>
+            <button type="button" data-jump="sec_mentor" data-no-dirty>5. Instructor</button>
+            <button type="button" data-jump="sec_faq" data-no-dirty>6. FAQ</button>
+            <button type="button" data-jump="sec_publish" data-no-dirty>7. Publish</button>
+          </nav>
+
+          <section class="form-section" id="sec_basics">
+            <h3 class="form-section-title"><span class="step-num">1</span> Name and description</h3>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Title (Bangla) <span class="req">mandatory</span> <span class="hint">· shown on the site</span></label>
+                <input type="text" id="f_title_bn" value="${Admin.escapeHtml(course?.title_bn || "")}">
+              </div>
+              <div class="form-field">
+                <label>Title (English) <span class="req">mandatory</span></label>
+                <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}">
+              </div>
+              <div class="form-field full">
+                <label>Description <span class="hint">shown under the course title — line breaks and blank lines appear exactly as you type them</span></label>
+                <textarea id="f_desc_en" rows="6">${Admin.escapeHtml(course?.description_en || "")}</textarea>
+              </div>
+              <div class="form-field">
+                <label>Category</label>
+                <input type="text" id="f_category" list="categoryList" value="${Admin.escapeHtml(course?.category || "general")}">
+                <datalist id="categoryList">${CATEGORY_SUGGESTIONS.map((x) => `<option value="${x}">`).join("")}</datalist>
+              </div>
+              <div class="form-field">
+                <label>Duration <span class="hint">shown as a badge, e.g. "3h 20m"</span></label>
+                <input type="text" id="f_duration" value="${Admin.escapeHtml(course?.duration_en || "")}">
+              </div>
+              <div class="form-field full">
+                <label>Course picture <span class="hint">the image on the course card. Optional — without one, the colour below is used</span></label>
+                <input type="file" id="f_image" accept="image/*">
+                ${course?.thumbnail_url ? `<div class="hint">Current: <a href="${course.thumbnail_url}" target="_blank">view image</a></div>` : ""}
+              </div>
+              <div class="form-field full">
+                <label>Card colour <span class="hint">only used when there is no picture</span></label>
+                <div class="tone-picker" id="tonePicker">
+                  ${[1,2,3,4,5,6].map((t) => `<button type="button" class="tone-${t} ${(course?.tone || 1) === t ? "selected" : ""}" data-tone="${t}" aria-label="Colour ${t}"></button>`).join("")}
+                </div>
+              </div>
             </div>
-            <div class="form-field">
-              <label>Title (English) <span class="req">mandatory</span></label>
-              <input type="text" id="f_title_en" value="${Admin.escapeHtml(course?.title_en || "")}">
+          </section>
+
+          <section class="form-section" id="sec_price">
+            <h3 class="form-section-title"><span class="step-num">2</span> Price</h3>
+            <label class="form-check" style="margin-bottom:16px;"><input type="checkbox" id="f_free" ${course?.is_free ? "checked" : ""}> This course is free</label>
+            <div class="form-grid" id="priceFields">
+              <div class="form-field">
+                <label for="f_price">Price now (৳ BDT) <span class="hint">what the student pays</span></label>
+                <input type="number" id="f_price" min="0" value="${course?.price_bdt ?? 0}">
+              </div>
+              <div class="form-field">
+                <label for="f_old_price">Original price (৳ BDT) <span class="hint">optional — the price before the discount</span></label>
+                <input type="number" id="f_old_price" min="0" placeholder="leave empty for no discount" value="${course?.old_price_bdt ?? ""}">
+              </div>
             </div>
+            <!-- Shows the admin what the two numbers will look like, so the
+                 difference between "price" and "original price" does not have
+                 to be worked out from the labels. -->
+            <div class="price-preview" id="pricePreview" aria-live="polite"></div>
+          </section>
+
+          <section class="form-section" id="sec_lessons">
+            <h3 class="form-section-title"><span class="step-num">3</span> Lessons</h3>
+            <p class="form-section-help">What students get inside the course, in this order. Use the buttons to add a lesson, and the arrows to move one up or down.
+              On a paid course every lesson is locked until someone buys — except a video you mark as a <strong>free preview</strong>, which anyone can watch.</p>
+            <div id="contentBlockList"></div>
+            <div class="add-row">
+              <span class="hint">Add:</span>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-block="video">+ Video</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-block="quiz">+ Quiz</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-block="live_class">+ Live class</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-block="resource">+ Resource link</button>
+              <button type="button" class="btn btn-ghost btn-sm" data-add-block="pdf">+ PDF</button>
+            </div>
+          </section>
+
+          <section class="form-section" id="sec_page">
+            <h3 class="form-section-title"><span class="step-num">4</span> Course page extras</h3>
+
             <div class="form-field full">
-              <label>Link on the site <span class="req">mandatory</span> <span class="hint">· auto-filled from the title — only change this if you know what it does</span></label>
-              <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}">
+              <label>What's included <span class="hint">the ticked list on the course page, above "আপনার প্রশিক্ষক" — remove every line and the whole card disappears</span></label>
+              <input type="text" id="f_learn_title" placeholder="যেমন: এই কোর্সে যা যা থাকছে" value="${Admin.escapeHtml(course?.learn_title || "")}">
+              <span class="hint" style="display:block; margin:6px 0 12px;">Optional heading for that card. Leave it blank and the ticks stand on their own.</span>
+              <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
+              <button type="button" class="btn btn-ghost btn-sm" id="addLearnBtn" style="align-self:flex-start;">+ Add point</button>
             </div>
+
             <div class="form-field full">
-              <label>Description (English) <span class="hint">shown under the course title — line breaks and blank lines appear exactly as you type them</span></label>
-              <textarea id="f_desc_en">${Admin.escapeHtml(course?.description_en || "")}</textarea>
+              <label>Trailer video <span class="hint">a short video at the top-right of the course page that everyone can see. This is separate from the lessons above. Leave both boxes empty and nothing is shown</span></label>
+              <input type="url" id="f_preview_url" placeholder="https://www.youtube.com/watch?v=..." value="${Admin.escapeHtml(course?.preview_video_url || "")}">
+              <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.
+                A normal video is shown wide (16:9) and a <strong>Short is shown tall (9:16)</strong> — copy the link straight from the Short so it still says
+                <code>/shorts/</code>, because a Short shared as a <code>youtu.be/…</code> link is indistinguishable from a normal video and will be shown wide.
+                An uploaded file always keeps its own shape, portrait or landscape.</span>
+              <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
+              <p class="hint" style="margin-top:8px;">
+                <strong>A YouTube link has no size limit and is the better choice for anything long.</strong>
+                Uploaded files go to your own Supabase storage, which caps a single file at 50 MB on the free plan —
+                roughly a couple of minutes of phone video. Over that, the upload is refused. To remove the video,
+                clear the box above and save.
+              </p>
             </div>
-            <div class="form-field">
-              <label>Category</label>
-              <input type="text" id="f_category" list="categoryList" value="${Admin.escapeHtml(course?.category || "general")}">
-              <datalist id="categoryList">${CATEGORY_SUGGESTIONS.map((x) => `<option value="${x}">`).join("")}</datalist>
-            </div>
-            <div class="form-field">
-              <label>Duration <span class="hint">shown as a badge, e.g. "3h 20m"</span></label>
-              <input type="text" id="f_duration" value="${Admin.escapeHtml(course?.duration_en || "")}">
-            </div>
-            <div class="form-field">
-              <label>Price (৳ BDT)</label>
-              <input type="number" id="f_price" min="0" value="${course?.price_bdt ?? 0}">
-            </div>
-            <div class="form-field">
-              <label>&nbsp;</label>
-              <label class="form-check"><input type="checkbox" id="f_free" ${course?.is_free ? "checked" : ""}> This course is free</label>
-            </div>
-            <div class="form-field">
-              <label>Rating <span class="hint">0–5</span></label>
-              <input type="number" id="f_rating" min="0" max="5" step="0.1" value="${course?.rating ?? 4.8}">
-            </div>
-            <div class="form-field">
-              <label>Students enrolled</label>
-              <input type="text" value="${course ? (course.students_count ?? 0).toLocaleString() : "0"}" readonly style="cursor:default; opacity:.7;">
-              <span class="hint">auto-calculated from real enrollments — updates itself, nothing to type here</span>
-            </div>
-            <div class="form-field full">
-              <label>Thumbnail color</label>
-              <div class="tone-picker" id="tonePicker">
-                ${[1,2,3,4,5,6].map((t) => `<button type="button" class="tone-${t} ${(course?.tone || 1) === t ? "selected" : ""}" data-tone="${t}"></button>`).join("")}
+          </section>
+
+          <section class="form-section" id="sec_mentor">
+            <h3 class="form-section-title"><span class="step-num">5</span> Instructor</h3>
+            <p class="form-section-help">Shown as "আপনার প্রশিক্ষক" on the course page. You can set a different instructor for each course.</p>
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Name</label>
+                <input type="text" id="f_mentor_name" value="${Admin.escapeHtml(course?.mentor?.name || "")}" placeholder="Shahedin">
+              </div>
+              <div class="form-field">
+                <label>One-line role <span class="hint">the line under the name</span></label>
+                <input type="text" id="f_mentor_bio" value="${Admin.escapeHtml(course?.mentor?.bio || "")}" placeholder="ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক">
               </div>
             </div>
             <div class="form-field full">
-              <label>Thumbnail image <span class="hint">optional — replaces the color above</span></label>
-              <input type="file" id="f_image" accept="image/*">
-              ${course?.thumbnail_url ? `<div class="hint">Current: <a href="${course.thumbnail_url}" target="_blank">view image</a></div>` : ""}
-            </div>
-            <div class="form-field">
-              <label>Order on the site</label>
-              <input type="number" id="f_sort" value="${course?.sort_order ?? 0}">
-            </div>
-            <div class="form-field">
-              <label>&nbsp;</label>
-              <label class="form-check"><input type="checkbox" id="f_published" ${course === null || course?.is_published ? "checked" : ""}> Published (visible on site)</label>
+              <label>About the instructor <span class="hint">the paragraphs beside the photo — leave blank and only the name and role are shown</span></label>
+              <textarea id="f_mentor_desc" rows="7" placeholder="প্রশিক্ষক সম্পর্কে বিস্তারিত লিখুন…">${Admin.escapeHtml(course?.mentor?.description || "")}</textarea>
+              <span class="hint" style="display:block; margin-top:6px;">Press Enter twice between paragraphs. Each paragraph becomes its own block on the course page; the first line is shown larger, as a lead.</span>
             </div>
             <div class="form-field full">
+              <label>Instructor photo</label>
+              <input type="file" id="f_mentor_avatar" accept="image/*">
+              ${course?.mentor?.avatar_url ? `<div class="hint">Current: <a href="${course.mentor.avatar_url}" target="_blank">view image</a></div>` : `<div class="hint">Leave blank to use the default Shahedin photo</div>`}
+            </div>
+          </section>
+
+          <section class="form-section" id="sec_faq">
+            <h3 class="form-section-title"><span class="step-num">6</span> Questions and answers (FAQ)</h3>
+            <p class="form-section-help">Shown near the bottom of the course page. Add as many as you like, or none.</p>
+            <div id="faqList" class="list-editor" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
+            <button type="button" class="btn btn-ghost btn-sm" id="addFaqBtn">+ Add question</button>
+          </section>
+
+          <section class="form-section" id="sec_publish">
+            <h3 class="form-section-title"><span class="step-num">7</span> Publish and display</h3>
+            <label class="form-check publish-check"><input type="checkbox" id="f_published" ${course === null || course?.is_published ? "checked" : ""}>
+              <span><b>Published</b><span class="hint">Ticked: visitors can see and buy this course. Unticked: it is saved as a draft that only admins can see.</span></span></label>
+
+            <div class="form-field full" style="margin-top:18px;">
               <label>Show on the course page <span class="hint">each of these can also be flipped straight from the courses table, without opening this form</span></label>
               <div class="flag-checks">
                 ${PAGE_FLAGS.map((flag) => `
@@ -268,80 +370,77 @@
                   </label>`).join("")}
               </div>
             </div>
-          </div>
 
-          <div class="form-field full">
-            <label>Course content <span class="hint">what students see on the course page, in this order — add, edit, reorder, or remove anytime</span></label>
-            <div id="contentBlockList"></div>
-            <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:6px;">
-              <button type="button" class="btn btn-ghost btn-sm" data-add-block="video">+ Video</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-add-block="quiz">+ Quiz</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-add-block="live_class">+ Live class</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-add-block="resource">+ Resource link</button>
-              <button type="button" class="btn btn-ghost btn-sm" data-add-block="pdf">+ PDF</button>
-            </div>
-          </div>
-
-          <div class="form-field full">
-            <label>Mentor <span class="hint">shown as "Your instructor" on the course page — set any name you like per course</span></label>
-            <div class="form-grid" style="margin-top:8px;">
+            <div class="form-grid">
               <div class="form-field">
-                <label>Name</label>
-                <input type="text" id="f_mentor_name" value="${Admin.escapeHtml(course?.mentor?.name || "")}" placeholder="Shahedin">
+                <label>Rating <span class="hint">the stars shown on the course, 0–5</span></label>
+                <input type="number" id="f_rating" min="0" max="5" step="0.1" value="${course?.rating ?? 4.8}">
               </div>
               <div class="form-field">
-                <label>One-line role <span class="hint">the standfirst under the name</span></label>
-                <input type="text" id="f_mentor_bio" value="${Admin.escapeHtml(course?.mentor?.bio || "")}" placeholder="ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক">
+                <label>Position in the course list <span class="hint">smaller numbers come first</span></label>
+                <input type="number" id="f_sort" value="${course?.sort_order ?? 0}">
+              </div>
+              <div class="form-field">
+                <label>Students enrolled</label>
+                <input type="text" value="${course ? (course.students_count ?? 0).toLocaleString() : "0"}" readonly style="cursor:default; opacity:.7;">
+                <span class="hint">counted automatically from real enrollments — nothing to type here</span>
+              </div>
+              <div class="form-field">
+                <label>Web address of this course <span class="req">mandatory</span> <span class="hint">· filled in for you from the title — best left alone</span></label>
+                <input type="text" id="f_slug" value="${Admin.escapeHtml(course?.slug || "")}">
               </div>
             </div>
-            <label style="margin-top:14px;">About the instructor <span class="hint">the paragraphs beside the photo — leave blank and only the name and role are shown</span></label>
-            <textarea id="f_mentor_desc" rows="7" placeholder="প্রশিক্ষক সম্পর্কে বিস্তারিত লিখুন…">${Admin.escapeHtml(course?.mentor?.description || "")}</textarea>
-            <span class="hint" style="display:block; margin-top:6px;">Press Enter twice between paragraphs. Each paragraph becomes its own block on the course page; the first line is shown larger, as a lead.</span>
-            <input type="file" id="f_mentor_avatar" accept="image/*" style="margin-top:6px;">
-            ${course?.mentor?.avatar_url ? `<div class="hint">Current: <a href="${course.mentor.avatar_url}" target="_blank">view image</a></div>` : `<div class="hint">Leave blank to use the default Shahedin photo</div>`}
-          </div>
-
-          <div class="form-field full">
-            <label>What's included <span class="hint">the ticked list on the course page, above "আপনার প্রশিক্ষক" — remove every line and the whole card disappears</span></label>
-            <input type="text" id="f_learn_title" placeholder="যেমন: এই কোর্সে যা যা থাকছে" value="${Admin.escapeHtml(course?.learn_title || "")}">
-            <span class="hint" style="display:block; margin:6px 0 12px;">Optional heading for that card. Leave it blank and the ticks stand on their own, exactly as they do now.</span>
-            <div id="learnList" class="list-editor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
-            <button type="button" class="btn btn-ghost btn-sm" id="addLearnBtn">+ Add point</button>
-          </div>
-
-          <div class="form-field full">
-            <label>Course preview video <span class="hint">plays in the top-right of the course page — leave both boxes empty and nothing is shown, exactly as now</span></label>
-            <input type="url" id="f_preview_url" placeholder="https://www.youtube.com/watch?v=..." value="${Admin.escapeHtml(course?.preview_video_url || "")}">
-            <span class="hint" style="display:block; margin-top:8px;">Paste a YouTube link above, <strong>or</strong> upload a video file below. Uploading replaces whatever is in the box.
-              A normal video is shown wide (16:9) and a <strong>Short is shown tall (9:16)</strong> — copy the link straight from the Short so it still says
-              <code>/shorts/</code>, because a Short shared as a <code>youtu.be/…</code> link is indistinguishable from a normal video and will be shown wide.
-              An uploaded file always keeps its own shape, portrait or landscape.</span>
-            <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
-            <p class="hint" style="margin-top:8px;">
-              <strong>A YouTube link has no size limit and is the better choice for anything long.</strong>
-              Uploaded files go to your own Supabase storage, which caps a single file at 50 MB on the free plan —
-              roughly a couple of minutes of phone video. Over that, the upload is refused. To remove the video,
-              clear the box above and save.
-            </p>
-          </div>
-
-          <div class="form-field full">
-            <label>FAQ <span class="hint">shown on the course page — add, edit, or remove as many questions as you like</span></label>
-            <div id="faqList" class="list-editor" style="display:flex; flex-direction:column; gap:10px; margin-bottom:10px;"></div>
-            <button type="button" class="btn btn-ghost btn-sm" id="addFaqBtn">+ Add question</button>
-          </div>
+          </section>
 
           <div class="modal-foot">
-            <button type="button" class="btn btn-ghost" id="cancelModal">Cancel</button>
+            <button type="button" class="btn btn-ghost" id="cancelModal" data-no-dirty>Cancel</button>
             <button type="submit" class="btn btn-primary" id="saveCourseBtn">${course ? "Save changes" : "Create course"}</button>
           </div>
         </form>
       </div>`;
     document.body.appendChild(backdrop);
 
-    document.getElementById("closeModal").addEventListener("click", closeModal);
-    document.getElementById("cancelModal").addEventListener("click", closeModal);
-    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
+    /* A course form can hold an hour of typing. Closing it by a stray click
+       on the dark area, or on Cancel, asks first once anything has changed. */
+    const form = document.getElementById("courseForm");
+    const tracker = Admin.trackChanges(form);
+    const requestClose = () => { if (Admin.confirmDiscard(tracker)) closeModal(); };
+    document.getElementById("closeModal").addEventListener("click", requestClose);
+    document.getElementById("cancelModal").addEventListener("click", requestClose);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) requestClose(); });
+
+    // The row of section buttons at the top of the form.
+    form.querySelectorAll("[data-jump]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const target = document.getElementById(btn.dataset.jump);
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    /* Price: a free course has no price to set, and the two price boxes are
+       easy to confuse, so show what the visitor will actually see. */
+    const freeEl = document.getElementById("f_free");
+    const priceEl = document.getElementById("f_price");
+    const oldPriceEl = document.getElementById("f_old_price");
+    function syncPrice() {
+      const free = freeEl.checked;
+      document.getElementById("priceFields").classList.toggle("is-muted", free);
+      const now = Number(priceEl.value) || 0;
+      const old = Number(oldPriceEl.value) || 0;
+      const box = document.getElementById("pricePreview");
+      if (free) {
+        box.innerHTML = `Visitors will see: <b class="pp-now pp-free">ফ্রি</b> <span class="hint">— the prices above are ignored while the course is free.</span>`;
+      } else if (oldPriceEl.value !== "" && old > now) {
+        const pct = Math.round(((old - now) / old) * 100);
+        box.innerHTML = `Visitors will see: <span class="pp-old">৳${old}</span> <b class="pp-now">৳${now}</b> <span class="hint">— ${pct}% off</span>`;
+      } else if (oldPriceEl.value !== "" && old <= now) {
+        box.innerHTML = `<span class="pp-warn">The original price has to be higher than the price now. Otherwise leave it empty.</span>`;
+      } else {
+        box.innerHTML = `Visitors will see: <b class="pp-now">৳${now}</b> <span class="hint">— no discount shown.</span>`;
+      }
+    }
+    [freeEl, priceEl, oldPriceEl].forEach((el) => { el.addEventListener("input", syncPrice); el.addEventListener("change", syncPrice); });
+    syncPrice();
 
     // Auto-slug from whichever title is filled in, only while creating.
     // Prefers English for a cleaner URL, falls back to the Bangla title.
@@ -450,11 +549,20 @@
 
   function blockFieldsHTML(type, existing) {
     if (type === "video") {
+      /* free_preview is the one lesson setting that changes who can watch.
+         Ticked, the courses_safe view sends this lesson's link to everyone,
+         enrolled or not (schema.sql section 35). It is a checkbox and not a
+         .cb-field on purpose: collectContentBlocks reads .cb-field inputs by
+         their .value, which for a checkbox is always "on". */
       return `
-        <div class="form-field full" style="margin-bottom:0;">
-          <label>YouTube URL</label>
+        <div class="form-field full" style="margin-bottom:10px;">
+          <label>YouTube link</label>
           <input type="url" class="cb-field" data-field="youtube_url" placeholder="https://www.youtube.com/watch?v=..." value="${Admin.escapeHtml(existing?.youtube_url || "")}">
-        </div>`;
+        </div>
+        <label class="form-check preview-check">
+          <input type="checkbox" class="cb-free-preview" ${existing?.free_preview ? "checked" : ""}>
+          <span><b>Free preview</b><span class="hint">Anyone can watch this video without buying the course. Leave it unticked and it stays locked until they buy.</span></span>
+        </label>`;
     }
     if (type === "live_class") {
       return `
@@ -489,6 +597,7 @@
     el.innerHTML = `
       <div class="module-head">
         <span class="badge badge-level" style="margin:0;">${BLOCK_TYPES[type] || type}</span>
+        <span class="badge badge-live cb-preview-badge" hidden>Free preview</span>
         <input type="text" placeholder="Title shown to students" class="cb-title" value="${Admin.escapeHtml(existing?.title || "")}" style="flex:1; background:var(--bg-3); border:1px solid var(--line-strong); border-radius:6px; padding:8px 10px; color:var(--text);">
         <button type="button" class="icon-btn move-up" title="Move up">↑</button>
         <button type="button" class="icon-btn move-down" title="Move down">↓</button>
@@ -496,6 +605,16 @@
       </div>
       <div class="cb-body">${blockFieldsHTML(type, existing)}</div>`;
     document.getElementById("contentBlockList").appendChild(el);
+
+    // The green "Free preview" tag on the lesson's header follows the tick
+    // box, so open lessons can be picked out without reading each one.
+    const previewBox = el.querySelector(".cb-free-preview");
+    if (previewBox) {
+      const badge = el.querySelector(".cb-preview-badge");
+      const syncPreview = () => { badge.hidden = !previewBox.checked; };
+      previewBox.addEventListener("change", syncPreview);
+      syncPreview();
+    }
 
     el.querySelector(".remove-block").addEventListener("click", () => el.remove());
     el.querySelector(".move-up").addEventListener("click", () => {
@@ -584,6 +703,10 @@
       }
 
       el.querySelectorAll(".cb-field").forEach((input) => { base[input.dataset.field] = input.value.trim(); });
+      // Only ever true on a video, and only stored when ticked, so a lesson
+      // nobody marked is saved exactly as it always was.
+      const previewBox = el.querySelector(".cb-free-preview");
+      if (type === "video" && previewBox && previewBox.checked) base.free_preview = true;
       return base;
     });
   }
@@ -598,12 +721,20 @@
   const COURSE_RULES = [
     { id: "f_title_bn", label: "Bangla title", message: "Bangla title is missing. This is the title shown to visitors on the site." },
     { id: "f_title_en", label: "English title", message: "English title is missing." },
-    { id: "f_slug", label: "Link on the site", message: "Link on the site is missing. It is normally filled in for you from the title." },
+    { id: "f_slug", label: "Web address", message: "The web address is missing. It is normally filled in for you from the title." },
     {
       id: "f_price",
       label: "Price",
       message: "Price must be a number — use 0, or tick “This course is free”.",
       test: (v) => v !== "" && Number.isFinite(Number(v)) && Number(v) >= 0,
+    },
+    {
+      id: "f_old_price",
+      label: "Original price",
+      // Blank means "no discount". A free course has no price to compare.
+      message: "The original price must be higher than the price now — or leave it empty for no discount.",
+      test: (v) => v === "" || document.getElementById("f_free").checked ||
+        (Number.isFinite(Number(v)) && Number(v) > Number(document.getElementById("f_price").value || 0)),
     },
     {
       id: "f_rating",
@@ -675,6 +806,8 @@
         category: document.getElementById("f_category").value.trim() || "general",
         duration_en: document.getElementById("f_duration").value.trim(),
         price_bdt: parseInt(document.getElementById("f_price").value || "0", 10),
+        // Display only: the checkout charges price_bdt and nothing else.
+        old_price_bdt: document.getElementById("f_old_price").value === "" ? null : parseInt(document.getElementById("f_old_price").value, 10),
         is_free: document.getElementById("f_free").checked,
         // Every switch from PAGE_FLAGS, so adding one there is enough.
         ...Object.fromEntries(PAGE_FLAGS.map((flag) => [flag.column, document.getElementById(flag.fieldId).checked])),
@@ -699,26 +832,37 @@
         },
       };
 
-      let res;
-      if (editingId) {
-        res = await c.from("courses").update(payload).eq("id", editingId);
-      } else {
-        res = await c.from("courses").insert(payload);
+      const write = (row) => (editingId ? c.from("courses").update(row).eq("id", editingId) : c.from("courses").insert(row));
+      let res = await write(payload);
+
+      /* old_price_bdt arrives with schema.sql section 35. On a database that
+         has not run it yet, the whole save is refused for that one column.
+         Save everything else rather than lose the form, and say what is
+         missing -- but only when that column really is the problem. */
+      let priceColumnMissing = false;
+      if (res.error && (res.error.code === "42703" || res.error.code === "PGRST204") && /old_price_bdt/.test(res.error.message || "")) {
+        const { old_price_bdt, ...rest } = payload;
+        res = await write(rest);
+        priceColumnMissing = !res.error;
       }
       if (res.error) throw res.error;
 
-      Admin.toast(editingId ? "Course updated." : "Course created.");
+      if (priceColumnMissing && payload.old_price_bdt !== null) {
+        Admin.toast("Saved — except the original price. That needs the latest schema.sql (section 35) run in the Supabase SQL editor.", true);
+      } else {
+        Admin.toast(editingId ? "Course updated." : "Course created.");
+      }
       closeModal();
       await loadCourses();
     } catch (err) {
       // Server rejections get pinned to the field that caused them too, so
       // the admin never has to decode a Postgres error into a form box.
-      const byColumn = { title_bn: "f_title_bn", title_en: "f_title_en", slug: "f_slug", price_bdt: "f_price" };
+      const byColumn = { title_bn: "f_title_bn", title_en: "f_title_en", slug: "f_slug", price_bdt: "f_price", old_price_bdt: "f_old_price" };
       let handled = false;
 
       if (err.code === "23505") {
-        Admin.showFieldError(document.getElementById("f_slug"), "Another course already uses this link. Change it to something unique.");
-        Admin.toast("That link is already taken by another course.", true);
+        Admin.showFieldError(document.getElementById("f_slug"), "Another course already uses this web address. Change it to something unique.");
+        Admin.toast("That web address is already taken by another course. See section 7.", true);
         handled = true;
       } else if (err.code === "23502") {
         const column = (err.message || "").match(/column "([a-z_]+)"/);

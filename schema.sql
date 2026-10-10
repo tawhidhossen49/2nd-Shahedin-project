@@ -1874,13 +1874,26 @@ alter function public.strip_blank_settings(jsonb) set search_path = public, pg_t
 --     course that already had its own points keeps them.
 -- =========================================================================
 
-update courses
-   set learn_points = includes
- where coalesce(jsonb_array_length(learn_points), 0) = 0
-   and coalesce(jsonb_array_length(includes), 0) > 0;
-
--- The section that carried this heading no longer exists.
-update courses set learn_title = null where learn_title is not null;
+-- The two statements below ran once, when the consolidation happened, and are
+-- kept as comments only. They are NOT safe to run again, and this file is
+-- re-run on the live database:
+--
+--   The first would put the old `includes` list back on any course whose
+--   points an admin has since removed on purpose -- removing every point is
+--   how the card is switched off.
+--
+--   The second cleared learn_title while no page used it. The admin panel now
+--   writes that field as the heading of the "what's included" card, so
+--   running it again would erase a heading the admin typed, on every course.
+--
+-- A new database has nothing to migrate, so it loses nothing by skipping them.
+--
+--   update courses
+--      set learn_points = includes
+--    where coalesce(jsonb_array_length(learn_points), 0) = 0
+--      and coalesce(jsonb_array_length(includes), 0) > 0;
+--
+--   update courses set learn_title = null where learn_title is not null;
 
 -- `includes` and `learn_title` are deliberately NOT dropped. `includes` now
 -- holds a frozen copy of every list as it stood before the consolidation, and
@@ -2069,6 +2082,10 @@ revoke all on function course_is_free(uuid) from public;
 grant execute on function course_is_free(uuid) to authenticated;
 
 drop policy if exists "students can create their own enrollments" on enrollments;
+-- Dropped before it is created, like every other policy in this file. Without
+-- this line a second run stopped here with "policy already exists" and none of
+-- the sections below it were applied.
+drop policy if exists "students can enrol themselves in free courses" on enrollments;
 create policy "students can enrol themselves in free courses"
   on enrollments for insert
   with check (auth.uid() = user_id and course_is_free(course_id));
@@ -2352,10 +2369,19 @@ grant execute on function bkash_token_store(text, timestamptz, text) to service_
 drop function if exists bkash_token_claim();
 drop function if exists bkash_token_store(text, timestamptz);
 
--- The row is stale by definition after this migration: it was issued by the
+-- A row with no fingerprint was issued before this section existed, by the
 -- sandbox. Expire it so the next call grants a fresh token for whichever
 -- account is configured, instead of waiting out the clock.
-update bkash_token set expires_at = now() - interval '1 second', locked_until = null where id = 1;
+--
+-- Only that row. This used to expire the token on every run, and this file
+-- is re-run on the live database: each run threw away a valid live token and
+-- forced a new Grant Token call, which bKash allows once an hour (section
+-- 29). A token stored by the current code always carries a fingerprint, and
+-- bkash_token_claim() already refuses one whose fingerprint does not match,
+-- so there is nothing else here that needs expiring.
+update bkash_token
+   set expires_at = now() - interval '1 second', locked_until = null
+ where id = 1 and fingerprint is null;
 
 -- ---------- (b) Every bKash order knows which environment paid it --------
 alter table orders add column if not exists bkash_env text;
@@ -2435,3 +2461,476 @@ revoke execute on function sync_course_students_count()    from public, anon, au
 -- only a signed-in student can trigger, so it keeps `authenticated`. An
 -- anonymous visitor never needs it.
 revoke execute on function course_is_free(uuid) from anon;
+
+
+-- =========================================================================
+-- 34. ADMIN ROLES: A MAIN ADMIN DECIDES WHAT EVERY OTHER ADMIN CAN DO
+--     Safe to re-run.
+--
+--     Until now a row in `admins` meant "can do everything", and the only way
+--     to add or remove an admin was the SQL editor. Two kinds of admin now:
+--
+--       main      every page, plus Admin -> Team & access, where the other
+--                 admins are added, removed, promoted and given their pages.
+--       partial   only the pages listed in `permissions`. The dashboard is
+--                 always allowed; it shows only what the admin may see.
+--
+--     A page key is the admin page's file name without ".html":
+--       home portfolio courses reviews submissions students products orders
+--       coupons analytics community legal settings
+--
+--     The panel hides what an admin may not use, but hiding is not the
+--     control: every policy below asks admin_can('<page>') in the database,
+--     so a partial admin who calls the API directly is refused there too.
+--
+--     Existing admins keep exactly what they had: on the first run each one
+--     becomes `partial` with every page ticked. One of them becomes `main`
+--     (see the DO block) and can hand out or take away the rest.
+-- =========================================================================
+
+alter table admins add column if not exists role text;
+alter table admins add column if not exists permissions text[] not null default '{}';
+
+-- First run only: `role` is null on every row that existed before this
+-- section. A re-run finds no nulls and changes nobody's access.
+update admins
+   set role = 'partial',
+       permissions = array['home','portfolio','courses','reviews','submissions','students',
+                           'products','orders','coupons','analytics','community','legal','settings']
+ where role is null;
+
+-- There must be a main admin. Shahedin's own login if it is here; otherwise
+-- the longest-standing admin. Skipped entirely once a main admin exists, so
+-- a re-run never overrides a choice made in the panel.
+do $$
+begin
+  if not exists (select 1 from admins where role = 'main') then
+    update admins set role = 'main'
+     where id = coalesce(
+       (select id from admins where lower(email) = 'shahedin.shikho@gmail.com' limit 1),
+       (select id from admins order by created_at asc limit 1)
+     );
+  end if;
+end $$;
+
+alter table admins alter column role set default 'partial';
+alter table admins alter column role set not null;
+alter table admins drop constraint if exists admins_role_check;
+alter table admins add constraint admins_role_check check (role in ('main', 'partial'));
+
+-- An admin added by hand in the SQL editor (ADMIN_SETUP.md) arrives as
+-- `partial` with no pages. On a brand-new database that would leave nobody
+-- able to grant anything, so the first admin ever inserted is made main.
+create or replace function admins_first_is_main()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not exists (select 1 from admins where role = 'main') then
+    new.role := 'main';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists admins_first_is_main on admins;
+create trigger admins_first_is_main
+  before insert on admins
+  for each row execute function admins_first_is_main();
+
+-- SECURITY DEFINER so they can read `admins` whatever the caller's own
+-- policies allow, and so the admins policy below can call is_main_admin()
+-- without recursing into itself.
+create or replace function is_main_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from admins where id = auth.uid() and role = 'main');
+$$;
+
+create or replace function admin_can(p_page text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from admins
+     where id = auth.uid()
+       and (role = 'main' or p_page = any(permissions))
+  );
+$$;
+
+-- The pages a partial admin can be given. One list, used by every function
+-- below, so a key that is not a real page can never be stored.
+create or replace function admin_page_keys()
+returns text[]
+language sql
+immutable
+as $$
+  select array['home','portfolio','courses','reviews','submissions','students',
+               'products','orders','coupons','analytics','community','legal','settings'];
+$$;
+
+/* Change one admin's role, pages and display name. Main admins only.
+   Refuses to leave the panel with no main admin, and refuses to let a main
+   admin change their own role -- the one slip that would lock the owner out
+   of the page that could undo it. */
+create or replace function admin_set_access(
+  p_admin_id uuid,
+  p_role text,
+  p_permissions text[],
+  p_full_name text default null
+)
+returns admins
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target admins;
+  clean text[];
+begin
+  if not is_main_admin() then
+    raise exception 'Only a main admin can change who has access.' using errcode = '42501';
+  end if;
+  if p_role is null or p_role not in ('main', 'partial') then
+    raise exception 'Role must be main or partial.' using errcode = '22023';
+  end if;
+
+  lock table admins in share row exclusive mode;
+
+  select * into target from admins where id = p_admin_id;
+  if not found then
+    raise exception 'That admin no longer exists.' using errcode = 'P0002';
+  end if;
+  if p_admin_id = auth.uid() and p_role <> target.role then
+    raise exception 'You cannot change your own role. Ask another main admin.' using errcode = '22023';
+  end if;
+  if target.role = 'main' and p_role <> 'main'
+     and (select count(*) from admins where role = 'main') <= 1 then
+    raise exception 'There must always be at least one main admin.' using errcode = '22023';
+  end if;
+
+  select coalesce(array_agg(distinct x), '{}') into clean
+    from unnest(coalesce(p_permissions, '{}')) as x
+   where x = any(admin_page_keys());
+
+  update admins
+     set role = p_role,
+         permissions = clean,
+         full_name = coalesce(nullif(btrim(p_full_name), ''), full_name)
+   where id = p_admin_id
+   returning * into target;
+  return target;
+end $$;
+
+/* Take admin access away. The person's login is left alone -- they simply
+   stop being an admin. */
+create or replace function admin_remove(p_admin_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  target admins;
+begin
+  if not is_main_admin() then
+    raise exception 'Only a main admin can remove an admin.' using errcode = '42501';
+  end if;
+  if p_admin_id = auth.uid() then
+    raise exception 'You cannot remove yourself.' using errcode = '22023';
+  end if;
+
+  lock table admins in share row exclusive mode;
+
+  select * into target from admins where id = p_admin_id;
+  if not found then return; end if;
+  if target.role = 'main' and (select count(*) from admins where role = 'main') <= 1 then
+    raise exception 'There must always be at least one main admin.' using errcode = '22023';
+  end if;
+  delete from admins where id = p_admin_id;
+end $$;
+
+/* Make an EXISTING login an admin, found by its email. Their password is
+   not touched. A person with no login yet is created by the admin-users
+   Edge Function instead, which is the only thing allowed to create one. */
+create or replace function admin_add_existing(
+  p_email text,
+  p_full_name text,
+  p_role text,
+  p_permissions text[]
+)
+returns admins
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  uid uuid;
+  clean text[];
+  created admins;
+begin
+  if not is_main_admin() then
+    raise exception 'Only a main admin can add an admin.' using errcode = '42501';
+  end if;
+  if p_role is null or p_role not in ('main', 'partial') then
+    raise exception 'Role must be main or partial.' using errcode = '22023';
+  end if;
+
+  select id into uid from auth.users where lower(email) = lower(btrim(p_email)) limit 1;
+  if uid is null then
+    raise exception 'No login exists for that email yet.' using errcode = 'P0002';
+  end if;
+  if exists (select 1 from admins where id = uid) then
+    raise exception 'That person is already an admin.' using errcode = '23505';
+  end if;
+
+  select coalesce(array_agg(distinct x), '{}') into clean
+    from unnest(coalesce(p_permissions, '{}')) as x
+   where x = any(admin_page_keys());
+
+  insert into admins (id, email, full_name, role, permissions)
+  values (uid, lower(btrim(p_email)), nullif(btrim(p_full_name), ''), p_role, clean)
+  returning * into created;
+  return created;
+end $$;
+
+-- None of these is for anonymous visitors. admin_can / is_main_admin are
+-- called from policies that apply to signed-in users only; the three RPCs
+-- check is_main_admin() themselves and refuse everyone else.
+revoke execute on function admins_first_is_main()                          from public, anon, authenticated;
+revoke execute on function is_main_admin()                                 from public, anon;
+revoke execute on function admin_can(text)                                 from public, anon;
+revoke execute on function admin_page_keys()                               from public, anon;
+revoke execute on function admin_set_access(uuid, text, text[], text)      from public, anon;
+revoke execute on function admin_remove(uuid)                              from public, anon;
+revoke execute on function admin_add_existing(text, text, text, text[])    from public, anon;
+grant execute on function is_main_admin()                                  to authenticated, service_role;
+grant execute on function admin_can(text)                                  to authenticated, service_role;
+grant execute on function admin_page_keys()                                to authenticated, service_role;
+grant execute on function admin_set_access(uuid, text, text[], text)       to authenticated;
+grant execute on function admin_remove(uuid)                               to authenticated;
+grant execute on function admin_add_existing(text, text, text, text[])     to authenticated;
+
+-- ---- admins: an admin reads their own row, a main admin reads them all ----
+drop policy if exists "admins can read their own row" on admins;
+create policy "admins can read their own row"
+  on admins for select
+  using (auth.uid() = id);
+
+drop policy if exists "main admins can read every admin" on admins;
+create policy "main admins can read every admin"
+  on admins for select
+  to authenticated
+  using ((select is_main_admin()));
+-- No insert / update / delete policy on purpose: every change to `admins`
+-- goes through the functions above, which enforce the main-admin rules.
+
+/* ---- per-page write and read rules --------------------------------------
+   Each policy keeps its old name and is recreated with the page check in
+   place of "is any admin". `(select admin_can(...))` rather than a bare
+   call so Postgres evaluates it once per statement, not once per row.
+
+   Left as "any admin", deliberately:
+     courses / products  READ   every page needs the names (orders, students,
+                                reviews, the dashboard).
+     course_reviews      READ   same.
+     activity_log        READ   the dashboard's "recent activity".
+     storage `media`            courses, products, homepage and portfolio all
+                                upload; the files are public anyway.          */
+
+-- Courses
+drop policy if exists "admins can insert courses" on courses;
+create policy "admins can insert courses" on courses for insert to authenticated
+  with check ((select admin_can('courses')));
+drop policy if exists "admins can update courses" on courses;
+create policy "admins can update courses" on courses for update to authenticated
+  using ((select admin_can('courses'))) with check ((select admin_can('courses')));
+drop policy if exists "admins can delete courses" on courses;
+create policy "admins can delete courses" on courses for delete to authenticated
+  using ((select admin_can('courses')));
+
+-- Store products
+drop policy if exists "admins can insert products" on products;
+create policy "admins can insert products" on products for insert to authenticated
+  with check ((select admin_can('products')));
+drop policy if exists "admins can update products" on products;
+create policy "admins can update products" on products for update to authenticated
+  using ((select admin_can('products'))) with check ((select admin_can('products')));
+drop policy if exists "admins can delete products" on products;
+create policy "admins can delete products" on products for delete to authenticated
+  using ((select admin_can('products')));
+
+-- Coupons (reading the codes counts as managing them)
+drop policy if exists "admins manage coupons" on coupons;
+create policy "admins manage coupons" on coupons for all to authenticated
+  using ((select admin_can('coupons'))) with check ((select admin_can('coupons')));
+
+-- Reviews: approving, hiding and deleting
+drop policy if exists "admins can manage all reviews" on course_reviews;
+create policy "admins can manage all reviews" on course_reviews for all to authenticated
+  using ((select admin_can('reviews'))) with check ((select admin_can('reviews')));
+
+-- Contact messages hold visitors' names, phones and what they wrote.
+drop policy if exists "admins can read contact messages" on contact_submissions;
+create policy "admins can read contact messages" on contact_submissions for select to authenticated
+  using ((select admin_can('submissions')));
+drop policy if exists "admins can update contact messages" on contact_submissions;
+create policy "admins can update contact messages" on contact_submissions for update to authenticated
+  using ((select admin_can('submissions'))) with check ((select admin_can('submissions')));
+drop policy if exists "admins can delete contact messages" on contact_submissions;
+create policy "admins can delete contact messages" on contact_submissions for delete to authenticated
+  using ((select admin_can('submissions')));
+
+-- Students: the people list, and granting or removing course access by hand.
+drop policy if exists "admins can read all profiles" on profiles;
+create policy "admins can read all profiles" on profiles for select to authenticated
+  using ((select admin_can('students')));
+drop policy if exists "admins can read all enrollments" on enrollments;
+create policy "admins can read all enrollments" on enrollments for select to authenticated
+  using ((select admin_can('students')));
+drop policy if exists "admins can insert enrollments" on enrollments;
+create policy "admins can insert enrollments" on enrollments for insert to authenticated
+  with check ((select admin_can('students')));
+drop policy if exists "admins can delete enrollments" on enrollments;
+create policy "admins can delete enrollments" on enrollments for delete to authenticated
+  using ((select admin_can('students')));
+
+-- Orders. The Students page lists each student's orders too, so either page
+-- may read them. Refunds themselves go through the bkash-payment function,
+-- which asks for the Orders page.
+drop policy if exists "admins can read all orders" on orders;
+create policy "admins can read all orders" on orders for select to authenticated
+  using ((select admin_can('orders')) or (select admin_can('students')));
+drop policy if exists "admins can read refunds" on order_refunds;
+create policy "admins can read refunds" on order_refunds for select to authenticated
+  using ((select admin_can('orders')));
+drop policy if exists "admins can read the bkash api log" on bkash_api_log;
+create policy "admins can read the bkash api log" on bkash_api_log for select to authenticated
+  using ((select admin_can('orders')));
+
+-- Analytics
+drop policy if exists "admins can read page views" on page_views;
+create policy "admins can read page views" on page_views for select to authenticated
+  using ((select admin_can('analytics')));
+
+-- Homepage and Portfolio share one table. The Portfolio page saves the
+-- `stats` and `portfolio…` rows; everything else, and every section's
+-- show/hide switch, belongs to the Homepage page.
+drop policy if exists "admins can write home content" on home_content;
+create policy "admins can write home content" on home_content for all to authenticated
+  using (
+    (select admin_can('home'))
+    or ((select admin_can('portfolio')) and (key = 'stats' or key like 'portfolio%'))
+  )
+  with check (
+    (select admin_can('home'))
+    or ((select admin_can('portfolio')) and (key = 'stats' or key like 'portfolio%'))
+  );
+
+-- Site settings is one table behind three pages, one row each.
+drop policy if exists "admins can write site settings" on site_settings;
+create policy "admins can write site settings" on site_settings for all to authenticated
+  using (
+    case key
+      when 'community' then (select admin_can('community'))
+      when 'legal'     then (select admin_can('legal'))
+      else (select admin_can('settings'))
+    end
+  )
+  with check (
+    case key
+      when 'community' then (select admin_can('community'))
+      when 'legal'     then (select admin_can('legal'))
+      else (select admin_can('settings'))
+    end
+  );
+
+
+-- =========================================================================
+-- 35. A COURSE CAN SHOW ITS ORIGINAL PRICE, AND LESSONS CAN BE FREE PREVIEWS
+--     Safe to re-run.
+--
+--     old_price_bdt   the same idea products already have: set it higher than
+--                     the price and the site shows it struck through beside
+--                     the real one ("৳1000  ৳900"). Blank = no change to how
+--                     the course looks. It is display only -- the checkout
+--                     charges price_bdt and has never read anything else.
+--
+--     free preview    a video lesson the admin ticks "free preview" on is
+--                     sent whole to everyone, enrolled or not, so a visitor
+--                     can watch it before buying. Every other lesson of a
+--                     paid course still leaves the database as
+--                     {id, type, title, locked} with its link stripped,
+--                     exactly as before. Only `video` lessons can be opened
+--                     this way: a quiz, a PDF or a live-class link is never
+--                     released by this flag, whatever the row says.
+-- =========================================================================
+
+alter table courses add column if not exists old_price_bdt integer;
+
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.old_price_bdt, c.is_free, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.reviews_enabled, c.show_students_count,
+  c.learn_title, c.learn_points, c.preview_video_url,
+  c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(
+        case
+          when elem->>'type' = 'video' and elem->>'free_preview' = 'true' then elem
+          else jsonb_build_object(
+            'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+          )
+        end
+        order by ord
+      ), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) with ordinality as t(elem, ord)
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;
+
+-- =========================================================================
+-- 36. ADD TAWHID AS AN ADMIN
+--     Safe to re-run.
+--
+--     Finds the login by its email, so there is no user id to copy by hand.
+--     Limited access with every page ticked -- the same as the other admins
+--     who existed before section 34. The main admin can change his pages, or
+--     make him a main admin, from Admin panel -> Team & access.
+--
+--     "on conflict do nothing": once he is an admin this leaves his row
+--     exactly as it is, so running this file again never undoes a change
+--     made in the panel. If the email has no login yet, nothing is added.
+-- =========================================================================
+
+insert into admins (id, email, full_name, role, permissions)
+select u.id, lower(u.email), 'Tawhid Hossen', 'partial', admin_page_keys()
+  from auth.users u
+ where lower(u.email) = 'tawhidhossen449@gmail.com'
+on conflict (id) do nothing;
+
+-- What you should see when the whole file has run: one row per admin, at
+-- least one of them "main", and every existing admin with 13 pages.
+select email, full_name, role, coalesce(array_length(permissions, 1), 0) as pages
+  from admins
+ order by created_at;

@@ -3,7 +3,7 @@
   const admin = await Admin.requireAdmin();
   if (!admin) return;
 
-  Admin.renderShell("products.html", "Store Products", "Add, edit, unpublish, or remove products. Changes appear on the live site right away.", admin);
+  Admin.renderShell("products.html", "Store products", "Add, edit, unpublish, or remove products. Changes appear on the live site right away.", admin);
   const content = document.getElementById("adminContent");
   const c = Admin.client();
   let products = [];
@@ -16,7 +16,7 @@
       <div class="panel-head">
         <div>
           <h2>All products</h2>
-          <p>"Stock" only matters for physical items — leave it blank for unlimited digital goods.</p>
+          <p>Press <strong>Edit</strong> on a product to change its name, price or picture. "Stock" only matters for physical items — leave it blank for unlimited digital goods.</p>
         </div>
         <button class="btn btn-primary" id="addProductBtn">+ Add product</button>
       </div>
@@ -62,8 +62,9 @@
               <td>${p.is_published ? '<span class="badge badge-live">Live</span>' : '<span class="badge badge-draft">Draft</span>'}</td>
               <td>
                 <div class="row-actions">
-                  <button class="icon-btn edit-btn" data-id="${p.id}" title="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-                  <button class="icon-btn del-btn" data-id="${p.id}" title="Delete"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>
+                  <a class="btn btn-ghost btn-sm" href="../product-detail.html?id=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="Open this product on the website in a new tab">View</a>
+                  <button class="btn btn-ghost btn-sm edit-btn" data-id="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>
+                  <button class="btn btn-danger btn-sm del-btn" data-id="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>Delete</button>
                 </div>
               </td>
             </tr>`).join("")}
@@ -76,7 +77,7 @@
 
   async function deleteProduct(id) {
     const p = products.find((x) => x.id === id);
-    if (!confirm(`Delete "${p.name_bn || p.name_en}"? This can't be undone.`)) return;
+    if (!confirm(`Delete "${p.name_bn || p.name_en}"?\n\nIt is removed from the store. This cannot be undone.\n\nIf you only want to hide it for now, press Cancel, then Edit the product and untick "Published".`)) return;
     const { error } = await c.from("products").delete().eq("id", id);
     if (error) { Admin.toast("Couldn't delete: " + error.message, true); return; }
     Admin.toast("Product deleted.");
@@ -110,11 +111,11 @@
               <input type="text" id="f_name_en" value="${Admin.escapeHtml(p?.name_en || "")}">
             </div>
             <div class="form-field full">
-              <label>Link on the site <span class="req">mandatory</span> <span class="hint">· auto-filled — only change if you know what it does</span></label>
+              <label>Web address of this product <span class="req">mandatory</span> <span class="hint">· filled in for you from the name — best left alone</span></label>
               <input type="text" id="f_slug" value="${Admin.escapeHtml(p?.slug || "")}">
             </div>
             <div class="form-field full">
-              <label>Description (English)</label>
+              <label>Description <span class="hint">shown on the product page</span></label>
               <textarea id="f_desc_en">${Admin.escapeHtml(p?.description_en || "")}</textarea>
             </div>
             <div class="form-field">
@@ -130,12 +131,12 @@
               </select>
             </div>
             <div class="form-field">
-              <label>Price (৳ BDT)</label>
+              <label>Price now (৳ BDT) <span class="hint">what the buyer pays</span></label>
               <input type="number" id="f_price" min="0" value="${p?.price_bdt ?? 0}">
             </div>
             <div class="form-field">
-              <label>Original price <span class="hint">optional — set to show a "Sale" badge</span></label>
-              <input type="number" id="f_old_price" min="0" value="${p?.old_price_bdt ?? ""}">
+              <label>Original price (৳ BDT) <span class="hint">optional — the price before the discount. It is shown crossed out, with a "সেল" badge</span></label>
+              <input type="number" id="f_old_price" min="0" placeholder="leave empty for no discount" value="${p?.old_price_bdt ?? ""}">
             </div>
             <div class="form-field">
               <label>Stock <span class="hint">leave blank = unlimited</span></label>
@@ -187,36 +188,40 @@
                      value="${Admin.escapeHtml(p?.delivery_note || "")}">
             </div>
             <div class="form-field">
-              <label>Order on the site</label>
+              <label>Position in the store <span class="hint">smaller numbers come first</span></label>
               <input type="number" id="f_sort" value="${p?.sort_order ?? 0}">
             </div>
             <div class="form-field full">
-              <label>Thumbnail color</label>
+              <label>Card colour <span class="hint">only used when there is no picture</span></label>
               <div class="tone-picker" id="tonePicker">
                 ${[1,2,3,4,5,6].map((t) => `<button type="button" class="tone-${t} ${(p?.tone || 1) === t ? "selected" : ""}" data-tone="${t}"></button>`).join("")}
               </div>
             </div>
             <div class="form-field full">
-              <label>Product image <span class="hint">optional — replaces the color above</span></label>
+              <label>Product picture <span class="hint">optional — replaces the colour above</span></label>
               <input type="file" id="f_image" accept="image/*">
               ${p?.image_url ? `<div class="hint">Current: <a href="${p.image_url}" target="_blank">view image</a></div>` : ""}
             </div>
             <div class="form-field">
               <label>&nbsp;</label>
-              <label class="form-check"><input type="checkbox" id="f_published" ${p === null || p?.is_published ? "checked" : ""}> Published (visible on site)</label>
+              <label class="form-check"><input type="checkbox" id="f_published" ${p === null || p?.is_published ? "checked" : ""}> Published — visitors can see and buy it</label>
             </div>
           </div>
           <div class="modal-foot">
-            <button type="button" class="btn btn-ghost" id="cancelModal">Cancel</button>
+            <button type="button" class="btn btn-ghost" id="cancelModal" data-no-dirty>Cancel</button>
             <button type="submit" class="btn btn-primary" id="saveProductBtn">${p ? "Save changes" : "Create product"}</button>
           </div>
         </form>
       </div>`;
     document.body.appendChild(backdrop);
 
-    document.getElementById("closeModal").addEventListener("click", closeModal);
-    document.getElementById("cancelModal").addEventListener("click", closeModal);
-    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) closeModal(); });
+    // Closing by a stray click on the dark area, or on Cancel, asks first
+    // once anything in the form has been changed. See Admin.trackChanges.
+    const tracker = Admin.trackChanges(document.getElementById("productForm"));
+    const requestClose = () => { if (Admin.confirmDiscard(tracker)) closeModal(); };
+    document.getElementById("closeModal").addEventListener("click", requestClose);
+    document.getElementById("cancelModal").addEventListener("click", requestClose);
+    backdrop.addEventListener("click", (e) => { if (e.target === backdrop) requestClose(); });
 
     // Auto-slug from whichever name is filled in, only while creating.
     // Prefers English for a cleaner URL, falls back to the Bangla name.
@@ -269,7 +274,7 @@
   const PRODUCT_RULES = [
     { id: "f_name_bn", label: "Bangla name", message: "Bangla name is missing. This is the name shown to visitors on the site." },
     { id: "f_name_en", label: "English name", message: "English name is missing." },
-    { id: "f_slug", label: "Link on the site", message: "Link on the site is missing. It is normally filled in for you from the name." },
+    { id: "f_slug", label: "Web address", message: "The web address is missing. It is normally filled in for you from the name." },
     {
       id: "f_price",
       label: "Price",
@@ -285,7 +290,7 @@
     {
       id: "f_old_price",
       label: "Original price",
-      message: "Original price must be higher than the price, or left blank.",
+      message: "The original price must be higher than the price now — or leave it empty for no discount.",
       test: (v) => v === "" || Number(v) > Number(document.getElementById("f_price").value || 0),
     },
   ];
@@ -389,8 +394,8 @@
       let handled = false;
 
       if (err.code === "23505") {
-        Admin.showFieldError(document.getElementById("f_slug"), "Another product already uses this link. Change it to something unique.");
-        Admin.toast("That link is already taken by another product.", true);
+        Admin.showFieldError(document.getElementById("f_slug"), "Another product already uses this web address. Change it to something unique.");
+        Admin.toast("That web address is already taken by another product.", true);
         handled = true;
       } else if (err.code === "23502") {
         const column = (err.message || "").match(/column "([a-z_]+)"/);

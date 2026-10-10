@@ -3,7 +3,7 @@
   const admin = await Admin.requireAdmin();
   if (!admin) return;
 
-  Admin.renderShell("home.html", "Homepage Content", "Every piece of text and photo on the homepage, plus which sections the public can see. Save each section separately — changes go live immediately.", admin);
+  Admin.renderShell("home.html", "Homepage", "Every piece of text and photo on the homepage, plus which sections the public can see. Save each section separately — changes go live immediately.", admin);
   const content = document.getElementById("adminContent");
   content.innerHTML = `<div class="loading-row"><div class="spinner"></div> Loading homepage content…</div>`;
 

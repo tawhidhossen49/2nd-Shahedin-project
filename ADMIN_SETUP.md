@@ -39,9 +39,9 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
 2. Open the file `schema.sql` from this project folder, copy **everything** in it,
    and paste it into the SQL editor.
 3. Click **Run**. You should see "Success. No rows returned."
-   - This creates all the tables (courses, products, analytics, etc.), sets up
-     security rules so only admins can edit content, and adds a few sample
-     courses so the admin panel isn't empty on first login.
+   - This creates all the tables (courses, products, analytics, etc.) and sets
+     up security rules so only admins can edit content. It adds no sample
+     courses or products: the site shows only what you add yourself.
    - It's safe to run again later (e.g. after an update) — it won't duplicate data.
 
 ## 3. Create your admin login
@@ -56,8 +56,12 @@ Do these steps in order. Steps 1–5 are one-time setup (~15 minutes).
    insert into admins (id, email) values ('paste-the-user-uid-here', 'your@email.com');
    ```
 5. Still in **Authentication → Settings**, turn **off** "Allow new users to sign up"
-   so nobody else can create their own account. You'll add any future admins
-   the same way, from Supabase's Users page + the SQL command above.
+   so nobody else can create their own account.
+
+The first admin you add this way becomes the **main admin** automatically.
+Every admin after that is added from inside the panel, on **Team & access** —
+you never need this SQL command again. See "Team members and what each can
+do" below.
 
 ## 4. Connect the website to Supabase
 
@@ -90,12 +94,14 @@ and Step 3 (create your login).
 
 ## Everyday use
 
-- **Add/edit/delete a course or product** → Admin panel → Courses / Store Products
-  → the button in the top right of each list, or the pencil/trash icons on
+- **Not sure where something is?** → the Dashboard has a "What do you want to
+  do?" box for each common job. Press one and it takes you there.
+- **Add/edit/delete a course or product** → Admin panel → Courses / Store products
+  → the button in the top right of each list, or **Edit** / **Delete** on
   each row. Changes appear on the live site immediately (no rebuild/redeploy
   needed).
 - **Edit any homepage text or the about-section photo** → Admin panel →
-  Homepage Content. Every section of the homepage (hero, trust stats, "why
+  Homepage. Every section of the homepage (hero, trust stats, "why
   learn," about, journey timeline, testimonials, press) is editable here,
   including adding/removing repeatable items like feature cards or
   testimonials. Save each section separately with its own "Save" button.
@@ -261,10 +267,75 @@ Progress tracking: content blocks a student is enrolled in get a "mark as
 complete" checkbox (quizzes mark themselves complete automatically when
 checked), which drives their progress bar and certificate eligibility.
 
+## Team members and what each can do
+
+Admin panel → **Team & access**. Only a main admin sees this page.
+
+There are two kinds of admin:
+
+- **Main admin** — can open every page, and can add, remove and change the
+  other team members. Give this only to people you fully trust: a main admin
+  can remove another main admin.
+- **Limited access** — can open only the pages you tick for them. Everything
+  else is missing from their menu, and the database refuses it too, so it is
+  not just hidden.
+
+To add someone: **+ Add a team member** → type their email, a name, and a
+password you choose for them → pick "Limited access" or "Main admin" → tick
+the pages they need → **Add team member**. Tell them the password yourself;
+nothing is emailed. If that email already has a login on the site, that login
+is made an admin and keeps its own password.
+
+To change someone later: **Change access** on their row. To take access away:
+**Remove**. Their login is not deleted; they simply stop being an admin.
+
+Two things the panel will not let you do, on purpose: change your own role,
+and leave the panel with no main admin at all.
+
+**One-time set-up by a developer** (both needed, in this order):
+
+1. Run the latest `schema.sql` in the Supabase SQL editor. Section 34 adds the
+   roles. Every admin who already existed keeps all of their pages; one of
+   them becomes the main admin.
+2. Deploy the function that creates a login for a new team member:
+   ```
+   supabase functions deploy admin-users
+   supabase functions deploy bkash-payment
+   ```
+   `admin-users` is new. `bkash-payment` is redeployed because refunds now
+   require the "Orders & payments" page, not just being an admin.
+
+Until step 1 is done the panel works exactly as before: every admin can do
+everything, and the Team page says the database still needs updating.
+
+## Course price and discount
+
+In the course editor, section **2. Price**:
+
+- **Price now** — what the student pays.
+- **Original price** — optional. Put the price before the discount here and
+  the site shows it crossed out beside the real price, with a "সেল" badge on
+  the course card and the percentage off on the course page. It has to be
+  higher than the price now. Leave it empty for no discount.
+
+The box under the two numbers shows exactly what a visitor will see. The
+original price is display only: the checkout always charges "Price now".
+
+## Free preview lessons
+
+On a paid course every lesson is locked until someone buys. To let visitors
+try before they buy, open the course → section **3. Lessons** → on any
+**video** lesson tick **Free preview**. That one video can then be watched by
+anyone, with a green "ফ্রি প্রিভিউ" tag beside it; every other lesson stays
+locked. Untick it to lock it again.
+
+Only videos can be free previews. This is separate from the **Trailer video**
+in section 4, which is the single video shown at the top of the course page.
+
 ## Building a course's content
 
 Each course is built from content blocks you add in any order from the course
-editor (Courses → pencil icon → "Course content"):
+editor (Courses → **Edit** → section "3. Lessons"):
 
 - **Video** — paste any YouTube URL; it's embedded right on the page.
 - **Mini quiz** — add questions, each with its own answer options; mark the

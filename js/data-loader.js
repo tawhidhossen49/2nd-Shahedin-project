@@ -28,6 +28,11 @@
       title_bn: row.title_bn,
       title_en: row.title_en,
       price: row.price_bdt,
+      /* The price before a discount, shown struck through beside the real
+         one. Only when it means something: a free course has no discount to
+         show, and an "original" price that is not higher than the price is a
+         typo, not an offer. Undefined on a database without the column. */
+      oldPrice: !row.is_free && Number(row.old_price_bdt) > Number(row.price_bdt) ? Number(row.old_price_bdt) : undefined,
       free: row.is_free,
       duration: row.duration_bn || row.duration_en || "",
       rating: Number(row.rating) || 4.8,

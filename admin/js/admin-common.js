@@ -9,21 +9,57 @@
 window.Admin = (function () {
   "use strict";
 
-  const NAV = [
-    { href: "index.html", label: "Dashboard", icon: "M4 4h7v9H4zM13 4h7v5h-7zM13 12h7v9h-7zM4 16h7v5H4z" },
-    { href: "home.html", label: "Homepage Content", icon: "M3 11l9-8 9 8M5 10v10h14V10" },
-    { href: "portfolio.html", label: "Portfolio & Stats", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
-    { href: "courses.html", label: "Courses", icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" },
-    { href: "reviews.html", label: "Reviews", icon: "M12 2l2.9 6.3 6.9.9-5 4.9 1.2 6.9-6-3.2-6 3.2 1.2-6.9-5-4.9 6.9-.9z" },
-    { href: "submissions.html", label: "Contact Messages", icon: "M4 4h16v16H4zM4 6l8 6 8-6" },
-    { href: "students.html", label: "Students", icon: "M12 2 1 7l11 5 9-4.1V17h2V7zM5 13.2V17c0 2 3.1 4 7 4s7-2 7-4v-3.8l-7 3.2z" },
-    { href: "products.html", label: "Store Products", icon: "M6 2 3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7l-3-5H6zM3 7h18M16 11a4 4 0 0 1-8 0" },
-    { href: "orders.html", label: "Orders", icon: "M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" },
-    { href: "coupons.html", label: "Coupons", icon: "M20 12a2 2 0 0 1 2-2V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v3a2 2 0 0 1 0 4v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a2 2 0 0 1-2-2zM13 7v2M13 15v2" },
-    { href: "analytics.html", label: "Analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
-    { href: "community.html", label: "Community", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
-    { href: "legal.html", label: "Terms & Privacy", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5" },
-    { href: "settings.html", label: "Settings", icon: "M10.3 2.3h3.4l.6 2.4a7.9 7.9 0 0 1 2 1.2l2.4-.8 1.7 3-1.9 1.6a8 8 0 0 1 0 2.3l1.9 1.6-1.7 3-2.4-.8a7.9 7.9 0 0 1-2 1.2l-.6 2.4h-3.4l-.6-2.4a7.9 7.9 0 0 1-2-1.2l-2.4.8-1.7-3 1.9-1.6a8 8 0 0 1 0-2.3L1.7 8.1l1.7-3 2.4.8a7.9 7.9 0 0 1 2-1.2z" },
+  /* The sidebar, in the groups a person thinks in rather than the order the
+     pages were built. `key` is the page's permission name: it is what a main
+     admin ticks on the Team page and what admin_can() checks in the
+     database (schema.sql section 34). Two keys are special and are never
+     stored: "dashboard" is open to every admin, "team" to main admins only. */
+  const NAV_GROUPS = [
+    { title: "", items: [
+      { href: "index.html", key: "dashboard", label: "Dashboard", icon: "M4 4h7v9H4zM13 4h7v5h-7zM13 12h7v9h-7zM4 16h7v5H4z" },
+    ] },
+    { title: "Courses & store", items: [
+      { href: "courses.html", key: "courses", label: "Courses", icon: "M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" },
+      { href: "products.html", key: "products", label: "Store products", icon: "M6 2 3 7v13a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V7l-3-5H6zM3 7h18M16 11a4 4 0 0 1-8 0" },
+      { href: "coupons.html", key: "coupons", label: "Discount coupons", icon: "M20 12a2 2 0 0 1 2-2V7a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v3a2 2 0 0 1 0 4v3a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-3a2 2 0 0 1-2-2zM13 7v2M13 15v2" },
+      { href: "reviews.html", key: "reviews", label: "Course reviews", icon: "M12 2l2.9 6.3 6.9.9-5 4.9 1.2 6.9-6-3.2-6 3.2 1.2-6.9-5-4.9 6.9-.9z" },
+    ] },
+    { title: "People & sales", items: [
+      { href: "orders.html", key: "orders", label: "Orders & payments", icon: "M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" },
+      { href: "students.html", key: "students", label: "Students", icon: "M12 2 1 7l11 5 9-4.1V17h2V7zM5 13.2V17c0 2 3.1 4 7 4s7-2 7-4v-3.8l-7 3.2z" },
+      { href: "submissions.html", key: "submissions", label: "Contact messages", icon: "M4 4h16v16H4zM4 6l8 6 8-6" },
+      { href: "analytics.html", key: "analytics", label: "Visitor analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
+    ] },
+    { title: "Website content", items: [
+      { href: "home.html", key: "home", label: "Homepage", icon: "M3 11l9-8 9 8M5 10v10h14V10" },
+      { href: "portfolio.html", key: "portfolio", label: "Portfolio page", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
+      { href: "community.html", key: "community", label: "Community links", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" },
+      { href: "legal.html", key: "legal", label: "Terms & privacy", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h5" },
+      { href: "settings.html", key: "settings", label: "Contact & social links", icon: "M10.3 2.3h3.4l.6 2.4a7.9 7.9 0 0 1 2 1.2l2.4-.8 1.7 3-1.9 1.6a8 8 0 0 1 0 2.3l1.9 1.6-1.7 3-2.4-.8a7.9 7.9 0 0 1-2 1.2l-.6 2.4h-3.4l-.6-2.4a7.9 7.9 0 0 1-2-1.2l-2.4.8-1.7-3 1.9-1.6a8 8 0 0 1 0-2.3L1.7 8.1l1.7-3 2.4.8a7.9 7.9 0 0 1 2-1.2z" },
+    ] },
+    { title: "Team", items: [
+      { href: "team.html", key: "team", label: "Team & access", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6" },
+    ] },
+  ];
+  const NAV = NAV_GROUPS.reduce((all, g) => all.concat(g.items), []);
+
+  /* The pages a partial admin can be given, with the one line the Team page
+     shows beside each tick box. Same keys as admin_page_keys() in
+     schema.sql. */
+  const PAGES = [
+    { key: "courses", label: "Courses", desc: "Add and edit courses, lessons and prices." },
+    { key: "products", label: "Store products", desc: "Add and edit the books, notes and other items in the store." },
+    { key: "coupons", label: "Discount coupons", desc: "Create and switch off discount codes." },
+    { key: "reviews", label: "Course reviews", desc: "Approve, hide or delete what students wrote." },
+    { key: "orders", label: "Orders & payments", desc: "See every payment and send refunds." },
+    { key: "students", label: "Students", desc: "See who signed up, and give or remove course access by hand." },
+    { key: "submissions", label: "Contact messages", desc: "Read and delete messages sent from the Contact page." },
+    { key: "analytics", label: "Visitor analytics", desc: "See how many people visit each page." },
+    { key: "home", label: "Homepage", desc: "Edit the text, photos and sections of the homepage." },
+    { key: "portfolio", label: "Portfolio page", desc: "Edit the portfolio page and its numbers." },
+    { key: "community", label: "Community links", desc: "Edit the community group links students see." },
+    { key: "legal", label: "Terms & privacy", desc: "Edit the Terms and Privacy pages." },
+    { key: "settings", label: "Contact & social links", desc: "Edit the phone, email, WhatsApp and social links." },
   ];
 
   function configured() {
@@ -65,25 +101,89 @@ window.Admin = (function () {
       window.location.href = "login.html";
       return null;
     }
-    const { data: adminRow, error } = await c.from("admins").select("id,email,full_name").eq("id", session.user.id).maybeSingle();
+    /* role + permissions arrive with schema.sql section 34. A database that
+       has not run it yet has neither column, and the query fails on the
+       column name rather than returning a row. That is not "not an admin":
+       fall back to the old three columns and treat the admin exactly as the
+       panel always has -- everything allowed -- so deploying this file ahead
+       of the schema change locks nobody out. */
+    let { data: adminRow, error } = await c.from("admins").select("id,email,full_name,role,permissions").eq("id", session.user.id).maybeSingle();
+    let legacy = false;
+    if (error && (error.code === "42703" || error.code === "PGRST204" || /column/i.test(error.message || ""))) {
+      legacy = true;
+      ({ data: adminRow, error } = await c.from("admins").select("id,email,full_name").eq("id", session.user.id).maybeSingle());
+    }
     if (error || !adminRow) {
       await c.auth.signOut();
       window.location.href = "login.html?denied=1";
       return null;
     }
+    if (legacy) {
+      adminRow.role = "main";
+      adminRow.permissions = [];
+      adminRow.legacy = true;
+    }
+    if (!Array.isArray(adminRow.permissions)) adminRow.permissions = [];
+    _admin = adminRow;
+
+    /* Which page is this? Every admin page calls requireAdmin() first, so the
+       check lives here once instead of in fifteen files. Opening a page you
+       were not given sends you to the dashboard with a plain explanation.
+       This is a courtesy, not the lock: the database refuses the data either
+       way (admin_can() in schema.sql). */
+    const here = pageFromLocation();
+    if (here && !can(here.key)) {
+      window.location.replace("index.html?noaccess=" + encodeURIComponent(here.label));
+      return null;
+    }
     return adminRow;
+  }
+
+  let _admin = null;
+
+  function pageFromLocation() {
+    const file = (window.location.pathname.split("/").pop() || "index.html").toLowerCase() || "index.html";
+    return NAV.find((n) => n.href === file) || null;
+  }
+
+  /* May the signed-in admin use this page? "dashboard" is everyone's landing
+     page. "team" is where access itself is handed out, so main admins only. */
+  function can(key) {
+    if (!_admin) return false;
+    if (key === "dashboard") return true;
+    if (_admin.role === "main") return true;
+    if (key === "team") return false;
+    return _admin.permissions.includes(key);
+  }
+
+  function isMain() {
+    return !!_admin && _admin.role === "main";
   }
 
   /* ---------- Shell (sidebar + topbar) ---------- */
   function renderShell(activeHref, title, subtitle, admin) {
     const app = document.getElementById("adminApp");
     if (!app) return;
-    const navHtml = NAV.map(
-      (n) => `<a href="${n.href}" class="${n.href === activeHref ? "active" : ""}">
+    /* Only the pages this admin may open. A group with nothing left in it
+       loses its heading too, so a one-page admin sees one link, not five
+       empty headings. */
+    const navHtml = NAV_GROUPS.map((group) => {
+      const links = group.items.filter((n) => can(n.key)).map(
+        (n) => `<a href="${n.href}" class="${n.href === activeHref ? "active" : ""}"${n.href === activeHref ? ' aria-current="page"' : ""}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
         ${n.label}
       </a>`
-    ).join("");
+      ).join("");
+      if (!links) return "";
+      return (group.title ? `<div class="admin-nav-group">${group.title}</div>` : "") + links;
+    }).join("");
+    const roleLabel = admin ? (admin.role === "main" ? "Main admin" : "Limited access") : "";
+    /* The heading says the same words as the menu link that opened the page.
+       Each page still passes its own title, and it is used when the page is
+       not in the menu, but "Orders" in the menu and "Orders & payments" at
+       the top would look like two different places. */
+    const navItem = NAV.find((n) => n.href === activeHref);
+    const heading = navItem ? navItem.label : title;
 
     app.innerHTML = `
       <div class="admin-shell">
@@ -91,7 +191,7 @@ window.Admin = (function () {
           <div class="admin-brand"><span class="dot"></span>Shahedin<br><small>Admin Panel</small></div>
           <nav class="admin-nav">${navHtml}</nav>
           <div class="admin-sidebar-foot">
-            <div class="admin-user">${admin ? (admin.full_name || admin.email) : ""}</div>
+            <div class="admin-user">${admin ? escapeHtml(admin.full_name || admin.email) : ""}${roleLabel ? `<span class="admin-role">${roleLabel}</span>` : ""}</div>
             <button class="admin-logout" id="logoutBtn">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
               Log out
@@ -101,7 +201,7 @@ window.Admin = (function () {
         <main class="admin-main">
           <div class="admin-topbar">
             <button class="icon-btn" id="mobileNavToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="adminSidebar">☰</button>
-            <div><h1>${title}</h1>${subtitle ? `<p>${subtitle}</p>` : ""}</div>
+            <div><h1>${heading}</h1>${subtitle ? `<p>${subtitle}</p>` : ""}</div>
             <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm">View site ↗</a>
           </div>
           <div class="admin-content" id="adminContent"></div>
@@ -273,6 +373,36 @@ window.Admin = (function () {
     return `${labels.length} fields still need filling in: ${labels.join(", ")}.`;
   }
 
+  /* ---------- Unsaved-changes guard ----------
+     The big editors open in a pop-up over a dark backdrop, and one stray
+     click on that backdrop used to close the pop-up and throw away whatever
+     had been typed -- a whole course, sometimes. trackChanges() watches a
+     form and remembers whether anything in it was touched; confirmDiscard()
+     asks before closing, but only when there is something to lose.
+
+     Typing and ticking count, and so do the form's own buttons (add a
+     lesson, remove a point, pick a colour), because those change what would
+     be saved without firing an input event. A button marked data-no-dirty
+     -- Cancel, the section jump links -- does not. */
+  function trackChanges(form) {
+    let dirty = false;
+    if (form) {
+      const mark = () => { dirty = true; };
+      form.addEventListener("input", mark);
+      form.addEventListener("change", mark);
+      form.addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (btn && btn.type !== "submit" && !btn.hasAttribute("data-no-dirty")) dirty = true;
+      });
+    }
+    return { isDirty: () => dirty };
+  }
+
+  function confirmDiscard(tracker) {
+    if (!tracker || !tracker.isDirty()) return true;
+    return confirm("Close without saving?\n\nThe changes you made here will be lost.");
+  }
+
   /* ---------- Helpers ---------- */
   /* \w is ASCII-only in JavaScript, so the old version deleted every Bangla
      character and handed back "" for a Bangla title — which then failed the
@@ -362,6 +492,7 @@ window.Admin = (function () {
 
   return {
     configured, client, requireAdmin, renderShell, toast,
+    can, isMain, PAGES, trackChanges, confirmDiscard,
     slugify, slugifyOrFallback, uploadImage, uploadFile, timeAgo, escapeHtml, showNotConfigured,
     validateFields, clearFieldErrors, showFieldError, missingSummary,
   };

@@ -143,8 +143,8 @@
         <td>
           <div class="row-actions">
             <button class="btn btn-ghost btn-sm toggle-btn" data-code="${Admin.escapeHtml(v.code)}">${v.is_active ? "Turn off" : "Turn on"}</button>
-            <button class="icon-btn edit-btn" data-code="${Admin.escapeHtml(v.code)}" title="Edit"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-            <button class="icon-btn del-btn" data-code="${Admin.escapeHtml(v.code)}" title="Delete"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg></button>
+            <button class="btn btn-ghost btn-sm edit-btn" data-code="${Admin.escapeHtml(v.code)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>
+            <button class="btn btn-danger btn-sm del-btn" data-code="${Admin.escapeHtml(v.code)}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>Delete</button>
           </div>
         </td>
       </tr>`;

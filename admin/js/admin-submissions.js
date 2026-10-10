@@ -197,8 +197,8 @@
       <td class="row-sub" title="${Admin.escapeHtml(new Date(s.created_at).toLocaleString())}">${Admin.timeAgo(s.created_at)}</td>
       <td class="row-actions">
         <button type="button" class="btn btn-ghost btn-sm" data-open="${s.id}">Open</button>
-        <button type="button" class="icon-btn" data-delete="${s.id}" title="Delete message">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg>
+        <button type="button" class="btn btn-danger btn-sm" data-delete="${s.id}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13"/></svg>Delete
         </button>
       </td>
     </tr>`;

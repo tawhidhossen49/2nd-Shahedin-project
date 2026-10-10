@@ -17,7 +17,7 @@
 <div class="login-wrap" id="loginWrap">
   <div class="login-card">
     <div class="admin-brand" style="justify-content:center;"><span class="dot"></span>Shahedin Admin</div>
-    <p class="lead">Sign in to manage courses, products & analytics.</p>
+    <p class="lead">Log in to manage the website.</p>
     <div id="deniedNotice"></div>
     <form id="loginForm">
       <div class="form-field">
@@ -26,11 +26,14 @@
       </div>
       <div class="form-field">
         <label for="password">Password</label>
-        <input type="password" id="password" required autocomplete="current-password">
+        <div class="password-row">
+          <input type="password" id="password" required autocomplete="current-password">
+          <button type="button" class="btn btn-ghost btn-sm" id="togglePassword">Show</button>
+        </div>
       </div>
       <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Log in</button>
     </form>
-    <p class="hint" style="margin-top:16px; text-align:center;">Access is limited to accounts added to the <code>admins</code> table in Supabase.</p>
+    <p class="hint" style="margin-top:16px; text-align:center;">Only team members can log in here. If you should have access, ask a main admin to add you under Team &amp; access.</p>
   </div>
 </div>
 
@@ -50,8 +53,16 @@
 
   if (new URLSearchParams(location.search).get("denied")) {
     document.getElementById("deniedNotice").innerHTML =
-      `<div class="notice">That account isn't set up as an admin yet. Ask whoever manages the Supabase project to add your user ID to the <code>admins</code> table.</div>`;
+      `<div class="notice">That login is not a team member, so it cannot open the admin panel. Ask a main admin to add you under Team &amp; access.</div>`;
   }
+
+  // Lets someone check what they typed instead of guessing at dots.
+  document.getElementById("togglePassword").addEventListener("click", (e) => {
+    const input = document.getElementById("password");
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    e.currentTarget.textContent = show ? "Hide" : "Show";
+  });
 
   document.getElementById("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -65,7 +76,12 @@
     if (error) {
       btn.disabled = false;
       btn.textContent = "Log in";
-      Admin.toast(error.message || "Couldn't sign in.", true);
+      /* Supabase answers a wrong email or password with "Invalid login
+         credentials", which is accurate and tells a non-technical person
+         nothing. Anything else (network down, too many attempts) is passed
+         through, because that message is the useful part. */
+      const wrong = /invalid login credentials/i.test(error.message || "");
+      Admin.toast(wrong ? "The email or password is not right. Check both and try again." : (error.message || "Couldn't log in. Please try again."), true);
       return;
     }
     const { data: adminRow } = await c.from("admins").select("id").eq("id", data.user.id).maybeSingle();

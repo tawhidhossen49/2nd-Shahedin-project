@@ -73,6 +73,23 @@ async function isAdmin(db: SupabaseClient, userId: string): Promise<boolean> {
   return !!data;
 }
 
+/* Sending money back belongs to the Orders page. A main admin always may; a
+   partial admin only when a main admin has ticked "Orders & payments" for
+   them (schema.sql section 34). The panel hides the Refund button from
+   everyone else, but this function is called with the service role, which no
+   database policy applies to -- so the rule has to be enforced here as well,
+   or a partial admin could refund an order by calling the function directly.
+
+   A database that has not run section 34 has no role / permissions columns
+   and the select fails on the column name. That case keeps the old rule,
+   any admin, so deploying this ahead of the schema change breaks nothing. */
+async function canRefund(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await db.from("admins").select("role, permissions").eq("id", userId).maybeSingle();
+  if (error) return isAdmin(db, userId);
+  if (!data) return false;
+  return data.role === "main" || (Array.isArray(data.permissions) && data.permissions.includes("orders"));
+}
+
 /* bKash pre-fills its wallet-number field from payerReference when the value
    looks like a wallet, which saves the customer typing their own number. The
    checkout field is free text, though, so anything that is not a Bangladeshi
@@ -352,7 +369,7 @@ async function handleStatus(db: SupabaseClient, userId: string, body: Body): Pro
 /* ---------- refund ---------------------------------------------------- */
 
 async function handleRefund(db: SupabaseClient, userId: string, body: Body): Promise<Response> {
-  if (!(await isAdmin(db, userId))) return fail("Not allowed.", 403);
+  if (!(await canRefund(db, userId))) return fail("Not allowed.", 403);
 
   const orderId = String(body.orderId ?? "").trim();
   const { data: order } = await db

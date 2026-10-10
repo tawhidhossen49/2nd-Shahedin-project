@@ -3,7 +3,7 @@
   const admin = await Admin.requireAdmin();
   if (!admin) return;
 
-  Admin.renderShell("analytics.html", "Analytics", "Page views recorded directly from your site — no cookies, no third-party trackers.", admin);
+  Admin.renderShell("analytics.html", "Visitor analytics", "Page views recorded directly from your site — no cookies, no third-party trackers.", admin);
   const content = document.getElementById("adminContent");
   content.innerHTML = `<div class="loading-row"><div class="spinner"></div> Loading analytics…</div>`;
 

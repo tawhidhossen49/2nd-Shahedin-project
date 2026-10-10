@@ -1150,6 +1150,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 }
 .buy-price-row{display:flex; align-items:baseline; gap:var(--space-3); flex-wrap:wrap;}
 .course-buy-card .price{font-size:clamp(1.8rem,3.4vw,2.4rem); line-height:1;}
+/* The original price sits beside a very large figure here, so the card-sized
+   .old would look like a footnote. Still clearly the smaller of the two. */
+.course-buy-card .price .old{font-size:.5em;}
+.buy-discount{align-self:center;}
 .course-buy-card .small-note{margin-block-start:6px;}
 .course-buy-card .btn{margin-block-start:var(--space-5);}
 /* In the hero the card follows the description instead of filling a column of
@@ -1242,6 +1246,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .cb-head-text{display:flex; flex-direction:column; gap:1px; min-inline-size:0;}
 .cb-acc .cb-title{line-height:1.35;}
 .cb-kind{font-family:var(--font-body); font-size:var(--step--2); font-weight:500; color:var(--text-3); letter-spacing:.01em;}
+/* A lesson the admin opened to everyone. Green, the site's "free" colour, so
+   it reads as the opposite of the padlock on the rows around it. Only shown
+   to a visitor who has not bought the course -- see contentBlockHTML. */
+.cb-preview-tag{
+  display:inline-block; margin-inline-start:var(--space-2); padding:1px 8px;
+  border-radius:var(--radius-pill); background:var(--good-dim); color:var(--good);
+  font-weight:600; letter-spacing:0;
+}
+.cb-kind > .cb-preview-tag:first-child{margin-inline-start:0;}
 .cb-acc .accordion-head{align-items:center; padding-block:var(--space-4);}
 /* Section 10 rotates every svg inside an open head — that rule is meant for
    the chevron alone, so the type icon and the padlock opt back out here. */
@@ -1303,6 +1316,11 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .cb-done-badge{margin-inline-start:8px; vertical-align:middle;}
 .cb-progress{display:flex; align-items:center; gap:var(--space-2); font-size:var(--step--1); color:var(--text-2); margin-block-start:var(--space-4); cursor:pointer;}
 .cb-progress input{inline-size:17px; block-size:17px; accent-color:var(--accent-fill);}
+/* render.js writes this control with `hidden` and course-progress.js reveals
+   it once the student is enrolled. display:flex above outranks the browser's
+   own [hidden] rule, so it showed for everyone -- a tick box that saved
+   nothing for a visitor watching a free preview. */
+.cb-progress[hidden]{display:none;}
 
 .video-embed{position:relative; padding-block-start:56.25%; border-radius:var(--radius-s); overflow:hidden; background:#000;}
 .video-embed iframe{position:absolute; inset:0; inline-size:100%; block-size:100%; border:0;}

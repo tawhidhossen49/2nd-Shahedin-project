@@ -39,7 +39,9 @@ contact.html           Contact form (saves to Admin → Contact Messages)
                         + booking calendar
 dashboard.html         Student dashboard (courses, resources, certificates)
 
-admin/                 Zero-code admin panel (see ADMIN_SETUP.md)
+admin/                 Zero-code admin panel (see ADMIN_SETUP.md). Team &
+                        access (admin/team.html) is where a main admin
+                        chooses which pages each other admin can use.
 schema.sql             Supabase schema — run once when setting up
 js/supabase-config.js  Your Supabase URL + anon key (used by site and admin)
 

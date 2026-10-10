@@ -544,3 +544,201 @@ svg:where(:not([width]):not([height])){ inline-size:1.15em; block-size:1.15em; f
   .danger-panel .row-actions .btn,
   .panel > .row-actions .btn{ width:100%; }
 }
+
+
+/* =========================================================================
+   EASIER TO USE
+   -------------------------------------------------------------------------
+   Additive only. Nothing above is rewritten; these rules are for the grouped
+   menu, the Team page, the numbered form sections, and for making the small
+   grey helper text readable by someone who is not used to admin panels.
+   ========================================================================= */
+
+/* ---- Helper text ----
+   .hint was .74rem in the dimmest text colour: fine as a footnote, too faint
+   and too small to be the thing that explains what a box is for. */
+.form-field .hint, .hint{ font-size:.8rem; color:var(--text-2); font-weight:400; line-height:1.5; }
+.form-field label{ font-size:.86rem; color:var(--text-1); }
+.panel-head p{ font-size:.86rem; color:var(--text-2); }
+.admin-topbar p{ color:var(--text-2); font-size:.88rem; }
+
+/* ---- Sidebar groups ---- */
+.admin-nav-group{
+  margin:14px 12px 4px; font-size:.68rem; font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-3);
+}
+.admin-nav a{ font-size:.92rem; }
+.admin-user{ white-space:normal; display:flex; flex-direction:column; gap:3px; overflow-wrap:anywhere; }
+.admin-role{ font-size:.7rem; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--accent-ink); }
+
+/* ---- Buttons that used to be a bare icon ----
+   A pencil and a bin mean nothing to someone who has not met them before, so
+   the row actions carry their word as well. */
+.row-actions{ flex-wrap:wrap; }
+.row-actions .btn svg{ width:14px; height:14px; flex:0 0 auto; }
+
+/* ---- Roles ---- */
+.badge-main{ background:var(--accent-dim); color:var(--accent-ink); border:1px solid var(--line-accent); }
+.badge-limited{ background:var(--surface-3); color:var(--text-1); border:1px solid var(--line-strong); }
+.access-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+.access-chip{
+  font-size:.74rem; font-weight:500; padding:2px 9px; border-radius:99px;
+  background:var(--surface-3); border:1px solid var(--line); color:var(--text-1);
+}
+
+.help-card{
+  background:var(--surface-1); border:1px solid var(--line); border-radius:var(--radius-m);
+  padding:20px 24px; margin-bottom:24px;
+}
+.help-card h2{ font-family:var(--font-display); font-size:1.05rem; font-weight:600; margin-bottom:14px; }
+.help-card p{ font-size:.88rem; color:var(--text-2); margin-top:8px; line-height:1.6; }
+.help-card p strong{ color:var(--text-1); }
+.help-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px 28px; }
+
+/* Two big either/or choices: a radio the size of a button, with the
+   consequence written inside it. */
+.choice-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:12px; }
+.choice-card{
+  display:flex; align-items:flex-start; gap:10px; cursor:pointer;
+  padding:14px 16px; border-radius:var(--radius-m);
+  background:var(--surface-2); border:1px solid var(--line-strong);
+}
+.choice-card:hover{ background:var(--surface-3); }
+.choice-card input{ margin-top:3px; width:18px; height:18px; flex:none; accent-color:var(--accent-fill); }
+.choice-card > span{ display:flex; flex-direction:column; gap:4px; }
+.choice-card b{ font-weight:600; font-size:.92rem; }
+.choice-card:has(input:checked){ border-color:var(--accent-line); background:var(--accent-dim); }
+.choice-card:has(input:disabled){ opacity:.6; cursor:not-allowed; }
+
+.pages-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+.pages-toolbar > span:last-child{ display:flex; gap:8px; }
+.page-checks{ display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:10px 18px; margin-top:0; }
+.page-checks .form-check{ padding:10px 12px; border-radius:var(--radius-s); background:var(--surface-2); border:1px solid var(--line); cursor:pointer; }
+.page-checks .form-check:has(input:checked){ border-color:var(--accent-line); }
+.password-row{ display:flex; gap:8px; align-items:stretch; }
+.password-row input{ flex:1; min-width:0; }
+
+/* ---- Numbered form sections ----
+   The course form is fifteen-odd things to fill in. Grouping them under a
+   number and a plain heading turns one wall of boxes into seven short steps,
+   without hiding anything. */
+.form-section{
+  border:1px solid var(--line); border-radius:var(--radius-m);
+  background:color-mix(in srgb, var(--surface-2) 45%, transparent);
+  padding:18px 20px 6px; margin-bottom:18px;
+  scroll-margin-top:70px;
+}
+.form-section-title{
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--font-display); font-size:1.02rem; font-weight:600; margin-bottom:14px;
+}
+.step-num{
+  display:inline-flex; align-items:center; justify-content:center; flex:none;
+  width:26px; height:26px; border-radius:50%;
+  background:var(--accent-fill); color:var(--text-on-accent); font-size:.82rem; font-weight:700;
+}
+.form-section-help{ font-size:.86rem; color:var(--text-2); margin:-4px 0 14px; line-height:1.6; }
+.form-section-help strong{ color:var(--text-1); }
+.form-section > .form-check{ margin-bottom:16px; }
+.publish-check{ align-items:flex-start; gap:10px; }
+.publish-check input{ margin-top:3px; flex:none; }
+.publish-check > span{ display:flex; flex-direction:column; gap:3px; }
+
+/* The row of jump buttons. Sticks to the top of the pop-up while the form
+   scrolls under it, so any section is one press away from anywhere. */
+.form-steps{
+  position:sticky; top:-40px; z-index:3;
+  display:flex; gap:6px; flex-wrap:wrap;
+  margin:0 -28px 18px; padding:10px 28px;
+  background:var(--surface-1); border-bottom:1px solid var(--line);
+}
+.form-steps button{
+  background:var(--surface-2); border:1px solid var(--line-strong); border-radius:99px;
+  padding:6px 12px; font-size:.78rem; font-weight:600; color:var(--text-1);
+}
+.form-steps button:hover{ background:var(--surface-3); border-color:var(--accent-line); }
+
+.add-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0 14px; }
+
+/* ---- Price preview ---- */
+.price-preview{
+  margin:-2px 0 16px; padding:11px 14px; border-radius:var(--radius-s);
+  background:var(--surface-2); border:1px dashed var(--line-strong);
+  font-size:.9rem; color:var(--text-2);
+}
+.price-preview .pp-old{ text-decoration:line-through; color:var(--text-3); margin-inline:4px 2px; }
+.price-preview .pp-now{ color:var(--text-1); font-size:1.08rem; margin-inline:2px 4px; }
+.price-preview .pp-free{ color:var(--good); }
+.price-preview .pp-warn{ color:var(--accent-ink); font-weight:600; }
+#priceFields.is-muted{ opacity:.45; }
+
+/* ---- Free-preview tick on a video lesson ---- */
+.preview-check{
+  align-items:flex-start; gap:10px; padding:10px 12px; border-radius:var(--radius-s);
+  background:var(--surface-3); border:1px solid var(--line); cursor:pointer;
+}
+.preview-check input{ margin-top:3px; flex:none; }
+.preview-check > span{ display:flex; flex-direction:column; gap:3px; }
+.preview-check:has(input:checked){ border-color:color-mix(in srgb, var(--good) 45%, transparent); background:var(--good-dim); }
+.module-head{ flex-wrap:wrap; }
+.module-head .cb-title{ min-width:160px; }
+
+/* ---- Save is always in reach ----
+   The pop-up scrolls inside its dark backdrop, and the Save button used to
+   sit at the very bottom of forms several screens long. It now stays pinned
+   to the bottom edge of the screen while the form scrolls behind it. */
+.modal-foot{
+  /* -40px, not 0: Chrome measures a sticky offset from the scrolling box's
+     content edge, and the backdrop that scrolls has 40px of padding. 0 would
+     leave the bar floating 40px above the bottom with the form showing
+     through underneath it. Same reason for .form-steps below. */
+  position:sticky; bottom:-40px; z-index:3;
+  margin:8px -28px -26px; padding:14px 28px 16px;
+  background:var(--surface-1); border-top:1px solid var(--line-strong);
+  border-radius:0 0 var(--radius-l) var(--radius-l);
+}
+@media (max-width:640px){
+  /* The backdrop's padding is 16px at this width. */
+  .modal-foot{ bottom:-16px; margin:8px -16px -20px; padding:12px 16px 14px; }
+  /* One row that slides sideways. Wrapped, seven buttons took three rows
+     of a phone screen and stayed pinned there. */
+  .form-steps{
+    top:-16px; margin:0 -16px 16px; padding:8px 16px;
+    flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .form-steps::-webkit-scrollbar{ display:none; }
+  .form-steps button{ flex:0 0 auto; }
+  .form-section{ padding:14px 14px 4px; }
+}
+
+/* ---- Dashboard task cards ---- */
+.task-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:14px; }
+.task-card{
+  display:flex; flex-direction:column; gap:6px;
+  padding:16px 18px; border-radius:var(--radius-m);
+  background:var(--surface-2); border:1px solid var(--line);
+  transition:background .15s ease, border-color .15s ease;
+}
+.task-card:hover{ background:var(--surface-3); border-color:var(--accent-line); }
+.task-card .task-icon{
+  width:36px; height:36px; border-radius:10px; display:inline-flex; align-items:center; justify-content:center;
+  background:var(--accent-dim); color:var(--accent-ink); margin-bottom:4px;
+}
+.task-card .task-icon svg{ width:19px; height:19px; }
+.task-card b{ font-size:.95rem; font-weight:600; }
+.task-card span.task-desc{ font-size:.82rem; color:var(--text-2); line-height:1.5; }
+.task-card .task-flag{ align-self:flex-start; margin-top:2px; }
+
+/* ---- `hidden` means hidden ----
+   The browser hides [hidden] with display:none, but any class that sets its
+   own display (.form-field, .badge, .field-error are all flex) silently wins,
+   so an element the script had hidden stayed on screen: the delivery fields
+   of a physical product, the empty status line under "give course access".
+   Stated once here so `el.hidden = true` does what it says everywhere. */
+[hidden]{ display:none !important; }
+
+/* The menu button opens the sidebar on a phone. On a wide screen the sidebar
+   is always there, and the button did nothing but look pressable. */
+@media (min-width:861px){
+  #mobileNavToggle{ display:none; }
+}

@@ -44,6 +44,12 @@ secrets = "env(SEND_SMS_HOOK_SECRETS)"
 # check would also accept the public anon key, which identifies nobody.
 verify_jwt = true
 
+[functions.admin-users]
+# Left ON. Creates a login for a new admin, so it must only ever run for a
+# signed-in main admin. The function checks that itself against the `admins`
+# table; this is the outer gate. See schema.sql section 34.
+verify_jwt = true
+
 [functions.bkash-callback]
 # MUST stay false. bKash returns the customer here as an ordinary browser
 # redirect with no Supabase session on the request, so the default would 401

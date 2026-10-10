@@ -3,7 +3,7 @@
   const admin = await Admin.requireAdmin();
   if (!admin) return;
 
-  Admin.renderShell("settings.html", "Settings", "These change site-wide text without touching any code.", admin);
+  Admin.renderShell("settings.html", "Contact & social links", "These change site-wide text without touching any code.", admin);
   const content = document.getElementById("adminContent");
   content.innerHTML = `<div class="loading-row"><div class="spinner"></div> Loading settings…</div>`;
 

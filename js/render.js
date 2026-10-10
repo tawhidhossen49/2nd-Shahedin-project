@@ -313,16 +313,24 @@
      would be and aria-disabled set; main.js refuses to open it and points
      the visitor at the buy card instead. The lock is honest UI over a real
      server-side restriction, not a CSS curtain over content that shipped. */
-  function contentBlockHTML(block, index) {
+  function contentBlockHTML(block, index, all) {
     const title = escapeHtml(block.title || "");
     const type = escapeHtml(block.type || "");
     const icon = CB_ICON[block.type] || CB_ICON.video;
     const kind = CB_TYPE_LABEL[block.type] || "";
+    /* A lesson the admin marked "free preview" arrives whole even for a
+       visitor who has not bought the course (courses_safe, schema.sql section
+       35), so it opens and plays like any unlocked lesson. The tag is what
+       tells that visitor which rows are worth pressing -- and it is only
+       shown while other rows are still locked. To someone enrolled, every
+       lesson is open and singling one out would mean nothing. */
+    const isPreview = block.free_preview === true && !block.locked &&
+      Array.isArray(all) && all.some((b) => b.locked);
     const head = `<span class="cb-head-main">
         <span class="cb-icon">${icon}</span>
         <span class="cb-head-text">
           <span class="cb-title">${bnNum(index + 1, { group: false })}. ${title}</span>
-          ${kind ? `<span class="cb-kind">${kind}</span>` : ""}
+          ${kind || isPreview ? `<span class="cb-kind">${kind}${isPreview ? `<span class="cb-preview-tag">ফ্রি প্রিভিউ</span>` : ""}</span>` : ""}
         </span>
       </span>`;
 
@@ -344,7 +352,7 @@
     // data-quiz goes on the ROOT, not the panel: wireQuizzes() reads
     // quizEl.dataset.blockId off the same element when it fires
     // "quiz-checked", and only the root carries the block id.
-    return `<div class="accordion-item cb-acc" data-no-autoopen${block.type === "quiz" ? " data-quiz" : ""} data-block-id="${escapeHtml(block.id)}" data-block-type="${type}">
+    return `<div class="accordion-item cb-acc${isPreview ? " is-preview" : ""}" data-no-autoopen${block.type === "quiz" ? " data-quiz" : ""} data-block-id="${escapeHtml(block.id)}" data-block-type="${type}">
       <button type="button" class="accordion-head cb-acc-head" aria-expanded="false">
         ${head}
         ${ICON.chevron}
@@ -361,12 +369,13 @@
       // inside every row — the padlock on each head already says which rows
       // are shut, so the enrol CTA only needs to appear once.
       const anyLocked = c.contentBlocks.some((b) => b.locked);
+      const anyPreview = anyLocked && c.contentBlocks.some((b) => b.free_preview === true && !b.locked);
       const lockedNote = anyLocked
         ? `<div class="curriculum-locked-note">
              <span class="lock-icon">${ICON.lock}</span>
              <div class="cln-copy">
-               <b>কনটেন্টগুলো লক করা আছে</b>
-               <p>সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।</p>
+               <b>${anyPreview ? "বাকি কনটেন্টগুলো লক করা আছে" : "কনটেন্টগুলো লক করা আছে"}</b>
+               <p>${anyPreview ? "“ফ্রি প্রিভিউ” লেখা ভিডিওগুলো এখনই দেখতে পারবেন। বাকি সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।" : "সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।"}</p>
              </div>
              <!-- A real trigger, not a jump link. data-enroll-cta is picked up
                   by course-progress.js alongside the price card button and runs
@@ -572,7 +581,19 @@
 
   function priceLabel(item) {
     if (item.free || Number(item.price) === 0) return `<span class="price price-free">ফ্রি</span>`;
-    return `<span class="price">৳${bnNum(Number(item.price))}</span>`;
+    // The original price struck through first, exactly as the product card
+    // does it, when the course is on offer.
+    return `<span class="price">${item.oldPrice ? `<span class="old">৳${bnNum(Number(item.oldPrice))}</span>` : ""}৳${bnNum(Number(item.price))}</span>`;
+  }
+
+  // "১০% ছাড়" for a course on offer, "" otherwise. Rounded down so the
+  // badge never promises more than the prices deliver.
+  function discountLabel(item) {
+    const old = Number(item.oldPrice) || 0;
+    const now = Number(item.price) || 0;
+    if (item.free || !(old > now)) return "";
+    const pct = Math.floor(((old - now) / old) * 100);
+    return pct >= 1 ? `${bnNum(pct, { group: false })}% ছাড়` : "";
   }
 
   /* ---------- Course card ---------- */
@@ -586,6 +607,7 @@
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
           ${c.free ? `<span class="badge badge-free">ফ্রি</span>` : ``}
+          ${!c.free && c.oldPrice ? `<span class="badge badge-accent">সেল</span>` : ``}
           ${duration ? `<span class="badge badge-dur">${escapeHtml(duration)}</span>` : ``}
         </div>
       </div>
@@ -803,7 +825,8 @@
       mount(
         "[data-mount='course-buy']",
         `<div class="buy-price-row">
-           <span class="price${c.free ? " price-free" : ""}">${c.free ? "ফ্রি" : "৳" + bnNum(Number(c.price) || 0)}</span>
+           <span class="price${c.free ? " price-free" : ""}">${c.free ? "ফ্রি" : (c.oldPrice ? `<span class="old">৳${bnNum(Number(c.oldPrice))}</span>` : "") + "৳" + bnNum(Number(c.price) || 0)}</span>
+           ${discountLabel(c) ? `<span class="badge badge-accent buy-discount">${discountLabel(c)}</span>` : ""}
          </div>
          <div class="enrolled-banner">
            <span class="enrolled-check">${ICON.check}</span>

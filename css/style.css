@@ -551,6 +551,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .page-head{padding-block:calc(var(--nav-h) + clamp(44px,6vw,76px)) clamp(36px,5vw,60px);}
 .page-head .section-head{margin-bottom:0;}
 
+/* The compact version, used by the course catalogue: a small heading with
+   the filters directly under it and the courses straight after, all in one
+   block. The band above did the same job in roughly twice the height, and
+   on a phone it pushed the first course below the fold. */
+.catalog-compact{padding-block:calc(var(--nav-h) + clamp(22px,3vw,40px)) var(--section-md);}
+.catalog-head{margin-block-end:var(--space-5);}
+.catalog-head h1{font-size:var(--step-3); line-height:1.2; margin:var(--space-2) 0 0;}
+.catalog-compact .filter-bar{margin-block-end:var(--space-6);}
+
 /* Section titles on the inner pages, replacing per-page inline margins. */
 .section-title{margin-block-end:var(--space-6);}
 .section-title-spaced{margin-block-start:var(--space-9);}
@@ -2313,6 +2322,15 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   .hero-ctas{flex-direction:column; align-items:stretch;}
   .hero-ctas .btn{inline-size:100%;}
   .filter-bar{padding:var(--space-4);}
+  /* Filters and search on one row, so the courses start higher. The search
+     box gives up its 220px minimum here and takes whatever the three chips
+     leave over. */
+  .catalog-compact .filter-bar{flex-wrap:nowrap; gap:var(--space-2); padding:var(--space-2);}
+  .catalog-compact .filter-group{flex-wrap:nowrap; flex:0 0 auto; gap:6px;}
+  .catalog-compact .chip{padding:8px 13px;}
+  .catalog-compact .search-input-wrap{min-inline-size:0;}
+  .catalog-compact .search-input{padding-inline:36px 12px;}
+  .catalog-compact .search-input-wrap svg{inset-inline-start:12px;}
   .cta-band{padding:var(--space-8) var(--space-5);}
   .footer-cols{grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--space-5);}
   .footer-bottom{flex-direction:column; text-align:center;}

@@ -1069,7 +1069,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
     radial-gradient(46rem 30rem at 88% 0%, rgba(193,18,47,.15), transparent 66%),
     linear-gradient(180deg,var(--surface-1),var(--surface-0));
   border-block-end:1px solid var(--line);
-  padding-block:calc(var(--nav-h) + clamp(52px,7.5vw,96px)) clamp(52px,7.5vw,96px);
+  /* The bottom is tighter than the top: under it comes the lesson list, and
+     the two paddings together left a band of empty space between the price
+     card and "এই কোর্সে কি কি থাকছে…". */
+  padding-block:calc(var(--nav-h) + clamp(52px,7.5vw,96px)) clamp(28px,3.5vw,44px);
 }
 
 /* Full-bleed course thumbnail.
@@ -1234,6 +1237,10 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    Plain source order: the price card used to live in this grid and needed
    explicit placement to stay in the right column while sitting first in the
    markup. It is in the hero now, so the two children fall where they are. */
+/* The lesson list directly under the course hero. .section-pad's top is
+   sized for a new chapter of the page; this is the same course continuing. */
+.course-body-section{padding-block-start:clamp(32px,4vw,52px);}
+
 .course-body-grid{
   display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
@@ -1263,7 +1270,7 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   border-radius:var(--radius-pill); background:var(--good-dim); color:var(--good);
   font-weight:600; letter-spacing:0;
 }
-.cb-kind > .cb-preview-tag:first-child{margin-inline-start:0;}
+
 .cb-acc .accordion-head{align-items:center; padding-block:var(--space-4);}
 /* Section 10 rotates every svg inside an open head — that rule is meant for
    the chevron alone, so the type icon and the padlock opt back out here. */

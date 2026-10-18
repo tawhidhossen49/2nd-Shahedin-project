@@ -375,7 +375,7 @@
              <span class="lock-icon">${ICON.lock}</span>
              <div class="cln-copy">
                <b>${anyPreview ? "বাকি কনটেন্টগুলো লক করা আছে" : "কনটেন্টগুলো লক করা আছে"}</b>
-               <p>${anyPreview ? "“ফ্রি প্রিভিউ” লেখা ভিডিওগুলো এখনই দেখতে পারবেন। বাকি সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।" : "সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।"}</p>
+               <p>${anyPreview ? "'ফ্রি প্রিভিউ' লেখা ভিডিওগুলো এখনই দেখতে পারবেন। বাকী কন্টেন্ট দেখতে এই কোর্সে ভর্তি হতে হবে।" : "সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।"}</p>
              </div>
              <!-- A real trigger, not a jump link. data-enroll-cta is picked up
                   by course-progress.js alongside the price card button and runs

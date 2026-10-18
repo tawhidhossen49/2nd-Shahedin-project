@@ -243,7 +243,10 @@
     const isOpen = item.classList.contains("open");
     const parent = item.parentElement;
     if (parent) {
-      parent.querySelectorAll(".accordion-item.open").forEach((openItem) => {
+      // A free preview stays open while other rows open and close around it:
+      // it is open because the visitor is meant to see it, not because it
+      // was the last row clicked.
+      parent.querySelectorAll(".accordion-item.open:not(.is-preview)").forEach((openItem) => {
         if (openItem !== item) closeAccordion(openItem);
       });
     }
@@ -259,12 +262,29 @@
     const firstAcc = document.querySelector(
       '.accordion-item:not([data-no-autoopen]):not(.is-locked)'
     );
-    if (firstAcc && !document.querySelector(".accordion-item.open")) {
+    // "Already open" is judged within the FAQ's own list. Asked of the whole
+    // page, an open free-preview lesson above it would stop the FAQ from
+    // opening its first answer.
+    if (firstAcc && !firstAcc.parentElement.querySelector(".accordion-item.open")) {
       requestAnimationFrame(() => openAccordion(firstAcc, true));
     }
   }
+
+  /* A lesson marked free preview is the one a visitor who has not bought the
+     course can watch, so it is shown already open with its video, rather
+     than as one more closed row that has to be found and clicked. render.js
+     only marks a lesson .is-preview while other lessons are locked, so an
+     enrolled student's list still opens one lesson at a time as before. */
+  function openPreviews() {
+    document.querySelectorAll(".cb-acc.is-preview:not(.open)").forEach((item) => openAccordion(item, false));
+  }
+
   openFirstAccordion();
-  document.addEventListener("contentready", openFirstAccordion);
+  openPreviews();
+  document.addEventListener("contentready", () => {
+    openFirstAccordion();
+    openPreviews();
+  });
 
   /* ---------- Filter chips (courses / store) — delegated ---------- */
   document.addEventListener("click", (e) => {

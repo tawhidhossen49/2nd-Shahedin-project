@@ -30,6 +30,7 @@ import {
   readConfig,
 } from "../_shared/bkash.ts";
 import { settleOrder } from "../_shared/orders.ts";
+import { requestContext } from "../_shared/meta.ts";
 
 // bKash's own code for "you already executed this payment". Not an error in
 // any sense the customer cares about — it means a duplicate callback, and the
@@ -220,6 +221,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     );
   }
 
-  await settleOrder(db, order, result.trxId, result.payerAccount);
+  // The customer's own browser made this request (bKash redirected it here),
+  // so its IP and user agent are the buyer's -- passed on for Meta's matching.
+  await settleOrder(db, order, result.trxId, result.payerAccount, requestContext(req));
   return redirect(landing(order.id, "success"));
 });

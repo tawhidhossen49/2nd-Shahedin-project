@@ -21,6 +21,7 @@ import { createClient, SupabaseClient } from "npm:@supabase/supabase-js@2";
 import { BkashError, createPayment, queryPayment, readConfig, refundPayment } from "../_shared/bkash.ts";
 import { corsHeaders, fail, json } from "../_shared/http.ts";
 import { grantCourse, settleOrder } from "../_shared/orders.ts";
+import { RequestContext, requestContext } from "../_shared/meta.ts";
 
 interface Body {
   action?: string;
@@ -308,7 +309,7 @@ async function handleCreate(db: SupabaseClient, userId: string, body: Body): Pro
    `failed`, and the branch below stops running for that order. A payment that
    goes through normally is therefore never queried. */
 
-async function handleStatus(db: SupabaseClient, userId: string, body: Body): Promise<Response> {
+async function handleStatus(db: SupabaseClient, userId: string, body: Body, ctx?: RequestContext): Promise<Response> {
   const orderId = String(body.orderId ?? "").trim();
   if (!orderId) return fail(MESSAGES.notFound, 404);
 
@@ -330,7 +331,7 @@ async function handleStatus(db: SupabaseClient, userId: string, body: Body): Pro
     try {
       const result = await queryPayment(statusCfg, order.bkash_payment_id);
       if (result.transactionStatus === "Completed") {
-        await settleOrder(db, order, result.trxId, result.payerAccount);
+        await settleOrder(db, order, result.trxId, result.payerAccount, ctx);
         order.status = "completed";
         order.bkash_trx_id = result.trxId;
       } else if (result.transactionStatus && result.transactionStatus !== "Initiated") {
@@ -489,7 +490,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     case "create":
       return await handleCreate(db, userId, body);
     case "status":
-      return await handleStatus(db, userId, body);
+      return await handleStatus(db, userId, body, requestContext(req));
     case "refund":
       return await handleRefund(db, userId, body);
     default:

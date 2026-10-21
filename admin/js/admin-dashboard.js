@@ -61,6 +61,7 @@
     chart: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6",
     star: "M12 2l2.9 6.3 6.9.9-5 4.9 1.2 6.9-6-3.2-6 3.2 1.2-6.9-5-4.9 6.9-.9z",
     team: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM19 8v6M22 11h-6",
+    megaphone: "M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13",
   };
   const TASKS = [
     { key: "courses", href: "courses.html?new=1", icon: "plus", title: "Add a new course", desc: "Create a course with its lessons and price." },
@@ -74,6 +75,7 @@
     { key: "home", href: "home.html", icon: "home", title: "Edit the homepage", desc: "Change the text, photos and sections visitors see first." },
     { key: "settings", href: "settings.html", icon: "phone", title: "Change contact details", desc: "Phone, email, WhatsApp and social media links." },
     { key: "analytics", href: "analytics.html", icon: "chart", title: "See visitor numbers", desc: "How many people visit, and which pages." },
+    { key: "ads", href: "ads.html", icon: "megaphone", title: "Facebook ads", desc: "Turn Facebook ad tracking on or off, and check it works." },
     { key: "team", href: "team.html", icon: "team", title: "Add a team member", desc: "Let someone else log in, and choose what they can use." },
   ].filter((t) => can(t.key));
 

@@ -308,6 +308,58 @@ and leave the panel with no main admin at all.
 Until step 1 is done the panel works exactly as before: every admin can do
 everything, and the Team page says the database still needs updating.
 
+## Facebook ads (Meta Pixel)
+
+Admin panel → **Facebook ads**. This is what lets Facebook and Instagram ads
+count sales from the website and show ads to the people most likely to buy.
+
+- **The big switch** turns it on or off for the whole website. Green
+  "চালু" = on. Turn it off and no Facebook code loads at all.
+- **The three checks** under it say in plain words whether the Pixel ID is
+  saved, whether the server's connection to Facebook works, and whether
+  tracking is on. All three green means everything is working.
+- **"বিজ্ঞাপনের ফলাফল"** (ad results): pick আজ / গত ৭ দিন / গত ৩০ দিন /
+  এই মাস / সব সময় and see money spent, sales from ads, cost per sale,
+  return on ad spend, people reached and clicks, plus the same per campaign.
+  Beside them, the website's own paid orders over the same days.
+- **"কাজ করছে কিনা পরীক্ষা করুন"** (check it works): open Events Manager →
+  your Pixel → Test events, copy the code that starts with `TEST`, paste it,
+  press Send test. A PageView and a Purchase appear in Facebook within
+  seconds. Test events are not counted as real visits or sales.
+
+What the website reports: page views, course and product views, checkout
+started, purchases (with the amount, in BDT), new accounts and contact-form
+messages. Purchases are reported twice — by the browser and by the server
+after bKash confirms the money — with the same order number, so Facebook
+counts each sale once even when an ad blocker stops the browser. Payments in
+the bKash sandbox and free courses are never reported as sales. Phone numbers
+and emails are sent only as SHA-256 codes.
+
+**One-time set-up by a developer:**
+
+1. Store the two Meta keys as server secrets (never in the code or the
+   database):
+   ```
+   supabase secrets set META_CAPI_TOKEN=<Conversions API token from Events Manager>
+   supabase secrets set META_ADS_READ_TOKEN=<system user token with ads_read>
+   ```
+   The first SENDS events. The second only READS ad results for the
+   "বিজ্ঞাপনের ফলাফল" section; with ads_read alone it cannot change an ad or
+   spend money. The ad account number is entered on the page itself, under
+   "উন্নত সেটিংস".
+2. Deploy the functions:
+   ```
+   supabase functions deploy meta-ads
+   supabase functions deploy bkash-payment
+   supabase functions deploy bkash-callback --no-verify-jwt
+   ```
+3. Run the latest `schema.sql` (section 37) so "Facebook ads" can be ticked
+   for a limited admin on Team & access. Main admins can use the page without
+   it.
+
+To replace the access token later (for example if Facebook says it is no
+longer valid), repeat step 1 with the new one. Nothing else changes.
+
 ## Course price and discount
 
 In the course editor, section **2. Price**:

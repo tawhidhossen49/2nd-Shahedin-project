@@ -259,6 +259,13 @@ window.ShahedinAuth = (function () {
           if (error) throw error;
           await c.auth.updateUser({ data: { full_name: name } }); // keep the name current whether this was a signup or a login
           clearResendTimer();
+          /* Facebook ads: a NEW account. The same form logs people in, so only
+             an account created in the last few minutes counts as a signup.
+             Nothing is sent unless the Pixel is switched on. */
+          const createdAt = data && data.user && Date.parse(data.user.created_at);
+          if (createdAt && Date.now() - createdAt < 10 * 60 * 1000 && window.ShahedinPixel) {
+            window.ShahedinPixel.track("CompleteRegistration", { status: true });
+          }
           if (opts.onSuccess) opts.onSuccess(data.user);
         } catch (err) {
           errEl.hidden = false;

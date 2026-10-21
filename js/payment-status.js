@@ -61,7 +61,32 @@
       : `checkout.html?product=${encodeURIComponent(order.slug)}`;
   }
 
+  /* Facebook ads: the sale, reported once per order. The server reports the
+     same sale with the same event id ("order_<id>"), so Facebook keeps one of
+     the two; the stored flag stops a refresh of this page sending it again.
+     A refunded order is shown here too but is no longer a sale, so it is not
+     reported. Does nothing unless the Pixel is switched on. */
+  function reportPurchase(order) {
+    if (!window.ShahedinPixel || !order || !order.id || order.status !== "completed") return;
+    if (!(Number(order.amount) > 0)) return;
+    const key = "shahedin_px_purchase_" + order.id;
+    try {
+      if (localStorage.getItem(key)) return;
+      localStorage.setItem(key, "1");
+    } catch (err) {
+      // Storage blocked: the shared event id still stops a double count.
+    }
+    window.ShahedinPixel.track("Purchase", {
+      value: Number(order.amount),
+      currency: "BDT",
+      content_type: "product",
+      content_name: order.title,
+      content_category: order.kind,
+    }, "order_" + order.id);
+  }
+
   function showCompleted(order) {
+    reportPurchase(order);
     /* The dashboard shows its own confirmation toast when it sees this, so a
        buyer who clicks through gets told again in the place they land. */
     try {

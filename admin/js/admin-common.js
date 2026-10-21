@@ -29,6 +29,7 @@ window.Admin = (function () {
       { href: "students.html", key: "students", label: "Students", icon: "M12 2 1 7l11 5 9-4.1V17h2V7zM5 13.2V17c0 2 3.1 4 7 4s7-2 7-4v-3.8l-7 3.2z" },
       { href: "submissions.html", key: "submissions", label: "Contact messages", icon: "M4 4h16v16H4zM4 6l8 6 8-6" },
       { href: "analytics.html", key: "analytics", label: "Visitor analytics", icon: "M4 19V5M4 19h16M9 19V9M14 19v-6M19 19V6" },
+      { href: "ads.html", key: "ads", label: "Facebook ads", icon: "M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" },
     ] },
     { title: "Website content", items: [
       { href: "home.html", key: "home", label: "Homepage", icon: "M3 11l9-8 9 8M5 10v10h14V10" },
@@ -55,6 +56,7 @@ window.Admin = (function () {
     { key: "students", label: "Students", desc: "See who signed up, and give or remove course access by hand." },
     { key: "submissions", label: "Contact messages", desc: "Read and delete messages sent from the Contact page." },
     { key: "analytics", label: "Visitor analytics", desc: "See how many people visit each page." },
+    { key: "ads", label: "Facebook ads", desc: "Turn Facebook ad tracking (Meta Pixel) on or off and check it works." },
     { key: "home", label: "Homepage", desc: "Edit the text, photos and sections of the homepage." },
     { key: "portfolio", label: "Portfolio page", desc: "Edit the portfolio page and its numbers." },
     { key: "community", label: "Community links", desc: "Edit the community group links students see." },

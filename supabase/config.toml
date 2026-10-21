@@ -50,6 +50,12 @@ verify_jwt = true
 # table; this is the outer gate. See schema.sql section 34.
 verify_jwt = true
 
+[functions.meta-ads]
+# Left ON. The Facebook ads page in the admin panel asks this for the
+# connection status and to send test events; the function checks the caller
+# is an admin allowed that page. See schema.sql section 37.
+verify_jwt = true
+
 [functions.bkash-callback]
 # MUST stay false. bKash returns the customer here as an ordinary browser
 # redirect with no Supabase session on the request, so the default would 401

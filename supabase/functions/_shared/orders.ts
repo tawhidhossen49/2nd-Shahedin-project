@@ -9,6 +9,7 @@
    ========================================================================= */
 
 import { SupabaseClient } from "npm:@supabase/supabase-js@2";
+import { queuePurchaseReport, RequestContext } from "./meta.ts";
 
 export interface SettleableOrder {
   id: string;
@@ -42,6 +43,7 @@ export async function settleOrder(
   order: SettleableOrder,
   trxId: string,
   payerAccount: string,
+  ctx?: RequestContext,
 ): Promise<boolean> {
   const { data: updated, error } = await db
     .from("orders")
@@ -63,5 +65,16 @@ export async function settleOrder(
   if (!updated || updated.length === 0) return false;
 
   if (order.kind === "course") await grantCourse(db, order.user_id, order.item_id);
+
+  /* Tell Meta about the sale (see _shared/meta.ts). Here, after the order is
+     marked paid and the course granted, and only on the call that actually
+     settled it -- the early return above means a replayed callback or a
+     racing status check can never report one sale twice. It runs in the
+     background and cannot fail this function. */
+  try {
+    queuePurchaseReport(db, order.id, ctx);
+  } catch (err) {
+    console.error("meta: could not queue the purchase report.", err instanceof Error ? err.message : String(err));
+  }
   return true;
 }

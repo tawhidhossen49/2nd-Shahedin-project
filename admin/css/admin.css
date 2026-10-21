@@ -742,3 +742,121 @@ svg:where(:not([width]):not([height])){ inline-size:1.15em; block-size:1.15em; f
 @media (min-width:861px){
   #mobileNavToggle{ display:none; }
 }
+
+/* =========================================================================
+   FACEBOOK ADS PAGE (admin/ads.html)
+   -------------------------------------------------------------------------
+   One big, unmistakable state: green and "চালু" when tracking is on, grey and
+   "বন্ধ" when it is off, with a switch large enough to find without looking
+   for it. The three checks underneath say in words what is right or wrong.
+   ========================================================================= */
+.ads-hero{
+  border:1px solid var(--line-strong); border-radius:var(--radius-l);
+  padding:24px 26px; margin-bottom:24px; background:var(--surface-1);
+}
+.ads-hero.is-on{ border-color:color-mix(in srgb, var(--good) 45%, var(--line)); background:color-mix(in srgb, var(--good) 7%, var(--surface-1)); }
+.ads-hero-main{ display:flex; align-items:flex-start; gap:18px; }
+.ads-light{ width:16px; height:16px; border-radius:50%; flex:none; margin-top:8px; background:var(--text-3); }
+.ads-hero.is-on .ads-light{ background:var(--good); box-shadow:0 0 0 6px color-mix(in srgb, var(--good) 22%, transparent); }
+.ads-hero-text{ flex:1; min-width:0; }
+.ads-hero-text h2{ font-family:var(--font-display); font-size:1.35rem; font-weight:700; margin-bottom:6px; }
+.ads-hero-text p{ color:var(--text-2); line-height:1.65; font-size:.95rem; }
+.ads-hero-text p.hint{ margin-top:4px; }
+
+/* The big switch: a real checkbox underneath, so keyboard and screen
+   readers work as they would with any tick box. */
+.ads-switch{ position:relative; flex:none; display:inline-flex; cursor:pointer; }
+.ads-switch input{ position:absolute; inset:0; opacity:0; margin:0; cursor:pointer; }
+.ads-switch-track{
+  position:relative; display:inline-flex; align-items:center; justify-content:flex-end;
+  width:112px; height:50px; border-radius:99px; padding:0 16px;
+  background:var(--surface-3); border:1px solid var(--line-strong);
+  transition:background .2s ease, border-color .2s ease;
+}
+.ads-switch-track::after{
+  content:""; position:absolute; top:5px; left:5px; width:38px; height:38px; border-radius:50%;
+  background:var(--text-3); transition:transform .2s ease, background .2s ease;
+}
+.ads-switch-label{ font-weight:700; font-size:.95rem; color:var(--text-2); }
+.ads-switch input:checked + .ads-switch-track{ background:var(--good); border-color:var(--good); justify-content:flex-start; }
+.ads-switch input:checked + .ads-switch-track::after{ transform:translateX(62px); background:#fff; }
+.ads-switch input:checked + .ads-switch-track .ads-switch-label{ color:#06210f; }
+.ads-switch input:focus-visible + .ads-switch-track{ outline:2px solid var(--accent-ink); outline-offset:3px; }
+.ads-switch input:disabled + .ads-switch-track{ opacity:.6; cursor:progress; }
+
+.ads-checks{ margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+.ads-checks li{ display:flex; gap:12px; align-items:flex-start; padding:12px 14px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--line); }
+.ads-checks li > span:last-child{ display:flex; flex-direction:column; gap:3px; }
+.ads-check-mark{ width:26px; height:26px; flex:none; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:800; }
+.ads-checks li.ok .ads-check-mark{ background:var(--good-dim); color:var(--good); }
+.ads-checks li.bad .ads-check-mark{ background:var(--accent-dim); color:var(--accent-ink); }
+.ads-checks li.warn .ads-check-mark{ background:var(--warn-dim); color:var(--warn); }
+
+.ads-events td .row-sub{ display:block; margin-top:2px; }
+.ads-events code, .ads-steps code{ font-size:.82rem; background:var(--surface-3); padding:2px 7px; border-radius:6px; }
+
+.ads-steps{ counter-reset:step; display:flex; flex-direction:column; gap:18px; padding-left:0; list-style:none; }
+.ads-steps > li{ position:relative; padding-left:44px; line-height:1.7; }
+.ads-steps > li::before{
+  counter-increment:step; content:counter(step);
+  position:absolute; left:0; top:0; width:30px; height:30px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:var(--accent-fill); color:var(--text-on-accent); font-weight:700;
+}
+.ads-steps .hint{ display:block; }
+.ads-steps .btn{ margin:6px 0 2px; }
+.ads-test-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+.ads-test-row input{
+  flex:1 1 200px; max-width:280px; background:var(--surface-2); border:1px solid var(--line-strong);
+  border-radius:var(--radius-s); padding:10px 12px; color:var(--text-1); font-size:1rem; letter-spacing:.04em;
+}
+.ads-test-result{ margin-top:12px; padding:12px 14px; border-radius:var(--radius-s); background:var(--surface-2); border:1px solid var(--line); line-height:1.7; }
+.ads-test-result.ok{ border-color:color-mix(in srgb, var(--good) 45%, transparent); color:var(--good); }
+.ads-test-result.bad{ border-color:var(--line-accent); color:var(--accent-ink); }
+.ads-advanced summary{ cursor:pointer; list-style:revert; }
+.ads-advanced summary .hint{ margin-left:6px; }
+
+@media (max-width:640px){
+  .ads-hero{ padding:18px 16px; }
+  /* The switch gets its own row under the heading, full size, instead of
+     squeezing the text into a narrow column beside it. */
+  .ads-hero-main{ display:grid; grid-template-columns:auto minmax(0,1fr); gap:12px 14px; }
+  .ads-switch{ grid-column:1 / -1; justify-self:start; }
+  .ads-hero-text h2{ font-size:1.2rem; }
+}
+
+/* ---- ADS RESULTS (admin/ads.html) ----
+   Big numbers with the Bangla meaning on top and a one-line explanation under
+   each, so a figure like "ROAS 2.4" arrives already translated into "প্রতি ৳১
+   খরচে ৳২.৪ বিক্রি". */
+.period-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+.period-tab{
+  display:inline-flex; flex-direction:column; align-items:center; gap:1px;
+  padding:8px 16px; border-radius:var(--radius-m); background:var(--surface-2);
+  border:1px solid var(--line-strong); font-weight:700; font-size:.92rem; color:var(--text-1);
+}
+.period-tab span{ font-size:.68rem; font-weight:500; color:var(--text-3); }
+.period-tab:hover{ background:var(--surface-3); }
+.period-tab.active{ background:var(--accent-fill); border-color:var(--accent-fill); color:var(--text-on-accent); }
+.period-tab.active span{ color:rgba(255,255,255,.8); }
+.ads-cards{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+@media (max-width:900px){ .ads-cards{ grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:480px){
+  .ads-cards{ gap:8px; }
+  .ads-card{ padding:12px; }
+  .ads-card-value{ font-size:1.35rem; }
+  .ads-card-label{ font-size:.82rem; }
+}
+.ads-card{ display:flex; flex-direction:column; gap:6px; padding:16px 18px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--line); }
+.ads-card-label{ font-weight:700; font-size:.92rem; }
+.ads-card-label span{ display:block; font-weight:500; font-size:.7rem; color:var(--text-3); letter-spacing:.03em; text-transform:uppercase; }
+.ads-card-value{ font-family:var(--font-display); font-size:1.8rem; font-weight:700; line-height:1.1; }
+.ads-card-note{ font-size:.8rem; color:var(--text-2); }
+.ads-card.is-strong{ border-color:var(--accent-line); }
+.ads-card.is-good .ads-card-value{ color:var(--good); }
+.ads-site-line{ margin:16px 0 4px; padding:12px 14px; border-radius:var(--radius-s); background:var(--surface-2); border:1px dashed var(--line-strong); }
+.ads-site-line .hint{ display:inline; }
+.ads-sub{ font-size:1rem; margin:22px 0 10px; }
+.ads-account-line{ margin-top:12px; }
+.ads-empty{ padding:18px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--line); line-height:1.7; }
+.ads-empty .hint{ display:block; margin-top:4px; }

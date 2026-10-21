@@ -2929,6 +2929,53 @@ select u.id, lower(u.email), 'Tawhid Hossen', 'partial', admin_page_keys()
  where lower(u.email) = 'tawhidhossen449@gmail.com'
 on conflict (id) do nothing;
 
+-- =========================================================================
+-- 37. FACEBOOK ADS (META PIXEL) PAGE
+--     Safe to re-run.
+--
+--     Admin -> Facebook ads turns the Meta Pixel on or off and holds its
+--     Pixel ID, in the site_settings row "meta_pixel":
+--       { "enabled": true, "pixel_id": "1234567890" }
+--     The Pixel ID is public by nature -- it sits in every page's source --
+--     so the row is readable like the other settings. The Conversions API
+--     access token is NOT stored here: it is the META_CAPI_TOKEN function
+--     secret, readable only by the Edge Functions.
+--
+--     This section makes "ads" a page a main admin can give a limited admin,
+--     and makes that page, not "Contact & social links", the one that may
+--     change the row. Main admins can use it with or without this section.
+-- =========================================================================
+
+create or replace function admin_page_keys()
+returns text[]
+language sql
+immutable
+as $$
+  select array['home','portfolio','courses','reviews','submissions','students',
+               'products','orders','coupons','analytics','community','legal','settings',
+               'ads'];
+$$;
+
+drop policy if exists "admins can write site settings" on site_settings;
+create policy "admins can write site settings" on site_settings for all to authenticated
+  using (
+    case key
+      when 'community'  then (select admin_can('community'))
+      when 'legal'      then (select admin_can('legal'))
+      when 'meta_pixel' then (select admin_can('ads'))
+      else (select admin_can('settings'))
+    end
+  )
+  with check (
+    case key
+      when 'community'  then (select admin_can('community'))
+      when 'legal'      then (select admin_can('legal'))
+      when 'meta_pixel' then (select admin_can('ads'))
+      else (select admin_can('settings'))
+    end
+  );
+
+
 -- What you should see when the whole file has run: one row per admin, at
 -- least one of them "main", and every existing admin with 13 pages.
 select email, full_name, role, coalesce(array_length(permissions, 1), 0) as pages

@@ -341,6 +341,18 @@
   document.addEventListener("sitedata-ready", () => {
     item = findItem(window.SITE_DATA || {});
     renderSummary();
+    // Facebook ads: someone opened checkout with something in it. Does
+    // nothing unless the Pixel is switched on (js/meta-pixel.js).
+    if (item && window.ShahedinPixel) {
+      window.ShahedinPixel.track("InitiateCheckout", {
+        content_ids: [String(item.dbId || item.slug)],
+        content_type: "product",
+        content_name: item.title,
+        num_items: item.qty || 1,
+        value: (Number(item.price) || 0) * (item.qty || 1),
+        currency: "BDT",
+      });
+    }
     syncDeliveryStep();
     prefillFromUser();
     const form = document.getElementById("checkoutForm");

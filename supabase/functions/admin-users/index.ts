@@ -28,6 +28,7 @@ import { corsHeaders, fail, json } from "../_shared/http.ts";
 const PAGE_KEYS = [
   "home", "portfolio", "courses", "reviews", "submissions", "students",
   "products", "orders", "coupons", "analytics", "community", "legal", "settings",
+  "ads",
 ];
 
 interface Body {

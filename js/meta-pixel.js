@@ -1,15 +1,19 @@
 /* =========================================================
-   meta-pixel.js — the Meta (Facebook) Pixel
+   meta-pixel.js — the Meta (Facebook) Pixel's events
    ---------------------------------------------------------
-   Loads Facebook's tracking code on every public page, but
-   ONLY when Admin -> Facebook ads has it switched on with a
-   Pixel ID saved (the site_settings row "meta_pixel"). With
-   it off, or no ID, this file does nothing at all: no
-   Facebook code is downloaded and no cookie is set.
+   Facebook's own base code sits in the <head> of every public
+   page (look for "Meta Pixel Code"). That is what loads the
+   Pixel and sends PageView, and it is where Meta, and anyone
+   checking with Ctrl+U, expects to find it.
+
+   This file sends everything after the page view, using that
+   same fbq -- but only while Admin -> Facebook ads has the
+   switch on (site_settings row "meta_pixel"). It never loads
+   Facebook again and never sends a second PageView.
 
    What it reports, so Facebook ads can count sales and find
    buyers:
-     PageView          every page
+     PageView          every page  (the <head> code, always)
      ViewContent       a course or product page
      InitiateCheckout  checkout opened with an item   (checkout.js)
      Purchase          bKash payment confirmed        (payment-status.js)
@@ -32,6 +36,9 @@
   var queue = [];
 
   function send(name, params, eventId) {
+    // No fbq means the <head> code is missing or an ad blocker stopped it.
+    // Nothing to send to, and nothing to break.
+    if (typeof window.fbq !== "function") return;
     try {
       if (eventId) window.fbq("track", name, params || {}, { eventID: eventId });
       else window.fbq("track", name, params || {});
@@ -48,21 +55,6 @@
       else if (state === "waiting") queue.push([name, params, eventId]);
     },
   };
-
-  /* Facebook's standard loader, unchanged apart from layout. It defines fbq
-     straight away (calls made before the real script arrives are queued by
-     fbq itself) and downloads fbevents.js in the background. */
-  function loadFacebook(pixelId) {
-    /* eslint-disable */
-    !function (f, b, e, v, n, t, s) {
-      if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = "2.0"; n.queue = [];
-      t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
-    }(window, document, "script", "https://connect.facebook.net/en_US/fbevents.js");
-    /* eslint-enable */
-    window.fbq("init", pixelId);
-    window.fbq("track", "PageView");
-  }
 
   function qs(name) {
     return new URLSearchParams(window.location.search).get(name);
@@ -113,7 +105,6 @@
         queue = [];
         return;
       }
-      loadFacebook(id);
       state = "on";
       queue.splice(0).forEach(function (q) { send(q[0], q[1], q[2]); });
     }).catch(function () {

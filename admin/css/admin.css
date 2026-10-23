@@ -860,3 +860,4 @@ svg:where(:not([width]):not([height])){ inline-size:1.15em; block-size:1.15em; f
 .ads-account-line{ margin-top:12px; }
 .ads-empty{ padding:18px; border-radius:var(--radius-m); background:var(--surface-2); border:1px solid var(--line); line-height:1.7; }
 .ads-empty .hint{ display:block; margin-top:4px; }
+.ads-readonly{ padding:10px 12px; border-radius:var(--radius-s); background:var(--surface-3); border:1px solid var(--line); font-family:ui-monospace,Consolas,monospace; letter-spacing:.04em; }

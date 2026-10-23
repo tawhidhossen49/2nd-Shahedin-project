@@ -65,6 +65,7 @@
     const tokenOk = server && !server.unavailable && server.token && server.token.valid;
 
     const checks = [
+      pageCheckResult(),
       validId(setting.pixel_id)
         ? { ok: true, text: `Pixel ID বসানো আছে: <b>${esc(setting.pixel_id)}</b>`, sub: "Pixel ID is saved." }
         : { ok: false, text: "Pixel ID বসানো নেই", sub: "নিচে “উন্নত সেটিংস”-এ Pixel ID বসান। / No Pixel ID yet — add it under Advanced settings below." },
@@ -74,8 +75,8 @@
           ? { ok: true, text: "Facebook-এর সাথে সার্ভার সংযোগ ঠিক আছে", sub: "বিক্রির তথ্য সরাসরি সার্ভার থেকেও Facebook-এ যায়। / Server connection to Facebook works." }
           : { ok: false, text: "Facebook সার্ভার সংযোগে সমস্যা", sub: "ডেভেলপারকে জানান — Access token নতুন করে দিতে হতে পারে। / " + esc((server && server.token && server.token.message) || "The access token is missing or no longer valid.") },
       on
-        ? { ok: true, text: "ওয়েবসাইটে ট্র্যাকিং চালু আছে", sub: "Tracking is ON for every visitor." }
-        : { ok: false, warn: true, text: "ওয়েবসাইটে ট্র্যাকিং বন্ধ আছে", sub: "উপরের সুইচ চালু করলেই শুরু হবে। / Tracking is OFF — use the switch above." },
+        ? { ok: true, text: "বিক্রি ও অন্যান্য তথ্য Facebook-এ যাচ্ছে", sub: "কোর্স দেখা, চেকআউট, কেনা, নতুন অ্যাকাউন্ট। / Course views, checkouts, purchases and sign-ups are being sent." }
+        : { ok: false, warn: true, text: "বিক্রির তথ্য পাঠানো বন্ধ আছে", sub: "Facebook এখন শুধু পেজ ভিজিট পাচ্ছে। উপরের সুইচ চালু করুন। / Only page visits are sent — use the switch above." },
       adAccountCheck(),
     ];
 
@@ -84,11 +85,11 @@
         <div class="ads-hero-main">
           <span class="ads-light" aria-hidden="true"></span>
           <div class="ads-hero-text">
-            <h2>${on ? "Facebook ট্র্যাকিং চালু আছে" : "Facebook ট্র্যাকিং বন্ধ আছে"}</h2>
+            <h2>${on ? "Facebook Pixel চালু আছে" : "বিক্রির তথ্য পাঠানো বন্ধ আছে"}</h2>
             <p>${on
-              ? "আপনার ওয়েবসাইটে কে আসছে, কে কোর্স দেখছে আর কে কিনছে — এই তথ্য Facebook পাচ্ছে। এতে আপনার বিজ্ঞাপন ঠিক মানুষের কাছে যায় এবং কোন বিজ্ঞাপন থেকে কত বিক্রি হলো তা Ads Manager-এ দেখা যায়।"
-              : "এখন Facebook কোনো তথ্য পাচ্ছে না। বিজ্ঞাপন চালানোর সময় এটি চালু রাখুন।"}</p>
-            <p class="hint">${on ? "Facebook is receiving visits and sales from your website." : "Facebook is not receiving anything right now."}</p>
+              ? "ওয়েবসাইটের সব পেজে Pixel বসানো আছে। কে আসছে, কে কোর্স দেখছে, কে চেকআউটে যাচ্ছে আর কে কিনছে — সব তথ্য Facebook পাচ্ছে। এতে আপনার বিজ্ঞাপন ঠিক মানুষের কাছে যায় এবং কোন বিজ্ঞাপন থেকে কত বিক্রি হলো তা দেখা যায়।"
+              : "Pixel সব পেজে বসানো আছে, তাই Facebook পেজ ভিজিট পাচ্ছে। কিন্তু কে কোর্স দেখছে বা কে কিনছে তা পাচ্ছে না — তাই বিজ্ঞাপন বিক্রি গুনতে পারবে না। বিজ্ঞাপন চালানোর সময় সুইচটি চালু রাখুন।"}</p>
+            <p class="hint">${on ? "The Pixel is on every page and Facebook receives visits, checkouts and sales." : "Facebook receives page visits only, not course views or sales."}</p>
           </div>
           <label class="ads-switch" title="${on ? "বন্ধ করুন / Turn off" : "চালু করুন / Turn on"}">
             <input type="checkbox" id="adsToggle" ${on ? "checked" : ""} aria-label="Facebook tracking on or off">
@@ -126,7 +127,7 @@
         <table class="admin-table ads-events">
           <thead><tr><th>যখন / When</th><th>Facebook-এ নাম</th></tr></thead>
           <tbody>
-            <tr><td><div>কেউ ওয়েবসাইটের যেকোনো পেজ দেখলে<span class="row-sub">Someone opens any page</span></div></td><td><code>PageView</code></td></tr>
+            <tr><td><div>কেউ ওয়েবসাইটের যেকোনো পেজ দেখলে <b>(সবসময়)</b><span class="row-sub">Someone opens any page — always sent, it is part of every page</span></div></td><td><code>PageView</code></td></tr>
             <tr><td><div>কেউ কোনো কোর্স বা প্রোডাক্টের পেজ দেখলে<span class="row-sub">Someone opens a course or product</span></div></td><td><code>ViewContent</code></td></tr>
             <tr><td><div>কেউ “এখনই কিনুন” চেপে চেকআউটে গেলে<span class="row-sub">Someone starts checkout</span></div></td><td><code>InitiateCheckout</code></td></tr>
             <tr><td><div>bKash-এ টাকা পরিশোধ সফল হলে (টাকার পরিমাণসহ)<span class="row-sub">A bKash payment succeeds, with the amount</span></div></td><td><code>Purchase</code></td></tr>
@@ -167,10 +168,10 @@
       <details class="panel ads-advanced">
         <summary><b>উন্নত সেটিংস</b> <span class="hint">Advanced — সাধারণত কিছু বদলানোর দরকার হয় না</span></summary>
         <div class="form-field" style="margin-top:16px; max-width:420px;">
-          <label for="pixelId">Pixel ID <span class="hint">শুধু সংখ্যা, Events Manager-এ পাবেন / digits only, from Events Manager</span></label>
-          <input type="text" id="pixelId" inputmode="numeric" autocomplete="off" value="${esc(setting.pixel_id)}" placeholder="1234567890123456">
+          <label>Pixel ID</label>
+          <div class="ads-readonly">${esc(setting.pixel_id || "—")}</div>
+          <span class="hint">এই নম্বরটি ওয়েবসাইটের প্রতিটি পেজের কোডে বসানো, তাই এখান থেকে বদলানো যায় না। নতুন Pixel ব্যবহার করতে হলে ডেভেলপারকে জানান। / This ID is written into every page's code, so it cannot be changed here.</span>
         </div>
-        <button type="button" class="btn btn-ghost" id="savePixelBtn">Pixel ID সেভ করুন / Save</button>
         <div class="form-field" style="margin-top:22px; max-width:420px;">
           <label for="adAccountId">Ad account নম্বর <span class="hint">যে অ্যাকাউন্ট থেকে বিজ্ঞাপন চালান — Ads Manager-এর উপরে বাম দিকে / the account your ads run from, top-left in Ads Manager</span></label>
           <input type="text" id="adAccountId" inputmode="numeric" autocomplete="off" value="${esc(setting.ad_account_id)}" placeholder="1234567890123456">
@@ -182,7 +183,6 @@
 
     document.getElementById("adsToggle").addEventListener("change", onToggle);
     document.getElementById("sendTestBtn").addEventListener("click", sendTest);
-    document.getElementById("savePixelBtn").addEventListener("click", savePixelId);
     document.getElementById("saveAccountBtn").addEventListener("click", saveAdAccount);
     content.querySelectorAll(".period-tab").forEach((b) => b.addEventListener("click", () => {
       period = b.dataset.period;
@@ -348,46 +348,67 @@
     setting = value;
   }
 
+  /* Opens the site's own pages, exactly as a visitor's browser receives them,
+     and looks for the Pixel code -- the check Shahedin did with Ctrl+U. It
+     runs against whichever site this admin panel is on, so on shahedin.com
+     it tests shahedin.com. */
+  const CHECK_PAGES = [
+    ["index.html", "হোমপেজ"],
+    ["course-detail.html", "কোর্সের পেজ"],
+    ["checkout.html", "চেকআউট"],
+    ["payment-status.html", "পেমেন্টের পরের পেজ"],
+  ];
+  let pageCheck = null; // null = checking; else { found: [...], missing: [...], wrongId: bool }
+
+  async function runPageCheck() {
+    const results = await Promise.all(CHECK_PAGES.map(async ([file, label]) => {
+      try {
+        const res = await fetch("../" + file + "?pixelcheck=" + Date.now(), { cache: "no-store" });
+        const html = res.ok ? await res.text() : "";
+        const m = html.match(/fbq\(\s*['"]init['"]\s*,\s*['"](\d+)['"]/);
+        return { label, id: m ? m[1] : null };
+      } catch (err) {
+        return { label, id: null };
+      }
+    }));
+    pageCheck = {
+      found: results.filter((r) => r.id).map((r) => r.label),
+      missing: results.filter((r) => !r.id).map((r) => r.label),
+      wrongId: results.some((r) => r.id && setting.pixel_id && r.id !== setting.pixel_id),
+    };
+    render();
+  }
+
+  function pageCheckResult() {
+    if (!pageCheck) return { ok: false, warn: true, text: "ওয়েবসাইটের পেজে Pixel কোড খোঁজা হচ্ছে…", sub: "Checking the website's pages…" };
+    if (pageCheck.missing.length) {
+      return { ok: false, text: "কিছু পেজে Pixel কোড পাওয়া যায়নি: " + esc(pageCheck.missing.join(", ")), sub: "ওয়েবসাইটের নতুন কোড আপলোড হয়নি বলে মনে হচ্ছে — ডেভেলপারকে জানান। / The latest website code does not seem to be uploaded on these pages." };
+    }
+    if (pageCheck.wrongId) {
+      return { ok: false, text: "পেজের Pixel ID আর সেটিংসের Pixel ID আলাদা", sub: "ডেভেলপারকে জানান। / The ID in the pages differs from the saved one." };
+    }
+    return { ok: true, text: "সব পেজে Pixel কোড বসানো আছে", sub: esc(pageCheck.found.join(" · ")) + " — Ctrl+U চেপে দেখলেও পাবেন। / Found on every page checked." };
+  }
+
   async function onToggle(e) {
     const turnOn = e.target.checked;
     if (turnOn && !validId(setting.pixel_id)) {
       e.target.checked = false;
-      Admin.toast("আগে Pixel ID বসান (নিচে “উন্নত সেটিংস”)। / Add a Pixel ID first.", true);
-      const adv = document.querySelector(".ads-advanced");
-      if (adv) { adv.open = true; document.getElementById("pixelId").focus(); }
+      Admin.toast("সেটিংসে Pixel ID নেই — ডেভেলপারকে জানান। / No Pixel ID in the settings; ask your developer.", true);
       return;
     }
-    if (!turnOn && !confirm("Facebook ট্র্যাকিং বন্ধ করবেন?\n\nবন্ধ থাকলে Facebook বিজ্ঞাপন বিক্রি গুনতে পারবে না।\n\nTurn Facebook tracking off? Your ads will stop counting sales.")) {
+    if (!turnOn && !confirm("বিক্রির তথ্য Facebook-এ পাঠানো বন্ধ করবেন?\n\nপেজ ভিজিট তবুও যাবে, কিন্তু Facebook আর বিক্রি গুনতে পারবে না।\n\nStop sending sales to Facebook? Page visits still go; sales will not be counted.")) {
       e.target.checked = true;
       return;
     }
     e.target.disabled = true;
     try {
       await save({ enabled: turnOn, pixel_id: setting.pixel_id });
-      Admin.toast(turnOn ? "চালু হয়েছে — Facebook এখন তথ্য পাচ্ছে। / Tracking is ON." : "বন্ধ হয়েছে। / Tracking is OFF.");
+      Admin.toast(turnOn ? "চালু হয়েছে — বিক্রির তথ্য এখন Facebook-এ যাচ্ছে। / Sales reporting is ON." : "বন্ধ হয়েছে — শুধু পেজ ভিজিট যাবে। / Sales reporting is OFF.");
       render();
     } catch (err) {
       e.target.checked = !turnOn;
       e.target.disabled = false;
-      Admin.toast("সেভ করা যায়নি: " + (err.message || err), true);
-    }
-  }
-
-  async function savePixelId() {
-    const input = document.getElementById("pixelId");
-    const id = input.value.replace(/\s+/g, "");
-    if (!validId(id)) {
-      Admin.showFieldError(input, "Pixel ID শুধু সংখ্যা হবে, যেমন 1234567890123456। / Digits only.");
-      return;
-    }
-    const btn = document.getElementById("savePixelBtn");
-    btn.disabled = true;
-    try {
-      await save({ enabled: setting.enabled, pixel_id: id });
-      Admin.toast("Pixel ID সেভ হয়েছে। / Pixel ID saved.");
-      render();
-    } catch (err) {
-      btn.disabled = false;
       Admin.toast("সেভ করা যায়নি: " + (err.message || err), true);
     }
   }
@@ -431,4 +452,5 @@
   }
 
   render();
+  runPageCheck();
 })();

@@ -313,11 +313,22 @@ everything, and the Team page says the database still needs updating.
 Admin panel → **Facebook ads**. This is what lets Facebook and Instagram ads
 count sales from the website and show ads to the people most likely to buy.
 
-- **The big switch** turns it on or off for the whole website. Green
-  "চালু" = on. Turn it off and no Facebook code loads at all.
-- **The three checks** under it say in plain words whether the Pixel ID is
-  saved, whether the server's connection to Facebook works, and whether
-  tracking is on. All three green means everything is working.
+- **The Pixel itself is in every public page.** Meta's base code sits in the
+  `<head>` of every page (search the page source for "Meta Pixel Code" or the
+  Pixel ID), so it loads first and every page view is sent. Admin pages do
+  not carry it.
+- **The big switch** controls everything after the page view: course and
+  product views, checkouts, purchases, sign-ups and contact messages, and the
+  server's purchase reports. Green "চালু" = all of it is sent. Off = Facebook
+  gets page views only, and cannot count sales.
+- **The checks** under it say in plain words whether the Pixel code is really
+  on the site's pages (the panel opens the homepage, a course page, checkout
+  and the after-payment page and looks), whether the Pixel ID is saved,
+  whether the server's connection to Facebook works, whether sales reporting
+  is on, and which ad account is connected. All green means everything works.
+- **Changing to a different Pixel** means changing the ID in every page's
+  `<head>` code and in the panel's settings row (`site_settings`
+  "meta_pixel"), so it is a developer job, not a panel setting.
 - **"বিজ্ঞাপনের ফলাফল"** (ad results): pick আজ / গত ৭ দিন / গত ৩০ দিন /
   এই মাস / সব সময় and see money spent, sales from ads, cost per sale,
   return on ad spend, people reached and clicks, plus the same per campaign.

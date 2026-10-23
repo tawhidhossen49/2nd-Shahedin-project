@@ -15,7 +15,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/style.css">
-<script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script></head>
+<script>document.documentElement.classList.remove('no-js');document.documentElement.classList.add('js');</script>  <!-- Meta Pixel Code
+       Meta's own base code, unchanged, in the <head> of every public page so
+       it loads first and the Pixel ID is visible in the page source. It sends
+       PageView. Course views, checkouts, purchases and the rest are sent by
+       js/meta-pixel.js, which uses this same fbq and is controlled from
+       Admin -> Facebook ads. Admin pages deliberately do not carry it. -->
+  <script>
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+  n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+  document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1136084995531282');
+  fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1136084995531282&ev=PageView&noscript=1"/></noscript>
+  <!-- End Meta Pixel Code -->
+</head>
 <body>
 
   <a class="skip-link" href="#main">মূল কনটেন্টে যান</a>

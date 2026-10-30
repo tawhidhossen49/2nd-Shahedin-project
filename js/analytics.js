@@ -19,7 +19,9 @@
     try {
       const client = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
       client.from("page_views").insert({
-        page_path: window.location.pathname.split("/").pop() || "index.html",
+        // Stored as "courses.html" even though the address is /courses, so old
+        // and new visits count as one page in Admin -> Visitor analytics.
+        page_path: (window.location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html",
         referrer: document.referrer || null,
         lang: currentLang(),
       }).then(() => {});

@@ -62,7 +62,7 @@
               <td>${p.is_published ? '<span class="badge badge-live">Live</span>' : '<span class="badge badge-draft">Draft</span>'}</td>
               <td>
                 <div class="row-actions">
-                  <a class="btn btn-ghost btn-sm" href="../product-detail.html?id=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="Open this product on the website in a new tab">View</a>
+                  <a class="btn btn-ghost btn-sm" href="/product-detail?id=${encodeURIComponent(p.slug)}" target="_blank" rel="noopener" title="Open this product on the website in a new tab">View</a>
                   <button class="btn btn-ghost btn-sm edit-btn" data-id="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>
                   <button class="btn btn-danger btn-sm del-btn" data-id="${p.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>Delete</button>
                 </div>

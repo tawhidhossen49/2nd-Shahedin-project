@@ -136,7 +136,7 @@
   content.innerHTML = `
     <div class="notice" style="margin-bottom:20px;">
       Looking for the hero/trust-bar <strong>numbers</strong> (subscribers, views, reach, rating, etc.)? Those now live on the
-      <a href="portfolio.html" style="color:var(--accent-2); text-decoration:underline;">Portfolio &amp; Stats</a> page, since the same
+      <a href="/admin/portfolio" style="color:var(--accent-2); text-decoration:underline;">Portfolio &amp; Stats</a> page, since the same
       numbers are shared across the homepage, portfolio page, and contact page — edit them once there and they update everywhere.
     </div>
     <form class="panel" data-section="visibility">

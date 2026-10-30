@@ -55,10 +55,10 @@
 
   // Where "try again" should send someone whose payment did not go through.
   function retryHref(order) {
-    if (!order || !order.slug) return order && order.kind === "course" ? "courses.html" : "store.html";
+    if (!order || !order.slug) return order && order.kind === "course" ? "/courses" : "/store";
     return order.kind === "course"
-      ? `checkout.html?course=${encodeURIComponent(order.slug)}`
-      : `checkout.html?product=${encodeURIComponent(order.slug)}`;
+      ? `/checkout?course=${encodeURIComponent(order.slug)}`
+      : `/checkout?product=${encodeURIComponent(order.slug)}`;
   }
 
   /* Facebook ads: the sale, reported once per order. The server reports the
@@ -107,7 +107,7 @@
       // support will ask for, so it must be on screen, not just in an email.
       meta: `${taka(order.amount)} পরিশোধিত${order.trxId ? ` · ট্রানজেকশন আইডি <strong>${escapeHtml(order.trxId)}</strong>` : ""}`,
       actions: [
-        { href: "dashboard.html", text: order.kind === "course" ? "ড্যাশবোর্ডে যান" : "আমার অর্ডার দেখুন", primary: true },
+        { href: "/dashboard", text: order.kind === "course" ? "ড্যাশবোর্ডে যান" : "আমার অর্ডার দেখুন", primary: true },
       ],
     });
   }
@@ -122,7 +122,7 @@
         : (order && order.reason) || "bKash পেমেন্টটি সম্পন্ন করতে পারেনি। কোনো টাকা কাটা হয়ে থাকলে তা স্বয়ংক্রিয়ভাবে ফেরত যাবে।",
       actions: [
         { href: retryHref(order), text: "আবার চেষ্টা করুন", primary: true },
-        { href: "contact.html", text: "সহায়তা নিন" },
+        { href: "/contact", text: "সহায়তা নিন" },
       ],
     });
   }
@@ -137,7 +137,7 @@
       meta: orderId ? `অর্ডার আইডি <strong>${escapeHtml(orderId)}</strong>` : "",
       actions: [
         { href: window.location.href, text: "আবার দেখুন", primary: true },
-        { href: "contact.html", text: "সহায়তা নিন" },
+        { href: "/contact", text: "সহায়তা নিন" },
       ],
     });
   }
@@ -149,8 +149,8 @@
       title: "পেমেন্টের তথ্য পাওয়া যায়নি",
       body: "এই লিংকে কোনো অর্ডার খুঁজে পাওয়া যায়নি। আপনি টাকা পরিশোধ করে থাকলে আমাদের সাথে যোগাযোগ করুন — আমরা দেখে নিশ্চিত করব।",
       actions: [
-        { href: "dashboard.html", text: "ড্যাশবোর্ডে যান", primary: true },
-        { href: "contact.html", text: "সহায়তা নিন" },
+        { href: "/dashboard", text: "ড্যাশবোর্ডে যান", primary: true },
+        { href: "/contact", text: "সহায়তা নিন" },
       ],
     });
   }

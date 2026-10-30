@@ -240,13 +240,34 @@
          player: without them getCurrentTime() is unavailable and watching a
          video counts for nothing. The watch bar underneath is filled in by
          that file from the student's saved position, so a lesson they are
-         halfway through looks halfway through before they press play. */
+         halfway through looks halfway through before they press play.
+
+         YouTube draws its Share, Copy link, Watch on YouTube and title bars
+         inside its own frame, where the page cannot remove them. So its
+         controls are turned off, the sheet (.vp-shield) takes every click,
+         the frame is sandboxed so it can neither open a tab nor move this
+         page, and the buttons students use are ours (video-progress.js). */
       return `${vid
-          ? `<div class="video-embed" data-yt-video>
-               <iframe src="https://www.youtube.com/embed/${vid}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&rel=0"
-                       title="${title}" frameborder="0"
-                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                       allowfullscreen loading="lazy"></iframe>
+          ? `<div class="video-embed">
+               <div class="vp is-new" data-yt-video>
+                 <iframe src="https://www.youtube.com/embed/${vid}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}&rel=0&controls=0&disablekb=1&fs=0&iv_load_policy=3&playsinline=1&modestbranding=1"
+                         title="${title}" frameborder="0" tabindex="-1"
+                         sandbox="allow-scripts allow-same-origin allow-presentation"
+                         referrerpolicy="strict-origin-when-cross-origin"
+                         allow="autoplay; encrypted-media" loading="lazy"></iframe>
+                 <div class="vp-dim"></div>
+                 <div class="vp-shield" tabindex="0" role="button" aria-label="ভিডিও চালান বা থামান"></div>
+                 <button class="vp-big" type="button" aria-label="চালান"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.500v13l11-6.500z"/></svg></button>
+                 <p class="vp-hint" hidden>ভিডিও শুরু করতে মাঝখানে আরেকবার চাপুন।</p>
+                 <div class="vp-bar">
+                   <button type="button" data-vp="play" aria-label="চালান"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="i-play" d="M8 5.500v13l11-6.500z"/><path class="i-pause" d="M7 5.500h3.500v13H7zM13.500 5.500H17v13h-3.500z"/></svg></button>
+                   <span class="vp-time"><b data-vp-now>0:00</b> / <span data-vp-total>0:00</span></span>
+                   <input class="vp-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="ভিডিওর সময় বদলান">
+                   <button type="button" data-vp="mute" aria-label="শব্দ"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500h3.500L12 6v12l-4.500-3.500H4z"/><path class="i-loud" d="M15.500 9a4.500 4.500 0 0 1 0 6M17.800 6.700a7.800 7.800 0 0 1 0 10.600"/><path class="i-quiet" d="M16 9.500l5 5M21 9.500l-5 5"/></svg></button>
+                   <button type="button" class="vp-speed" data-vp="speed" aria-label="গতি">1×</button>
+                   <button type="button" data-vp="full" aria-label="পূর্ণ পর্দা"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+                 </div>
+               </div>
              </div>
              <div class="watch-bar" data-watch-bar hidden>
                <div class="watch-track"><div class="watch-fill"></div></div>
@@ -375,7 +396,7 @@
              <span class="lock-icon">${ICON.lock}</span>
              <div class="cln-copy">
                <b>${anyPreview ? "বাকি কনটেন্টগুলো লক করা আছে" : "কনটেন্টগুলো লক করা আছে"}</b>
-               <p>${anyPreview ? "'ফ্রি প্রিভিউ' লেখা ভিডিওগুলো এখনই দেখতে পারবেন। বাকী কন্টেন্ট দেখতে এই কোর্সে ভর্তি হতে হবে।" : "সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।"}</p>
+               <p>${c.enrollmentOpen === false ? "এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে।" : anyPreview ? "'ফ্রি প্রিভিউ' লেখা ভিডিওগুলো এখনই দেখতে পারবেন। বাকী কন্টেন্ট দেখতে এই কোর্সে ভর্তি হতে হবে।" : "সব ভিডিও, কুইজ ও রিসোর্স দেখতে হলে এই কোর্সে ভর্তি হতে হবে।"}</p>
              </div>
              <!-- A real trigger, not a jump link. data-enroll-cta is picked up
                   by course-progress.js alongside the price card button and runs
@@ -383,7 +404,7 @@
                   the visitor to a second button they have to press. A <button>
                   rather than an <a> because it performs an action and because
                   the flow sets .disabled on whatever was clicked. -->
-             <button type="button" class="btn btn-primary btn-sm" data-enroll-cta>কোর্সে ভর্তি হোন</button>
+             ${c.enrollmentOpen === false ? "" : `<button type="button" class="btn btn-primary btn-sm" data-enroll-cta>কোর্সে ভর্তি হোন</button>`}
            </div>`
         : "";
       return `<div data-mount="course-progress-summary"></div><div class="content-blocks curriculum-accordion">${c.contentBlocks.map(contentBlockHTML).join("")}</div>${lockedNote}`;
@@ -467,7 +488,7 @@
   const DEFAULT_MENTOR = {
     name: "Shahedin",
     bio: "ইউটিউব ক্রিয়েটর ও রাজনৈতিক বিশ্লেষক, ১৮ লাখ+ সাবস্ক্রাইবার।",
-    avatar_url: "assets/img/shahedin-cutout.webp",
+    avatar_url: "/assets/img/shahedin-cutout.webp",
   };
 
   /* ASSET NOTE (mentor portrait): framed 4:5 by .about-portrait and cropped
@@ -601,13 +622,13 @@
     const title = escapeHtml(c.title);
     const duration = durationBn(c.duration);
     return `
-    <a href="course-detail.html?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(c))}">
+    <a href="/course-detail?id=${encodeURIComponent(c.id)}" class="card" data-filterable data-price="${c.free ? "free" : "paid"}" data-category="${escapeHtml(c.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(c))}">
       <div class="thumb thumb-tone-${escapeHtml(c.tone)}${c.image ? " has-image" : ""}">
         ${thumbArt(c, c.title)}
         <div class="thumb-overlay"></div>
         <div class="thumb-badges">
           ${c.free ? `<span class="badge badge-free">ফ্রি</span>` : ``}
-          ${!c.free && c.oldPrice ? `<span class="badge badge-accent">সেল</span>` : ``}
+          ${c.enrollmentOpen === false ? `<span class="badge badge-accent">ভর্তি বন্ধ</span>` : !c.free && c.oldPrice ? `<span class="badge badge-accent">সেল</span>` : ``}
           ${duration ? `<span class="badge badge-dur">${escapeHtml(duration)}</span>` : ``}
         </div>
       </div>
@@ -627,7 +648,7 @@
   function productCard(p) {
     const title = escapeHtml(p.title);
     return `
-    <a href="product-detail.html?id=${encodeURIComponent(p.id)}" class="card" data-filterable data-type="${escapeHtml(p.type)}" data-category="${escapeHtml(p.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(p))}">
+    <a href="/product-detail?id=${encodeURIComponent(p.id)}" class="card" data-filterable data-type="${escapeHtml(p.type)}" data-category="${escapeHtml(p.category)}" data-title="${title}" data-search="${escapeHtml(searchIndex(p))}">
       <div class="thumb thumb-tone-${escapeHtml(p.tone)}${p.image ? " has-image" : ""}">
         ${thumbArt(p, p.title)}
         <div class="thumb-overlay"></div>
@@ -708,7 +729,7 @@
           icon: ICON.book,
           title: "কোর্স শীঘ্রই আসছে",
           body: "প্রথম কোর্সগুলো তৈরি হচ্ছে — ইউটিউব চ্যানেলে চোখ রাখুন।",
-          ctaHref: "index.html#videos",
+          ctaHref: "/#videos",
           ctaText: "ফ্রি ভিডিও দেখুন",
         })
       );
@@ -722,7 +743,7 @@
           icon: ICON.book,
           title: "এখনো কোনো কোর্স প্রকাশ করা হয়নি",
           body: "নতুন কোর্স যুক্ত হলে এখানেই দেখতে পাবেন।",
-          ctaHref: "index.html",
+          ctaHref: "/",
           ctaText: "হোমে ফিরে যান",
         })
       );
@@ -738,7 +759,7 @@
           icon: ICON.inbox,
           title: "স্টোর এখন খালি",
           body: "নতুন বই, নোট ও মার্চেন্ডাইজ শীঘ্রই যুক্ত হবে।",
-          ctaHref: "courses.html",
+          ctaHref: "/courses",
           ctaText: "কোর্স দেখুন",
         })
       );
@@ -755,7 +776,7 @@
         mount("[data-mount='course-detail']", emptyStateHTML(failed.courses ? loadErrorState("কোর্সটি লোড করা যায়নি") : {
           title: "কোর্সটি খুঁজে পাওয়া যায়নি",
           body: "এই কোর্সটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
-          ctaHref: "courses.html",
+          ctaHref: "/courses",
           ctaText: "সব কোর্স দেখুন",
         }));
         const buyEl = document.querySelector("[data-mount='course-buy']");
@@ -768,11 +789,11 @@
       const id = qs("id") || data.courses[0].id;
       const c = data.courses.find((x) => x.id === id) || data.courses[0];
       document.title = c.title + " — Shahedin";
-      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price, reviewsEnabled: c.reviewsEnabled !== false };
+      window.SHAHEDIN_CURRENT_COURSE = { dbId: c.dbId || null, slug: c.id, title: c.title, free: c.free, price: c.price, reviewsEnabled: c.reviewsEnabled !== false, enrollmentOpen: c.enrollmentOpen !== false };
       const durationLabel = durationBn(c.duration);
       mount(
         "[data-mount='course-detail']",
-        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="index.html">হোম</a><span aria-hidden="true">/</span><a href="courses.html">কোর্স</a><span aria-hidden="true">/</span><span>${escapeHtml(c.title)}</span></nav>
+        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="/">হোম</a><span aria-hidden="true">/</span><a href="/courses">কোর্স</a><span aria-hidden="true">/</span><span>${escapeHtml(c.title)}</span></nav>
          <span class="eyebrow">${escapeHtml(categoryLabel(c.category))}</span>
          <h1>${escapeHtml(c.title)}</h1>
          <div class="meta-row">
@@ -832,7 +853,8 @@
            <span class="enrolled-check">${ICON.check}</span>
            <span><b>ভর্তি হয়েছেন</b><span>আজীবন অ্যাক্সেস</span></span>
          </div>
-         <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}">${c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
+         ${c.enrollmentOpen === false ? `<p class="buy-closed-note">এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে।</p>` : ""}
+         <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}"${c.enrollmentOpen === false ? " disabled" : ""}>${c.enrollmentOpen === false ? "ভর্তি বন্ধ" : c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
          <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>`
       );
 
@@ -878,7 +900,7 @@
         mount("[data-mount='product-detail']", emptyStateHTML(failed.products ? loadErrorState("প্রোডাক্টটি লোড করা যায়নি") : {
           title: "প্রোডাক্টটি খুঁজে পাওয়া যায়নি",
           body: "এই প্রোডাক্টটি সরিয়ে ফেলা হয়েছে অথবা এখনো প্রকাশ করা হয়নি।",
-          ctaHref: "store.html",
+          ctaHref: "/store",
           ctaText: "স্টোরে ফিরে যান",
         }));
         ["product-buy", "gallery-main"].forEach((key) => {
@@ -908,7 +930,7 @@
       if (galleryThumbs) galleryThumbs.hidden = true;
       mount(
         "[data-mount='product-detail']",
-        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="index.html">হোম</a><span aria-hidden="true">/</span><a href="store.html">স্টোর</a><span aria-hidden="true">/</span><span>${escapeHtml(p.title)}</span></nav>
+        `<nav class="crumb" aria-label="ব্রেডক্রাম্ব"><a href="/">হোম</a><span aria-hidden="true">/</span><a href="/store">স্টোর</a><span aria-hidden="true">/</span><span>${escapeHtml(p.title)}</span></nav>
          <span class="badge badge-level" style="margin:0 0 12px;display:inline-flex;">${p.type === "digital" ? "ডিজিটাল ডাউনলোড" : "ফিজিক্যাল প্রোডাক্ট"}</span>
          <h1>${escapeHtml(p.title)}</h1>
          <div class="price" style="margin:14px 0;">${p.oldPrice ? `<span class="old">৳${bnNum(Number(p.oldPrice))}</span>` : ""}৳${bnNum(Number(p.price))}</div>

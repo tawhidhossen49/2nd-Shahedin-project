@@ -1166,6 +1166,8 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
    .old would look like a footnote. Still clearly the smaller of the two. */
 .course-buy-card .price .old{font-size:.5em;}
 .buy-discount{align-self:center;}
+.buy-closed-note{margin-block-start:var(--space-3); color:var(--accent-ink); font-weight:600; font-size:var(--step--1);}
+.course-buy-card.is-enrolled .buy-closed-note{display:none;}
 .course-buy-card .small-note{margin-block-start:6px;}
 .course-buy-card .btn{margin-block-start:var(--space-5);}
 /* In the hero the card follows the description instead of filling a column of
@@ -1340,6 +1342,68 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 
 .video-embed{position:relative; padding-block-start:56.25%; border-radius:var(--radius-s); overflow:hidden; background:#000;}
 .video-embed iframe{position:absolute; inset:0; inline-size:100%; block-size:100%; border:0;}
+
+/* Our own player over YouTube's picture (see contentBlockBodyHTML). The frame
+   is taller than the picture and centred, so the strips where YouTube draws
+   its title, Share and Copy link fall outside and are cut off; the picture
+   stays the size of the player, because YouTube keeps it 16:9 in the middle. */
+.vp{position:absolute; inset:0; overflow:hidden; container-type:size; background:#000; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none;}
+.video-embed .vp iframe{
+  inset:auto; left:50%; top:50%; --w:min(100cqw, 100cqh * 16 / 9);
+  inline-size:var(--w); block-size:calc(var(--w) * 9 / 16 + 300px);
+  transform:translate(-50%,-50%); pointer-events:none;
+}
+.vp-shield{position:absolute; inset:0; z-index:3; cursor:pointer; outline:none;}
+/* Paused or finished, YouTube shows "more videos" over the picture: dim it. */
+.vp-dim{position:absolute; inset:0; z-index:2; pointer-events:none; background:rgba(0,0,0,.86); opacity:0; transition:opacity var(--dur-2) var(--ease-out);}
+.vp.is-paused .vp-dim{opacity:1;}
+.vp.is-ended .vp-dim{opacity:1; background:#000;}
+.vp-big{
+  position:absolute; left:50%; top:50%; z-index:4; display:grid; place-items:center;
+  inline-size:clamp(60px,9cqw,84px); block-size:clamp(60px,9cqw,84px); padding:0;
+  transform:translate(-50%,-50%); border:0; border-radius:50%;
+  background:var(--accent-fill); color:var(--text-on-accent); cursor:pointer;
+}
+.vp-big svg{inline-size:44%; block-size:44%; fill:currentColor;}
+.vp.is-playing .vp-big{opacity:0; pointer-events:none;}
+.vp-hint{position:absolute; left:50%; bottom:64px; z-index:5; transform:translateX(-50%); margin:0; padding:8px 12px; border-radius:var(--radius-s); background:rgba(5,6,6,.92); color:#fff; font-size:var(--step--1); white-space:nowrap;}
+.vp-hint[hidden]{display:none;}
+/* A phone that only starts a video from a touch on the video: one square over
+   YouTube's play button is opened for that tap, the rest stays covered. */
+.vp.needs-tap .vp-big{opacity:0; pointer-events:none;}
+.vp.needs-tap .vp-dim{opacity:0;}
+.video-embed .vp.needs-tap iframe{pointer-events:auto;}
+.vp.needs-tap .vp-shield{clip-path:polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, calc(50% - 56px) calc(50% - 56px), calc(50% + 56px) calc(50% - 56px), calc(50% + 56px) calc(50% + 56px), calc(50% - 56px) calc(50% + 56px), calc(50% - 56px) calc(50% - 56px));}
+.vp-bar{position:absolute; inset-inline:0; bottom:0; z-index:5; display:flex; align-items:center; gap:4px; padding:26px 10px 8px; background:linear-gradient(to top, rgba(0,0,0,.88), transparent); transition:opacity var(--dur-2) var(--ease-out);}
+.vp.is-playing.is-idle .vp-bar{opacity:0; pointer-events:none;}
+.vp.is-playing.is-idle{cursor:none;}
+.vp-bar button{flex:none; display:grid; place-items:center; min-inline-size:40px; block-size:40px; padding:0 8px; background:none; border:0; color:#fff; cursor:pointer; font:700 13px/1 var(--font-body);}
+.vp-bar button:hover{color:var(--accent-ink);}
+.vp-bar button:focus-visible,.vp-shield:focus-visible{outline:2px solid var(--accent-ink); outline-offset:-2px;}
+.vp-bar svg{inline-size:22px; block-size:22px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linejoin:round; stroke-linecap:round;}
+.vp-bar [data-vp="play"] svg path{fill:currentColor; stroke:none;}
+.vp .i-pause,.vp .i-quiet{display:none;}
+.vp.is-playing .i-play{display:none;}
+.vp.is-playing .i-pause{display:inline;}
+.vp.is-muted .i-loud{display:none;}
+.vp.is-muted .i-quiet{display:inline;}
+.vp-time{flex:none; padding:0 6px; font-size:13px; font-variant-numeric:tabular-nums; color:rgba(255,255,255,.75); white-space:nowrap;}
+.vp-time b{font-weight:700; color:#fff;}
+.vp-seek{flex:1; min-inline-size:40px; block-size:40px; margin:0 6px; -webkit-appearance:none; appearance:none; background:none; cursor:pointer; --at:0%;}
+.vp-seek::-webkit-slider-runnable-track{block-size:4px; background:linear-gradient(to right, var(--accent-fill) var(--at), rgba(255,255,255,.3) var(--at));}
+.vp-seek::-moz-range-track{block-size:4px; background:rgba(255,255,255,.3);}
+.vp-seek::-moz-range-progress{block-size:4px; background:var(--accent-fill);}
+.vp-seek::-webkit-slider-thumb{-webkit-appearance:none; inline-size:14px; block-size:14px; margin-top:-5px; border-radius:50%; background:var(--accent-fill);}
+.vp-seek::-moz-range-thumb{inline-size:14px; block-size:14px; border:0; border-radius:50%; background:var(--accent-fill);}
+.vp-speed{min-inline-size:46px;}
+.vp:fullscreen,.vp:-webkit-full-screen{inline-size:100vw; block-size:100vh;}
+.vp.is-full{position:fixed; inset:0; z-index:99999; inline-size:100vw; block-size:100dvh;}
+html.vp-open,html.vp-open body{overflow:hidden;}
+@media (max-width:560px){
+  .vp-bar{gap:0; padding-inline:4px;}
+  .vp-bar button{min-inline-size:36px; padding:0 5px;}
+  .vp-time{font-size:12px;}
+}
 .pdf-embed{inline-size:100%; block-size:560px; border-radius:var(--radius-s); overflow:hidden; background:var(--surface-2); border:1px solid var(--line);}
 .pdf-embed iframe{inline-size:100%; block-size:100%; border:0;}
 .live-datetime{font-size:var(--step--1); color:var(--text-2); margin-block-end:var(--space-4);}

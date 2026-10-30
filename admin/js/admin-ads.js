@@ -353,17 +353,17 @@
      runs against whichever site this admin panel is on, so on shahedin.com
      it tests shahedin.com. */
   const CHECK_PAGES = [
-    ["index.html", "হোমপেজ"],
-    ["course-detail.html", "কোর্সের পেজ"],
-    ["checkout.html", "চেকআউট"],
-    ["payment-status.html", "পেমেন্টের পরের পেজ"],
+    ["/", "হোমপেজ"],
+    ["/course-detail", "কোর্সের পেজ"],
+    ["/checkout", "চেকআউট"],
+    ["/payment-status", "পেমেন্টের পরের পেজ"],
   ];
   let pageCheck = null; // null = checking; else { found: [...], missing: [...], wrongId: bool }
 
   async function runPageCheck() {
     const results = await Promise.all(CHECK_PAGES.map(async ([file, label]) => {
       try {
-        const res = await fetch("../" + file + "?pixelcheck=" + Date.now(), { cache: "no-store" });
+        const res = await fetch(file + "?pixelcheck=" + Date.now(), { cache: "no-store" });
         const html = res.ok ? await res.text() : "";
         const m = html.match(/fbq\(\s*['"]init['"]\s*,\s*['"](\d+)['"]/);
         return { label, id: m ? m[1] : null };

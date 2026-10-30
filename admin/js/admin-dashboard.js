@@ -64,19 +64,19 @@
     megaphone: "M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1zM15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13",
   };
   const TASKS = [
-    { key: "courses", href: "courses.html?new=1", icon: "plus", title: "Add a new course", desc: "Create a course with its lessons and price." },
-    { key: "courses", href: "courses.html", icon: "edit", title: "Change a course", desc: "Edit the name, price, discount, lessons or free preview videos." },
-    { key: "orders", href: "orders.html", icon: "cart", title: "See payments", desc: "Who paid, how much, and send a refund if needed." },
-    { key: "students", href: "students.html", icon: "people", title: "Find a student", desc: "See what they bought, or give them a course by hand." },
-    { key: "submissions", href: "submissions.html", icon: "mail", title: "Read messages", desc: "Messages people sent from the Contact page.", flag: unreadMessages ? `${unreadMessages} new` : "" },
-    { key: "products", href: "products.html?new=1", icon: "bag", title: "Add a store product", desc: "A book, notes, or anything else you sell." },
-    { key: "coupons", href: "coupons.html", icon: "tag", title: "Make a discount coupon", desc: "A code that gives buyers money off." },
-    { key: "reviews", href: "reviews.html", icon: "star", title: "Approve reviews", desc: "Choose which student reviews show on the site." },
-    { key: "home", href: "home.html", icon: "home", title: "Edit the homepage", desc: "Change the text, photos and sections visitors see first." },
-    { key: "settings", href: "settings.html", icon: "phone", title: "Change contact details", desc: "Phone, email, WhatsApp and social media links." },
-    { key: "analytics", href: "analytics.html", icon: "chart", title: "See visitor numbers", desc: "How many people visit, and which pages." },
-    { key: "ads", href: "ads.html", icon: "megaphone", title: "Facebook ads", desc: "Turn Facebook ad tracking on or off, and check it works." },
-    { key: "team", href: "team.html", icon: "team", title: "Add a team member", desc: "Let someone else log in, and choose what they can use." },
+    { key: "courses", href: "/admin/courses?new=1", icon: "plus", title: "Add a new course", desc: "Create a course with its lessons and price." },
+    { key: "courses", href: "/admin/courses", icon: "edit", title: "Change a course", desc: "Edit the name, price, discount, lessons or free preview videos." },
+    { key: "orders", href: "/admin/orders", icon: "cart", title: "See payments", desc: "Who paid, how much, and send a refund if needed." },
+    { key: "students", href: "/admin/students", icon: "people", title: "Find a student", desc: "See what they bought, or give them a course by hand." },
+    { key: "submissions", href: "/admin/submissions", icon: "mail", title: "Read messages", desc: "Messages people sent from the Contact page.", flag: unreadMessages ? `${unreadMessages} new` : "" },
+    { key: "products", href: "/admin/products?new=1", icon: "bag", title: "Add a store product", desc: "A book, notes, or anything else you sell." },
+    { key: "coupons", href: "/admin/coupons", icon: "tag", title: "Make a discount coupon", desc: "A code that gives buyers money off." },
+    { key: "reviews", href: "/admin/reviews", icon: "star", title: "Approve reviews", desc: "Choose which student reviews show on the site." },
+    { key: "home", href: "/admin/home", icon: "home", title: "Edit the homepage", desc: "Change the text, photos and sections visitors see first." },
+    { key: "settings", href: "/admin/settings", icon: "phone", title: "Change contact details", desc: "Phone, email, WhatsApp and social media links." },
+    { key: "analytics", href: "/admin/analytics", icon: "chart", title: "See visitor numbers", desc: "How many people visit, and which pages." },
+    { key: "ads", href: "/admin/ads", icon: "megaphone", title: "Facebook ads", desc: "Turn Facebook ad tracking on or off, and check it works." },
+    { key: "team", href: "/admin/team", icon: "team", title: "Add a team member", desc: "Let someone else log in, and choose what they can use." },
   ].filter((t) => can(t.key));
 
   const taskHtml = TASKS.map((t) => `

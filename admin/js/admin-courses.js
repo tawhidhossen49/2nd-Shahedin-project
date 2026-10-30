@@ -46,6 +46,15 @@
       onMsg: "The student count is now shown on that course page.",
       offMsg: "The student count is now hidden on that course page.",
     },
+    {
+      column: "enrollment_open",
+      label: "Open for sale",
+      fieldId: "f_enrollment_open",
+      modalLabel: "Open for new students",
+      modalHint: "Untick to close the course. Everyone who already bought it keeps full access, but nobody new can buy or enrol. Tick it again to reopen at any time.",
+      onMsg: "That course is open: new students can buy it.",
+      offMsg: "That course is closed. Existing students keep access; nobody new can buy it.",
+    },
   ];
 
   const flagOn = (course, flag) => course[flag.column] !== false;
@@ -82,7 +91,7 @@
     }
     wrap.innerHTML = `
       <table class="admin-table">
-        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Show on page</th><th>Order</th><th></th></tr></thead>
+        <thead><tr><th>Course</th><th>Price</th><th>Status</th><th>Switches</th><th>Order</th><th></th></tr></thead>
         <tbody>
           ${courses.map((course) => `
             <tr>
@@ -101,7 +110,7 @@
               <td>${course.sort_order}</td>
               <td>
                 <div class="row-actions">
-                  <a class="btn btn-ghost btn-sm" href="../course-detail.html?id=${encodeURIComponent(course.slug)}" target="_blank" rel="noopener" title="Open this course on the website in a new tab">View</a>
+                  <a class="btn btn-ghost btn-sm" href="/course-detail?id=${encodeURIComponent(course.slug)}" target="_blank" rel="noopener" title="Open this course on the website in a new tab">View</a>
                   <button class="btn btn-ghost btn-sm edit-btn" data-id="${course.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Edit</button>
                   <button class="btn btn-danger btn-sm del-btn" data-id="${course.id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>Delete</button>
                 </div>
@@ -835,19 +844,21 @@
       const write = (row) => (editingId ? c.from("courses").update(row).eq("id", editingId) : c.from("courses").insert(row));
       let res = await write(payload);
 
-      /* old_price_bdt arrives with schema.sql section 35. On a database that
-         has not run it yet, the whole save is refused for that one column.
-         Save everything else rather than lose the form, and say what is
-         missing -- but only when that column really is the problem. */
+      /* old_price_bdt and enrollment_open arrive with schema.sql sections 35
+         and 38. On a database that has not run them, the whole save is refused
+         for one column. Save everything else rather than lose the form, and
+         say what is missing -- but only when that column is the problem. */
       let priceColumnMissing = false;
-      if (res.error && (res.error.code === "42703" || res.error.code === "PGRST204") && /old_price_bdt/.test(res.error.message || "")) {
-        const { old_price_bdt, ...rest } = payload;
-        res = await write(rest);
-        priceColumnMissing = !res.error;
+      for (const column of ["enrollment_open", "old_price_bdt"]) {
+        if (res.error && (res.error.code === "42703" || res.error.code === "PGRST204") && (res.error.message || "").includes(column)) {
+          delete payload[column];
+          res = await write(payload);
+          if (column === "old_price_bdt") priceColumnMissing = !res.error;
+        }
       }
       if (res.error) throw res.error;
 
-      if (priceColumnMissing && payload.old_price_bdt !== null) {
+      if (priceColumnMissing && document.getElementById("f_old_price").value !== "") {
         Admin.toast("Saved — except the original price. That needs the latest schema.sql (section 35) run in the Supabase SQL editor.", true);
       } else {
         Admin.toast(editingId ? "Course updated." : "Course created.");

@@ -371,6 +371,23 @@ and emails are sent only as SHA-256 codes.
 To replace the access token later (for example if Facebook says it is no
 longer valid), repeat step 1 with the new one. Nothing else changes.
 
+## Revenue of one course or product
+
+Admin panel → **Orders & payments** → **Revenue by course and product**. One
+row per course and product, with how many were sold, the sales, the refunds
+and the money actually received, for all time, the last 30 or 7 days, or this
+month. Test payments are not counted.
+
+## Closing a course to new students
+
+Admin panel → **Courses** → press **Open for sale** on the course's row, or
+untick **Open for new students** in section 7 of its editor.
+
+Everyone who already bought it keeps full access. Nobody new can buy or enrol:
+the course page shows "ভর্তি বন্ধ", the course card carries the same badge, and
+checkout and the server both refuse. Press it again to reopen. A student given
+access by hand from the Students page still gets in.
+
 ## Course price and discount
 
 In the course editor, section **2. Price**:

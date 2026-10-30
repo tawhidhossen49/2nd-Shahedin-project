@@ -27,6 +27,11 @@
 
    Only enrolled students have progress controls rendered, so a
    locked or preview block simply has nothing to report.
+
+   This file also runs the player's buttons. YouTube's own are
+   switched off (see contentBlockBodyHTML in render.js), so play,
+   seek, sound, speed and full screen here all go through the
+   same YT.Player that measures progress.
    ========================================================= */
 (function () {
   "use strict";
@@ -102,6 +107,139 @@
     bar.classList.toggle("is-done", pct >= COMPLETE_AT);
   }
 
+  /* ---------- The player's buttons ---------- */
+  const SPEEDS = [1, 1.25, 1.5, 2, 0.75];
+
+  function paintControls(state) {
+    const el = state.wrap;
+    if (!el) return;
+    const p = state.player;
+    const s = p && typeof p.getPlayerState === "function" ? p.getPlayerState() : -1;
+    const playing = s === 1 || s === 3;
+    el.classList.toggle("is-playing", playing);
+    el.classList.toggle("is-paused", s === 2);
+    el.classList.toggle("is-ended", s === 0);
+    if (playing) {
+      state.started = true;
+      el.classList.remove("is-new", "needs-tap");
+      el.querySelector(".vp-hint").hidden = true;
+    }
+    if (p && typeof p.getCurrentTime === "function" && !state.dragging) {
+      state.now = p.getCurrentTime() || 0;
+      state.total = p.getDuration() || state.dur || 0;
+    }
+    el.querySelector("[data-vp-now]").textContent = fmt(state.now);
+    el.querySelector("[data-vp-total]").textContent = fmt(state.total);
+    if (!state.dragging) {
+      const seek = el.querySelector(".vp-seek");
+      seek.value = state.total ? Math.round((state.now / state.total) * 1000) : 0;
+      seek.style.setProperty("--at", (state.total ? (state.now / state.total) * 100 : 0) + "%");
+    }
+    if (p && typeof p.isMuted === "function") el.classList.toggle("is-muted", p.isMuted());
+    el.querySelector('[data-vp="play"]').setAttribute("aria-label", playing ? "থামান" : "চালান");
+  }
+
+  /* Some phones only start a cross-origin video from a touch on the video
+     itself. If play did not take, one small square over YouTube's own play
+     button is opened for that single tap; the rest stays covered. It also
+     rescues a player whose API never loaded, so a video is never unplayable. */
+  function offerTap(state) {
+    setTimeout(() => {
+      if (state.started) return;
+      state.wrap.classList.add("needs-tap");
+      state.wrap.querySelector(".vp-hint").hidden = false;
+    }, 1800);
+  }
+
+  function wireControls(state) {
+    const el = state.wrap;
+    const seek = el.querySelector(".vp-seek");
+    const player = () => (state.player && typeof state.player.playVideo === "function" ? state.player : null);
+
+    const play = () => {
+      const p = player();
+      if (p) p.playVideo();
+      offerTap(state);
+    };
+    const toggle = () => {
+      const p = player();
+      const s = p ? p.getPlayerState() : -1;
+      if (s === 1 || s === 3) p.pauseVideo();
+      else if (s === 0) { p.seekTo(0, true); p.playVideo(); }
+      else play();
+    };
+    const jump = (to) => {
+      const p = player();
+      if (!p) return;
+      p.seekTo(Math.max(0, Math.min(state.total || to, to)), true);
+      paintControls(state);
+    };
+
+    // Full screen; where a browser has none for a page (iPhone), the player
+    // fills the window instead.
+    const fill = (on) => {
+      el.classList.toggle("is-full", on);
+      document.documentElement.classList.toggle("vp-open", on);
+    };
+    const full = () => {
+      if (el.classList.contains("is-full")) return fill(false);
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        return (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      }
+      const ask = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (!ask) return fill(true);
+      const going = ask.call(el);
+      if (going && going.catch) going.catch(() => fill(true));
+    };
+
+    el.querySelector(".vp-shield").addEventListener("click", toggle);
+    el.querySelector(".vp-shield").addEventListener("dblclick", full);
+    el.querySelector(".vp-big").addEventListener("click", toggle);
+    el.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-vp]");
+      if (!b) return;
+      const p = player();
+      const k = b.dataset.vp;
+      if (k === "play") toggle();
+      else if (k === "full") full();
+      else if (k === "mute" && p) { if (p.isMuted()) p.unMute(); else p.mute(); el.classList.toggle("is-muted"); }
+      else if (k === "speed" && p) {
+        state.rate = SPEEDS[(SPEEDS.indexOf(state.rate) + 1) % SPEEDS.length];
+        p.setPlaybackRate(state.rate);
+        b.textContent = state.rate + "×";
+      }
+    });
+    seek.addEventListener("input", () => {
+      state.dragging = true;
+      state.now = (seek.value / 1000) * state.total;
+      seek.style.setProperty("--at", seek.value / 10 + "%");
+      el.querySelector("[data-vp-now]").textContent = fmt(state.now);
+    });
+    seek.addEventListener("change", () => {
+      state.dragging = false;
+      jump((seek.value / 1000) * state.total);
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.target.matches("input")) return;
+      if (e.key === " " || e.key === "k") { e.preventDefault(); toggle(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); jump(state.now + 5); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); jump(state.now - 5); }
+      else if (e.key === "f") full();
+      else if (e.key === "Escape" && el.classList.contains("is-full")) fill(false);
+    });
+    // Nothing to right-click ("copy video URL") on the picture.
+    el.addEventListener("contextmenu", (e) => e.preventDefault());
+    // The buttons fade while it plays, and come back on a move or a touch.
+    let idle;
+    const wake = () => {
+      el.classList.remove("is-idle");
+      clearTimeout(idle);
+      idle = setTimeout(() => el.classList.add("is-idle"), 2600);
+    };
+    ["pointermove", "pointerdown", "keydown", "focusin"].forEach((t) => el.addEventListener(t, wake));
+    wake();
+  }
+
   function emitProgress(state) {
     document.dispatchEvent(new CustomEvent("video-progress", {
       detail: { blockId: state.blockId, pos: state.pos, dur: state.dur, pct: state.pct },
@@ -121,6 +259,7 @@
     state.dur = dur;
     state.pct = Math.round((pos / dur) * 100);
     paintBar(state);
+    paintControls(state);
 
     if (state.pct >= COMPLETE_AT && !state.reported) {
       state.reported = true;
@@ -147,8 +286,14 @@
       reported: false,
       timer: null,
       bar: holder.querySelector("[data-watch-bar]"),
+      wrap,
+      now: 0, total: 0,
+      rate: 1,
+      started: false,
+      dragging: false,
     };
     players.set(blockId, state);
+    wireControls(state);
 
     // Show what we already know before the player is even ready.
     const saved = savedFor(blockId);
@@ -158,7 +303,10 @@
       state.pct = Number(saved.pct) || 0;
       state.savedAt = state.pos;
       state.reported = state.pct >= COMPLETE_AT;
+      state.now = state.pos;
+      state.total = state.dur;
       paintBar(state);
+      paintControls(state);
     }
 
     whenReady(() => {
@@ -174,9 +322,11 @@
                 state.player.seekTo(from, true);
                 state.player.pauseVideo();
               }
+              paintControls(state);
             },
             onStateChange(e) {
               const YT = window.YT;
+              paintControls(state);
               if (e.data === YT.PlayerState.PLAYING) {
                 clearInterval(state.timer);
                 state.timer = setInterval(() => tick(state), 1000);
@@ -202,6 +352,7 @@
         // A blocked or unavailable embed must not take the lesson page with it.
         console.warn("Shahedin: couldn't attach to a YouTube player.", err);
         players.delete(blockId);
+        wrap.classList.add("needs-tap");
       }
     });
   }

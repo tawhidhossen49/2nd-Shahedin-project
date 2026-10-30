@@ -30,8 +30,8 @@
   const DEFAULTS = window.SHAHEDIN_LEGAL_DEFAULTS || { terms: {}, privacy: {} };
 
   const PAGES = [
-    { id: "terms", label: "Terms of Service", file: "terms.html" },
-    { id: "privacy", label: "Privacy Policy", file: "privacy.html" },
+    { id: "terms", label: "Terms of Service", file: "terms" },
+    { id: "privacy", label: "Privacy Policy", file: "privacy" },
   ];
 
   let saved = {};
@@ -72,7 +72,7 @@
           <tr><td><code>- item</code></td><td>A bullet list</td></tr>
           <tr><td><code>1. item</code></td><td>A numbered list</td></tr>
           <tr><td><code>**important**</code></td><td>Bold text</td></tr>
-          <tr><td><code>[যোগাযোগ](contact.html)</code></td><td>A link</td></tr>
+          <tr><td><code>[যোগাযোগ](/contact)</code></td><td>A link</td></tr>
           <tr><td>A blank line</td><td>Starts a new paragraph</td></tr>
         </tbody>
       </table>
@@ -83,7 +83,7 @@
         <div class="panel-head">
           <div>
             <h2>${p.label}</h2>
-            <p>Live at <a href="../${p.file}" target="_blank" rel="noopener">/${p.file}</a></p>
+            <p>Live at <a href="/${p.file}" target="_blank" rel="noopener">/${p.file}</a></p>
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Save</button>
         </div>

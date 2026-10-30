@@ -18,11 +18,13 @@ course and store pages are empty: there is no sample content.
 
 1. Unzip this folder.
 2. Open the folder in VS Code (or Antigravity).
-3. Right-click `index.html` → **Open with Live Server**.
+3. In a terminal in that folder, run `npx serve`, then open the address it prints.
 
-Don't just double-click `index.html` in your file explorer — a couple of
-features (fetching data, some relative paths) behave better over
-`http://localhost` than over `file://`.
+The site's links have no `.html` in them (`/courses`, `/admin/orders`). On
+Vercel, `vercel.json` makes that work; locally, `serve` does the same thing.
+A plain static server such as Live Server will not find those pages, and
+double-clicking a file will not load anything, because every path starts at
+the site root.
 
 ## Folder structure
 

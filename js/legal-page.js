@@ -25,13 +25,13 @@ window.ShahedinLegal = (function () {
   }
 
   /* Inline markers, applied to text that is ALREADY escaped.
-     Links are restricted to http(s), mailto: and same-site .html pages so a
-     policy can never carry a javascript: URL. */
+     Links are restricted to http(s), mailto: and same-site pages (/contact,
+     or the older contact.html) so a policy can never carry a javascript: URL. */
   function inline(safeText) {
     return safeText
       .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
       .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (match, label, href) => {
-        const ok = /^(https?:\/\/|mailto:|tel:)/i.test(href) || /^[\w.-]+\.html(#[\w-]+)?$/i.test(href);
+        const ok = /^(https?:\/\/|mailto:|tel:)/i.test(href) || /^\/?[\w-]+(\.html)?(#[\w-]+)?$/i.test(href);
         if (!ok) return label;
         const external = /^https?:\/\//i.test(href);
         return `<a href="${href}"${external ? ' target="_blank" rel="noopener"' : ""}>${label}</a>`;

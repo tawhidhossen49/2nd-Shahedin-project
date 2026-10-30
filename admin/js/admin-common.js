@@ -100,7 +100,7 @@ window.Admin = (function () {
     const c = client();
     const { data: { session } } = await c.auth.getSession();
     if (!session) {
-      window.location.href = "login.html";
+      window.location.href = "/admin/login";
       return null;
     }
     /* role + permissions arrive with schema.sql section 34. A database that
@@ -117,7 +117,7 @@ window.Admin = (function () {
     }
     if (error || !adminRow) {
       await c.auth.signOut();
-      window.location.href = "login.html?denied=1";
+      window.location.href = "/admin/login?denied=1";
       return null;
     }
     if (legacy) {
@@ -135,7 +135,7 @@ window.Admin = (function () {
        way (admin_can() in schema.sql). */
     const here = pageFromLocation();
     if (here && !can(here.key)) {
-      window.location.replace("index.html?noaccess=" + encodeURIComponent(here.label));
+      window.location.replace("/admin?noaccess=" + encodeURIComponent(here.label));
       return null;
     }
     return adminRow;
@@ -144,7 +144,9 @@ window.Admin = (function () {
   let _admin = null;
 
   function pageFromLocation() {
-    const file = (window.location.pathname.split("/").pop() || "index.html").toLowerCase() || "index.html";
+    // "/admin" is the dashboard; any other page is its last path segment.
+    const last = window.location.pathname.replace(/\/+$/, "").split("/").pop().toLowerCase().replace(/\.html$/, "");
+    const file = (last === "admin" || !last ? "index" : last) + ".html";
     return NAV.find((n) => n.href === file) || null;
   }
 
@@ -157,6 +159,9 @@ window.Admin = (function () {
     if (key === "team") return false;
     return _admin.permissions.includes(key);
   }
+
+  // NAV keeps each page's file name as its key; this is the address visitors see.
+  const pageUrl = (file) => (file === "index.html" ? "/admin" : "/admin/" + file.replace(/\.html$/, ""));
 
   function isMain() {
     return !!_admin && _admin.role === "main";
@@ -171,7 +176,7 @@ window.Admin = (function () {
        empty headings. */
     const navHtml = NAV_GROUPS.map((group) => {
       const links = group.items.filter((n) => can(n.key)).map(
-        (n) => `<a href="${n.href}" class="${n.href === activeHref ? "active" : ""}"${n.href === activeHref ? ' aria-current="page"' : ""}>
+        (n) => `<a href="${pageUrl(n.href)}" class="${n.href === activeHref ? "active" : ""}"${n.href === activeHref ? ' aria-current="page"' : ""}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${n.icon}"/></svg>
         ${n.label}
       </a>`
@@ -204,7 +209,7 @@ window.Admin = (function () {
           <div class="admin-topbar">
             <button class="icon-btn" id="mobileNavToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="adminSidebar">☰</button>
             <div><h1>${heading}</h1>${subtitle ? `<p>${subtitle}</p>` : ""}</div>
-            <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm">View site ↗</a>
+            <a href="/" target="_blank" class="btn btn-ghost btn-sm">View site ↗</a>
           </div>
           <div class="admin-content" id="adminContent"></div>
         </main>
@@ -213,7 +218,7 @@ window.Admin = (function () {
 
     document.getElementById("logoutBtn").addEventListener("click", async () => {
       await client().auth.signOut();
-      window.location.href = "login.html";
+      window.location.href = "/admin/login";
     });
 
     /* Mobile sidebar. Below 860px admin.css moves .admin-sidebar off-canvas

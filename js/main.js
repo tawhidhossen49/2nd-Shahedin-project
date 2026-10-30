@@ -234,7 +234,8 @@
     // price card rather than leaving the click with no visible result.
     if (head.hasAttribute("data-locked-block")) {
       e.preventDefault();
-      if (window.showToast) window.showToast("এই অংশটি দেখতে হলে এই কোর্সে ভর্তি হতে হবে।");
+      const closed = window.SHAHEDIN_CURRENT_COURSE && window.SHAHEDIN_CURRENT_COURSE.enrollmentOpen === false;
+      if (window.showToast) window.showToast(closed ? "এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে।" : "এই অংশটি দেখতে হলে এই কোর্সে ভর্তি হতে হবে।");
       const buy = document.getElementById("course-buy");
       if (buy) buy.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
@@ -432,7 +433,7 @@
       const valEl = stepper && stepper.querySelector("[data-qty-value]");
       // Clamped again here so a hand-edited quantity can't get past the stepper.
       const qty = Math.max(1, Math.min(qtyCeiling(stepper), valEl ? parseInt(valEl.textContent, 10) || 1 : 1));
-      window.location.href = `checkout.html?product=${encodeURIComponent(buyBtn.dataset.buyProduct)}&qty=${qty}`;
+      window.location.href = `/checkout?product=${encodeURIComponent(buyBtn.dataset.buyProduct)}&qty=${qty}`;
     }
   });
 
@@ -488,7 +489,7 @@
   }
 
   /* ---------- Set active nav link based on current page ---------- */
-  const path = window.location.pathname.split("/").pop() || "index.html";
+  const path = (window.location.pathname.split("/").pop() || "index").replace(/\.html$/, "") + ".html";
   document.querySelectorAll(".nav-link[data-page]").forEach((link) => {
     if (link.dataset.page === path) link.classList.add("active");
   });

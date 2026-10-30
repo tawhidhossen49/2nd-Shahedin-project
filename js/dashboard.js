@@ -176,7 +176,7 @@
   }
 
   function unavailableHTML(count) {
-    return `<div class="empty-state"><p>আপনার ${bn(count)}টি কোর্সের তথ্য এই মুহূর্তে লোড করা যাচ্ছে না। কোর্সটি হয়তো সাময়িকভাবে সরিয়ে রাখা হয়েছে — একটু পরে আবার চেষ্টা করুন বা <a class="text-link" href="contact.html">আমাদের জানান</a>।</p></div>`;
+    return `<div class="empty-state"><p>আপনার ${bn(count)}টি কোর্সের তথ্য এই মুহূর্তে লোড করা যাচ্ছে না। কোর্সটি হয়তো সাময়িকভাবে সরিয়ে রাখা হয়েছে — একটু পরে আবার চেষ্টা করুন বা <a class="text-link" href="/contact">আমাদের জানান</a>।</p></div>`;
   }
 
   // Bangla numerals, so the dashboard's figures match the rest of the site.
@@ -237,7 +237,7 @@
     });
     document.getElementById("dashSignOut").addEventListener("click", async () => {
       await window.ShahedinAuth.signOut();
-      window.location.href = "index.html";
+      window.location.href = "/";
     });
 
     renderTab(activeTab);
@@ -278,11 +278,11 @@
       // "all complete" line is now only reachable when courses actually loaded
       // AND every one of them really is at 100%.
       if (!rows.length) {
-        wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
+        wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="/courses">কোর্স ব্রাউজ করুন →</a></p></div>`;
       } else if (!known.length) {
         wrap.innerHTML = unavailableHTML(rows.length);
       } else {
-        wrap.innerHTML = `<div class="empty-state"><p>আপনার সব কোর্স সম্পন্ন হয়েছে — দারুণ! <a class="text-link" href="courses.html">আরও কোর্স দেখুন →</a></p></div>`;
+        wrap.innerHTML = `<div class="empty-state"><p>আপনার সব কোর্স সম্পন্ন হয়েছে — দারুণ! <a class="text-link" href="/courses">আরও কোর্স দেখুন →</a></p></div>`;
       }
       return;
     }
@@ -299,7 +299,7 @@
           <div class="progress-track"><div class="progress-fill" style="width:${p.pct}%;"></div></div>
           <div class="small-note dash-progress-note">${p.pct}% সম্পন্ন${p.total ? ` · ${p.done}/${p.total} আইটেম` : ""}</div>
         </div>
-        <a href="course-detail.html?id=${encodeURIComponent(course.slug)}" class="btn btn-ghost btn-sm">চালিয়ে যান</a>
+        <a href="/course-detail?id=${encodeURIComponent(course.slug)}" class="btn btn-ghost btn-sm">চালিয়ে যান</a>
       </div>`;
   }
 
@@ -307,7 +307,7 @@
     main.innerHTML = `<h1 class="dash-page-title">আমার কোর্স</h1><div id="allCourses"></div>`;
     const wrap = document.getElementById("allCourses");
     if (!state.enrollments.length) {
-      wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন →</a></p></div>`;
+      wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো কোর্সে ভর্তি হননি। <a class="text-link" href="/courses">কোর্স ব্রাউজ করুন →</a></p></div>`;
       return;
     }
     // This used to filter out every enrolment whose course details were
@@ -569,7 +569,7 @@
     main.innerHTML = `<h1 class="dash-page-title">অর্ডার</h1><div id="orderList"></div>`;
     const wrap = document.getElementById("orderList");
     if (!state.orders.length) {
-      wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো অর্ডার নেই। <a class="text-link" href="store.html">স্টোর দেখুন →</a></p></div>`;
+      wrap.innerHTML = `<div class="empty-state"><p>এখনো কোনো অর্ডার নেই। <a class="text-link" href="/store">স্টোর দেখুন →</a></p></div>`;
       return;
     }
     /* Since bKash checkout went in, an order row is written when a payment
@@ -594,7 +594,7 @@
          which settles it if the money did in fact go through — and otherwise
          offers to start again. */
       if (o.status !== "completed" && o.status !== "refunded") {
-        return `<a class="btn btn-ghost btn-sm" href="payment-status.html?order=${encodeURIComponent(o.id)}">${
+        return `<a class="btn btn-ghost btn-sm" href="/payment-status?order=${encodeURIComponent(o.id)}">${
           o.status === "pending" ? "পেমেন্ট দেখুন" : "আবার চেষ্টা করুন"
         }</a>`;
       }
@@ -742,7 +742,7 @@
 
         <p class="settings-privacy">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.2 8.3 8 9 4.8-.7 8-4.5 8-9V6z"/></svg>
-          <span>এই তথ্য শুধু Shahedin টিম দেখতে পায়। কীভাবে ব্যবহার করা হয় তা <a href="privacy.html">প্রাইভেসি পলিসিতে</a> লেখা আছে।</span>
+          <span>এই তথ্য শুধু Shahedin টিম দেখতে পায়। কীভাবে ব্যবহার করা হয় তা <a href="/privacy">প্রাইভেসি পলিসিতে</a> লেখা আছে।</span>
         </p>
 
         <!-- Appears only once something has actually changed, so the page is

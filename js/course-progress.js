@@ -69,6 +69,7 @@
      because that is the card .is-enrolled transforms. */
   async function startEnrollment(course, trigger) {
     if (enrollment) return; // already enrolled
+    if (course.enrollmentOpen === false) return; // closed to new students
 
     const originalText = trigger.textContent;
     trigger.disabled = true;
@@ -91,7 +92,7 @@
        requireAuth() above runs first, so the order always has an account to
        attach to. */
     if (!course.free) {
-      window.location.href = `checkout.html?course=${encodeURIComponent(course.slug)}`;
+      window.location.href = `/checkout?course=${encodeURIComponent(course.slug)}`;
       return;
     }
 
@@ -154,8 +155,9 @@
 
     if (card) card.classList.remove("is-enrolled");
     btn.hidden = false;
-    btn.disabled = false;
-    btn.textContent = course.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন";
+    const closed = course.enrollmentOpen === false;
+    btn.disabled = closed;
+    btn.textContent = closed ? "ভর্তি বন্ধ" : course.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন";
   }
 
   function paintProgress(course) {

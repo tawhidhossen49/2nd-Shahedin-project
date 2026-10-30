@@ -63,7 +63,7 @@
 
     if (courseSlug) {
       const c = (data.courses || []).find((x) => x.id === courseSlug);
-      if (c) return { kind: "course", dbId: c.dbId || null, slug: c.id, title: c.title, price: c.free ? 0 : c.price, qty: 1, image: c.image || null, type: "digital" };
+      if (c) return { kind: "course", dbId: c.dbId || null, slug: c.id, title: c.title, price: c.free ? 0 : c.price, qty: 1, image: c.image || null, type: "digital", closed: c.enrollmentOpen === false };
     }
     if (productSlug) {
       const p = (data.products || []).find((x) => x.id === productSlug);
@@ -103,6 +103,14 @@
     const mount = document.querySelector("[data-mount='order-summary']");
     if (!mount) return;
 
+    // Someone arriving from an old link or a tab left open. The server refuses
+    // this payment too; this is just the honest message before they try.
+    if (item && item.closed) {
+      mount.innerHTML = `<div class="empty-state"><p>এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে। <a class="text-link" href="/courses">অন্য কোর্স দেখুন</a>।</p></div>`;
+      setUnavailable(true);
+      return;
+    }
+
     if (!item) {
       /* "Not selected" would be the wrong thing to say when the catalogue
          simply failed to load: the item in the address may well exist. */
@@ -110,7 +118,7 @@
       const loadFailed = (qs("course") && failed.courses) || (qs("product") && failed.products);
       mount.innerHTML = loadFailed
         ? `<div class="empty-state state-error"><p>অর্ডারের তথ্য লোড করা যায়নি। ইন্টারনেট সংযোগ দেখে <a class="text-link" href="${escapeHtml(location.pathname + location.search)}">আবার চেষ্টা করুন</a>।</p></div>`
-        : `<div class="empty-state"><p>কোনো আইটেম নির্বাচন করা হয়নি। <a class="text-link" href="courses.html">কোর্স ব্রাউজ করুন</a> অথবা <a class="text-link" href="store.html">স্টোর দেখুন</a>।</p></div>`;
+        : `<div class="empty-state"><p>কোনো আইটেম নির্বাচন করা হয়নি। <a class="text-link" href="/courses">কোর্স ব্রাউজ করুন</a> অথবা <a class="text-link" href="/store">স্টোর দেখুন</a>।</p></div>`;
       setUnavailable(true);
       return;
     }
@@ -318,7 +326,7 @@
          so there is no gateway trip to make. */
       if (data && data.free) {
         sessionStorage.setItem("shahedin_purchase_success", item.kind === "course" ? "course" : "product");
-        window.location.href = "dashboard.html";
+        window.location.href = "/dashboard";
         return;
       }
 
@@ -343,7 +351,7 @@
     renderSummary();
     // Facebook ads: someone opened checkout with something in it. Does
     // nothing unless the Pixel is switched on (js/meta-pixel.js).
-    if (item && window.ShahedinPixel) {
+    if (item && !item.closed && window.ShahedinPixel) {
       window.ShahedinPixel.track("InitiateCheckout", {
         content_ids: [String(item.dbId || item.slug)],
         content_type: "product",

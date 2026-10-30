@@ -56,6 +56,34 @@
   });
 
   const money = (n) => "৳" + Number(n || 0).toLocaleString("en-US");
+
+  /* Every paid order, for the revenue figures. The list below stops at the
+     newest 500; revenue must not, so this pages through all of them. */
+  const paidRows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error: paidError } = await c
+      .from("orders")
+      .select("kind, item_id, item_title, qty, amount_bdt, refunded_bdt, status, bkash_env, paid_at, created_at")
+      .in("status", ["completed", "refunded"])
+      .order("created_at", { ascending: true })
+      .range(from, from + 999);
+    if (paidError) break;
+    paidRows.push(...(page || []));
+    if (!page || page.length < 1000) break;
+  }
+
+  /* Current names, and every course and product including those with no sale
+     yet, so "৳0" is a visible answer rather than a missing row. */
+  const [{ data: courseRows }, { data: productRows }] = await Promise.all([
+    c.from("courses").select("id, title_bn, title_en"),
+    c.from("products").select("id, name_bn, name_en"),
+  ]);
+  const catalogue = [
+    ...(courseRows || []).map((x) => ({ id: x.id, kind: "course", title: x.title_bn || x.title_en })),
+    ...(productRows || []).map((x) => ({ id: x.id, kind: "product", title: x.name_bn || x.name_en })),
+  ];
+  let revenuePeriod = "all";
+  const PERIODS = [["all", "All time"], ["30", "Last 30 days"], ["7", "Last 7 days"], ["month", "This month"]];
   // A product order with an address is the one that needs a human to act.
   const needsShipping = (o) => o.kind === "product" && !!(o.shipping_address || "").trim();
 
@@ -82,6 +110,57 @@
     cancelled: ["badge-draft", "Cancelled"],
   };
 
+  function periodStart() {
+    if (revenuePeriod === "all") return 0;
+    if (revenuePeriod === "month") { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1).getTime(); }
+    return Date.now() - Number(revenuePeriod) * 86400000;
+  }
+
+  /* One row per course or product. Rows are grouped by id, so a renamed item
+     stays one row; an item since deleted keeps the title from its orders. */
+  function revenueByItem() {
+    const rows = new Map();
+    catalogue.forEach((x) => rows.set(x.id, { ...x, sold: 0, gross: 0, refunded: 0 }));
+    const since = periodStart();
+    paidRows.filter(paid).forEach((o) => {
+      if (new Date(o.paid_at || o.created_at).getTime() < since) return;
+      const key = o.item_id || o.item_title;
+      if (!rows.has(key)) rows.set(key, { id: key, kind: o.kind, title: o.item_title || "(deleted item)", sold: 0, gross: 0, refunded: 0 });
+      const row = rows.get(key);
+      row.sold += Number(o.qty) || 1;
+      row.gross += Number(o.amount_bdt) || 0;
+      row.refunded += Number(o.refunded_bdt) || 0;
+    });
+    return Array.from(rows.values()).sort((a, b) => (b.gross - b.refunded) - (a.gross - a.refunded) || a.title.localeCompare(b.title));
+  }
+
+  function renderRevenue() {
+    const wrap = document.getElementById("revenueWrap");
+    const rows = revenueByItem();
+    const sum = (f) => rows.reduce((n, r) => n + f(r), 0);
+    wrap.innerHTML = !rows.length ? `<div class="empty-state">No courses or products yet.</div>` : `
+      <table class="admin-table">
+        <thead><tr><th>Course or product</th><th>Type</th><th>Sold</th><th>Sales</th><th>Refunded</th><th>Revenue</th></tr></thead>
+        <tbody>
+          ${rows.map((r) => `<tr>
+            <td><div class="row-title">${Admin.escapeHtml(r.title)}</div></td>
+            <td class="row-sub">${r.kind === "course" ? "Course" : "Product"}</td>
+            <td>${r.sold}</td>
+            <td>${money(r.gross)}</td>
+            <td>${r.refunded ? money(r.refunded) : "—"}</td>
+            <td><strong>${money(r.gross - r.refunded)}</strong></td>
+          </tr>`).join("")}
+          <tr>
+            <td><div class="row-title">Total</div></td><td></td>
+            <td>${sum((r) => r.sold)}</td>
+            <td>${money(sum((r) => r.gross))}</td>
+            <td>${sum((r) => r.refunded) ? money(sum((r) => r.refunded)) : "—"}</td>
+            <td><strong>${money(sum((r) => r.gross - r.refunded))}</strong></td>
+          </tr>
+        </tbody>
+      </table>`;
+  }
+
   function matches(o) {
     if (filter === "course" && o.kind !== "course") return false;
     if (filter === "product" && o.kind !== "product") return false;
@@ -95,8 +174,8 @@
 
   function render() {
     const live = orders.filter((o) => !isTest(o));
-    const revenue = live.reduce((s, o) => s + netPaid(o), 0);
-    const refunded = live.reduce((s, o) => s + (Number(o.refunded_bdt) || 0), 0);
+    const revenue = paidRows.reduce((s, o) => s + netPaid(o), 0);
+    const refunded = paidRows.filter(paid).reduce((s, o) => s + (Number(o.refunded_bdt) || 0), 0);
     const shipping = live.filter((o) => needsShipping(o) && paid(o)).length;
     const waiting = live.filter((o) => o.status === "pending").length;
     const tests = orders.length - live.length;
@@ -107,6 +186,19 @@
         <div class="stat-card"><div class="label">Revenue</div><div class="value">${money(revenue)}</div><div class="sub">${refunded > 0 ? `after ${money(refunded)} refunded` : "paid orders only"}</div></div>
         <div class="stat-card"><div class="label">Awaiting payment</div><div class="value">${waiting}</div><div class="sub">started, never finished</div></div>
         <div class="stat-card"><div class="label">To ship</div><div class="value">${shipping}</div><div class="sub">paid, physical, has an address</div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Revenue by course and product</h2>
+            <p>Money actually received for each one, after refunds. Test payments are not counted.</p>
+          </div>
+          <div class="filter-tabs">
+            ${PERIODS.map(([id, label]) => `<button type="button" class="btn btn-sm ${revenuePeriod === id ? "btn-primary" : "btn-ghost"}" data-period="${id}">${label}</button>`).join("")}
+          </div>
+        </div>
+        <div id="revenueWrap"></div>
       </div>
 
       <div class="panel">
@@ -127,6 +219,17 @@
     content.querySelectorAll("[data-filter]").forEach((b) =>
       b.addEventListener("click", () => { filter = b.dataset.filter; render(); })
     );
+    content.querySelectorAll("[data-period]").forEach((b) =>
+      b.addEventListener("click", () => {
+        revenuePeriod = b.dataset.period;
+        content.querySelectorAll("[data-period]").forEach((x) => {
+          x.classList.toggle("btn-primary", x === b);
+          x.classList.toggle("btn-ghost", x !== b);
+        });
+        renderRevenue();
+      })
+    );
+    renderRevenue();
     const searchEl = document.getElementById("orderSearch");
     searchEl.addEventListener("input", () => {
       search = searchEl.value.trim().toLowerCase();

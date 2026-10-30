@@ -34,6 +34,9 @@
          typo, not an offer. Undefined on a database without the column. */
       oldPrice: !row.is_free && Number(row.old_price_bdt) > Number(row.price_bdt) ? Number(row.old_price_bdt) : undefined,
       free: row.is_free,
+      // Closed to new students (Admin -> Courses). Only an explicit false: a
+      // database without the column keeps every course open.
+      enrollmentOpen: row.enrollment_open !== false,
       duration: row.duration_bn || row.duration_en || "",
       rating: Number(row.rating) || 4.8,
       students: row.students_count || 0,

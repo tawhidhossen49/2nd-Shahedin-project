@@ -43,6 +43,7 @@ const MESSAGES = {
   soldOut: "এই প্রোডাক্টটি স্টকে নেই।",
   stock: "স্টকে এত পিস নেই।",
   enrolled: "আপনি ইতিমধ্যে এই কোর্সে ভর্তি আছেন।",
+  closed: "এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে।",
   gateway: "পেমেন্ট শুরু করা যায়নি, একটু পরে আবার চেষ্টা করুন।",
   coupon: "কুপনটি যাচাই করা যায়নি, একটু পরে আবার চেষ্টা করুন।",
   notFound: "অর্ডারটি পাওয়া যায়নি।",
@@ -143,7 +144,9 @@ async function handleCreate(db: SupabaseClient, userId: string, body: Body): Pro
   if (kind === "course") {
     const { data: course } = await db
       .from("courses")
-      .select("id, title_bn, title_en, price_bdt, is_free, is_published")
+      // "*", not a column list: enrollment_open arrives with schema.sql section
+      // 38, and naming a column the database lacks would fail every checkout.
+      .select("*")
       .eq("slug", slug)
       .maybeSingle();
     if (!course || !course.is_published) return fail(MESSAGES.item, 404);
@@ -160,6 +163,10 @@ async function handleCreate(db: SupabaseClient, userId: string, body: Body): Pro
       .eq("course_id", itemId)
       .maybeSingle();
     if (already) return fail(MESSAGES.enrolled, 409);
+
+    // Closed to new students. Only an explicit false: a database without the
+    // column reads undefined here and keeps selling as before.
+    if (course.enrollment_open === false) return fail(MESSAGES.closed, 409);
   } else {
     const { data: product } = await db
       .from("products")

@@ -60,7 +60,7 @@
     return new URLSearchParams(window.location.search).get(name);
   }
 
-  var page = (window.location.pathname.split("/").pop() || "index.html").toLowerCase();
+  var page = (window.location.pathname.split("/").pop() || "index").toLowerCase().replace(/\.html$/, "");
 
   /* ViewContent for course and product pages. The course page announces
      itself with "course-mounted" once render.js knows which course it is;
@@ -79,7 +79,7 @@
     });
   });
 
-  if (/(^|[-_])product-detail\.html$/.test(page)) {
+  if (page === "product-detail") {
     document.addEventListener("sitedata-ready", function () {
       var id = qs("id");
       var p = ((window.SITE_DATA && window.SITE_DATA.products) || []).find(function (x) { return x.id === id; });

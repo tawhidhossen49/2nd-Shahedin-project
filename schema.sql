@@ -2975,6 +2975,68 @@ create policy "admins can write site settings" on site_settings for all to authe
     end
   );
 
+-- =========================================================================
+-- 38. CLOSING A COURSE TO NEW STUDENTS
+--     Safe to re-run.
+--
+--     enrollment_open = false: everyone already enrolled keeps full access
+--     (nothing below touches their enrolment or courses_safe's check for it),
+--     but nobody new can buy or enrol. Switched from Admin -> Courses.
+--
+--     The rule is enforced where it cannot be skipped: the bkash-payment
+--     function refuses to start a payment, and course_is_free() -- what the
+--     "enrol yourself" policy asks -- answers false for a closed course. A
+--     payment already in progress when the course closes still settles, and
+--     an admin can still grant access by hand.
+-- =========================================================================
+
+alter table courses add column if not exists enrollment_open boolean not null default true;
+
+create or replace function course_is_free(p_course_id uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public, pg_temp
+as $$
+  select coalesce(
+    (select (c.is_free or c.price_bdt <= 0) and c.enrollment_open from courses c where c.id = p_course_id),
+    false);
+$$;
+
+drop view if exists courses_safe;
+create view courses_safe as
+select
+  c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
+  c.duration_bn, c.duration_en, c.price_bdt, c.old_price_bdt, c.is_free, c.enrollment_open, c.thumbnail_url,
+  c.external_url, c.purchase_url, c.reviews_enabled, c.show_students_count,
+  c.learn_title, c.learn_points, c.preview_video_url,
+  c.is_published, c.sort_order, c.created_at, c.updated_at,
+  c.rating, c.students_count, c.tone, c.category, c.modules, c.includes, c.faqs, c.mentor, c.extra,
+  case
+    when c.is_free then c.content_blocks
+    when auth.uid() in (select id from admins) then c.content_blocks
+    when auth.uid() is not null and exists (
+      select 1 from enrollments e where e.user_id = auth.uid() and e.course_id = c.id
+    ) then c.content_blocks
+    else (
+      select coalesce(jsonb_agg(
+        case
+          when elem->>'type' = 'video' and elem->>'free_preview' = 'true' then elem
+          else jsonb_build_object(
+            'id', elem->>'id', 'type', elem->>'type', 'title', elem->>'title', 'locked', true
+          )
+        end
+        order by ord
+      ), '[]'::jsonb)
+      from jsonb_array_elements(c.content_blocks) with ordinality as t(elem, ord)
+    )
+  end as content_blocks
+from courses c
+where c.is_published = true or auth.uid() in (select id from admins);
+
+grant select on courses_safe to anon, authenticated;
+
 
 -- What you should see when the whole file has run: one row per admin, at
 -- least one of them "main", and every existing admin with 13 pages.

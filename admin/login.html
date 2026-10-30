@@ -9,8 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anek+Bangla:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../css/tokens.css">
-<link rel="stylesheet" href="css/admin.css">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
 
@@ -38,8 +38,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="../js/supabase-config.js"></script>
-<script src="js/admin-common.js"></script>
+<script src="/js/supabase-config.js"></script>
+<script src="/admin/js/admin-common.js"></script>
 <script>
 (async function () {
   if (!Admin.configured()) { Admin.showNotConfigured(); return; }
@@ -48,7 +48,7 @@
   const { data: { session } } = await c.auth.getSession();
   if (session) {
     const { data: adminRow } = await c.from("admins").select("id").eq("id", session.user.id).maybeSingle();
-    if (adminRow) { window.location.href = "index.html"; return; }
+    if (adminRow) { window.location.href = "/admin"; return; }
   }
 
   if (new URLSearchParams(location.search).get("denied")) {
@@ -89,10 +89,10 @@
       await c.auth.signOut();
       btn.disabled = false;
       btn.textContent = "Log in";
-      window.location.href = "login.html?denied=1";
+      window.location.href = "/admin/login?denied=1";
       return;
     }
-    window.location.href = "index.html";
+    window.location.href = "/admin";
   });
 })();
 </script>

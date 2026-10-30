@@ -64,7 +64,7 @@
       inquiry_type: value(form, "inquiry_type") || "general",
       message: value(form, "message"),
       preferred_date: selectedCalendarDate(),
-      source_page: location.pathname.split("/").pop() || "contact.html",
+      source_page: (location.pathname.split("/").pop() || "contact").replace(/\.html$/, "") + ".html",
     };
 
     if (!payload.name || !payload.email || !payload.message) {

@@ -166,7 +166,9 @@ async function handleCreate(db: SupabaseClient, userId: string, body: Body): Pro
 
     // Closed to new students. Only an explicit false: a database without the
     // column reads undefined here and keeps selling as before.
-    if (course.enrollment_open === false) return fail(MESSAGES.closed, 409);
+    // Closed by hand, or its enrolment deadline (schema.sql section 38) has passed.
+    const deadline = course.enrollment_deadline ? Date.parse(course.enrollment_deadline) : NaN;
+    if (course.enrollment_open === false || deadline <= Date.now()) return fail(MESSAGES.closed, 409);
   } else {
     const { data: product } = await db
       .from("products")

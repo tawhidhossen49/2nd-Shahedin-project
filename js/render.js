@@ -118,6 +118,8 @@
     return String(value).replace(/[0-9]/g, (d) => BN_DIGITS[+d]);
   }
 
+  const BN_MONTHS = ["জানুয়ারি", "ফেব্রুয়ারি", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগস্ট", "সেপ্টেম্বর", "অক্টোবর", "নভেম্বর", "ডিসেম্বর"];
+
   const CATEGORY_BN = {
     politics: "রাজনীতি",
     economy: "অর্থনীতি",
@@ -735,6 +737,50 @@
       );
     }
 
+    // Home: the open course whose enrolment deadline comes soonest, with a countdown.
+    const deadlineMount = document.querySelector("[data-mount='deadline-course']");
+    if (deadlineMount) {
+      const dl = data.courses
+        .filter((x) => x.enrollmentOpen !== false && Date.parse(x.deadline) > Date.now())
+        .sort((a, b) => Date.parse(a.deadline) - Date.parse(b.deadline))[0];
+      if (dl) {
+        const end = Date.parse(dl.deadline);
+        // "৬ নভেম্বর, রাত ১১টা ০৮ মিনিট" in Bangladesh time, whatever the visitor's clock says.
+        const bd = new Date(end + 6 * 3600000); // Dhaka is UTC+6 all year
+        const h = bd.getUTCHours();
+        const part = h < 4 ? "রাত" : h < 6 ? "ভোর" : h < 12 ? "সকাল" : h < 15 ? "দুপুর" : h < 18 ? "বিকাল" : h < 20 ? "সন্ধ্যা" : "রাত";
+        const when = `${bnNum(bd.getUTCDate())} ${BN_MONTHS[bd.getUTCMonth()]}, ${part} ${bnNum(h % 12 || 12)}টা${bd.getUTCMinutes() ? " " + bnNum(String(bd.getUTCMinutes()).padStart(2, "0")) + " মিনিট" : ""}`;
+        const href = `/course-detail?id=${encodeURIComponent(dl.id)}`;
+        deadlineMount.innerHTML = `
+          <div class="deadline-card">
+            <a href="${href}" class="thumb thumb-tone-${escapeHtml(dl.tone)}${dl.image ? " has-image" : ""}" tabindex="-1" aria-hidden="true">${thumbArt(dl, dl.title)}</a>
+            <div class="deadline-body">
+              <span class="eyebrow">ভর্তি চলছে</span>
+              <h2><a href="${href}">${escapeHtml(dl.title)}</a></h2>
+              <p class="deadline-when">ভর্তির শেষ সময়: ${escapeHtml(when)}</p>
+              <div class="countdown" role="timer" aria-label="ভর্তি শেষ হতে বাকি">
+                ${["দিন", "ঘণ্টা", "মিনিট", "সেকেন্ড"].map((u) => `<div><b data-cd>০</b><span>${u}</span></div>`).join("")}
+              </div>
+              <div class="deadline-foot">${priceLabel(dl)}<a href="${href}" class="btn btn-primary">এখনই ভর্তি হোন</a></div>
+            </div>
+          </div>`;
+        deadlineMount.hidden = false;
+        const cells = deadlineMount.querySelectorAll("[data-cd]");
+        const tick = () => {
+          const left = Math.max(0, Math.floor((end - Date.now()) / 1000));
+          if (!left) {
+            clearInterval(timer);
+            deadlineMount.hidden = true;
+            return;
+          }
+          [Math.floor(left / 86400), Math.floor(left / 3600) % 24, Math.floor(left / 60) % 60, left % 60]
+            .forEach((n, i) => { cells[i].textContent = bnNum(n, { group: false }); });
+        };
+        const timer = setInterval(tick, 1000);
+        tick();
+      }
+    }
+
     // Course catalog
     if (document.querySelector("[data-mount='course-grid']")) {
       mount(
@@ -855,7 +901,8 @@
          </div>
          ${c.enrollmentOpen === false ? `<p class="buy-closed-note">এই কোর্সে এখন নতুন ভর্তি বন্ধ আছে।</p>` : ""}
          <button class="btn btn-primary btn-block" data-enroll="${escapeHtml(c.id)}"${c.enrollmentOpen === false ? " disabled" : ""}>${c.enrollmentOpen === false ? "ভর্তি বন্ধ" : c.free ? "ফ্রি-তে ভর্তি হোন" : "এখনই কিনুন"}</button>
-         <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>`
+         <div class="small-note" data-enroll-status style="margin-top:10px; display:none;"></div>
+         ${c.free || c.enrollmentOpen === false ? "" : `<p class="buy-abroad-note">যারা দেশের বাইরে কোর্সে যোগ দিতে চাচ্ছেন তারা পেমেন্ট সংক্রান্ত ইস্যুর জন্য <a href="https://wa.me/8801841066845" target="_blank" rel="noopener">01841066845</a> এই whatsapp এ নক দিন।</p>`}`
       );
 
       /* "" when the admin has removed every point, so :empty collapses the

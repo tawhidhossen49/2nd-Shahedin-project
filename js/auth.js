@@ -9,6 +9,10 @@
    sending an OTP does both: a new phone creates the account,
    an existing phone just logs it back in.
 
+   Google (Gmail) sign-in is offered as well, as soon as it is
+   switched on in Supabase (Authentication -> Providers -> Google);
+   until then its button simply does not appear.
+
    Requires phone auth to be turned on in the Supabase dashboard
    (Authentication → Providers → Phone), with an SMS provider
    (Twilio, MessageBird, Vonage, etc.) configured there — that
@@ -65,7 +69,7 @@ window.ShahedinAuth = (function () {
 
   function displayName(user) {
     if (!user) return "";
-    return (user.user_metadata && user.user_metadata.full_name) || formatPhone(user.phone) || "";
+    return (user.user_metadata && user.user_metadata.full_name) || formatPhone(user.phone) || user.email || "";
   }
 
   /* ---------- Bangladeshi phone number formatting ---------- */
@@ -102,6 +106,20 @@ window.ShahedinAuth = (function () {
     return (str == null ? "" : String(str)).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
   }
 
+  const GOOGLE_ICON = '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+
+  // Whether Google sign-in is switched on in Supabase (Authentication -> Providers). Asked once per page.
+  let _google = null;
+  function googleEnabled() {
+    if (!_google) {
+      _google = fetch(window.SUPABASE_URL + "/auth/v1/settings", { headers: { apikey: window.SUPABASE_ANON_KEY } })
+        .then((r) => r.json())
+        .then((d) => !!(d && d.external && d.external.google))
+        .catch(() => false);
+    }
+    return _google;
+  }
+
   /* ---------- Shared login/signup form (used inline or inside a modal) ---------- */
   function renderAuthForm(container, opts) {
     opts = opts || {};
@@ -118,6 +136,10 @@ window.ShahedinAuth = (function () {
     function paintPhoneStep() {
       container.innerHTML = `
         <div class="auth-error" hidden></div>
+        <div class="auth-google" hidden>
+          <button type="button" class="btn btn-ghost btn-block auth-google-btn" data-google>${GOOGLE_ICON}<span>Google (Gmail) দিয়ে চালিয়ে যান</span></button>
+          <div class="auth-or"><span>অথবা ফোন নম্বর দিয়ে</span></div>
+        </div>
         <form class="auth-form">
           <div class="field"><label>নাম</label><input type="text" name="name" required autocomplete="name" value="${escapeHtml(name)}"></div>
           <div class="field">
@@ -132,6 +154,22 @@ window.ShahedinAuth = (function () {
 
       const form = container.querySelector(".auth-form");
       const errEl = container.querySelector(".auth-error");
+
+      // Shown only once Google is switched on in Supabase, so the button never leads to an error page.
+      googleEnabled().then((on) => {
+        const box = container.querySelector(".auth-google");
+        if (box) box.hidden = !on;
+      });
+      container.querySelector("[data-google]").addEventListener("click", async (e) => {
+        e.currentTarget.disabled = true;
+        // Comes back to this same page, signed in.
+        const { error } = await client().auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } });
+        if (error) {
+          e.currentTarget.disabled = false;
+          errEl.hidden = false;
+          errEl.textContent = translateAuthError(error.message);
+        }
+      });
 
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -304,7 +342,7 @@ window.ShahedinAuth = (function () {
       <div class="modal auth-modal">
         <button type="button" class="modal-close auth-modal-close" aria-label="Close">&times;</button>
         <div class="auth-modal-brand"><span class="dot"></span>Shahedin</div>
-        <p class="auth-otp-sub" style="text-align:center;">লগ ইন করতে বা নতুন অ্যাকাউন্ট খুলতে আপনার নাম ও ফোন নম্বর দিন।</p>
+        <p class="auth-otp-sub" style="text-align:center;">লগ ইন করুন অথবা নতুন অ্যাকাউন্ট খুলুন — একই ধাপে দুটোই হয়।</p>
         <div class="auth-modal-body"></div>
       </div>`;
     document.body.appendChild(backdrop);
@@ -332,6 +370,25 @@ window.ShahedinAuth = (function () {
       });
     });
   }
+
+  /* The "লগইন / সাইন আপ" buttons in the menu: shown only to someone signed
+     out (they start hidden, so a signed-in visitor never sees them flash). */
+  function wireLoginButtons() {
+    const btns = document.querySelectorAll("[data-auth-open]");
+    if (!btns.length || !configured()) return;
+    const paint = (user) => btns.forEach((b) => { b.hidden = !!user; });
+    getUser().then(paint);
+    onChange(paint);
+    btns.forEach((b) => b.addEventListener("click", () => {
+      const menu = document.querySelector(".mobile-menu.open .mobile-menu-close");
+      if (menu) menu.click();
+      requireAuth().then((user) => {
+        if (user && window.showToast) window.showToast("লগইন হয়েছে।");
+      });
+    }));
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wireLoginButtons);
+  else wireLoginButtons();
 
   return { configured, client, getUser, onChange, signOut, updateProfile, displayName, formatPhone, renderAuthForm, openModal, requireAuth };
 })();

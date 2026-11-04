@@ -373,6 +373,14 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   transition:background var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-spring), box-shadow var(--dur-2);
 }
 .nav-cta:hover{background:var(--accent-hover); transform:translateY(-2px); box-shadow:var(--shadow-accent);}
+/* Login / sign up (auth.js shows it only to someone signed out). */
+.nav-login{
+  border:1px solid var(--line-strong); color:var(--text-1); background:transparent;
+  padding:9px 18px; border-radius:var(--radius-pill); font-size:var(--step--1); font-weight:600; white-space:nowrap;
+  transition:border-color var(--dur-2) var(--ease-out), background var(--dur-2) var(--ease-out);
+}
+.nav-login:hover{border-color:var(--text-2); background:var(--surface-2);}
+[data-auth-open][hidden]{display:none !important;}
 .nav-burger{
   display:none; inline-size:42px; block-size:42px; border-radius:50%;
   border:1px solid var(--line-strong); color:var(--text-1);
@@ -760,6 +768,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
   color:var(--text-2); font-family:var(--font-mixed); font-weight:600; white-space:nowrap;
 }
 .phone-input-group input{border-radius:0 var(--radius-s) var(--radius-s) 0 !important;}
+.auth-google-btn{display:flex; align-items:center; justify-content:center; gap:10px;}
+.auth-or{display:flex; align-items:center; gap:var(--space-3); margin:var(--space-4) 0; color:var(--text-3); font-size:var(--step--1);}
+.auth-or::before,.auth-or::after{content:""; flex:1; border-top:1px solid var(--line-strong);}
 .auth-otp-sub{font-size:var(--step--1); color:var(--text-2); margin:-4px 0 var(--space-5);}
 .auth-otp-actions{display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-block-start:var(--space-4); flex-wrap:wrap;}
 .auth-link-btn{color:var(--accent-ink); font-size:var(--step--2); font-weight:600;}
@@ -1168,6 +1179,29 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .buy-discount{align-self:center;}
 .buy-closed-note{margin-block-start:var(--space-3); color:var(--accent-ink); font-weight:600; font-size:var(--step--1);}
 .course-buy-card.is-enrolled .buy-closed-note{display:none;}
+.buy-abroad-note{margin:var(--space-4) 0 0; padding:var(--space-3) var(--space-4); background:var(--surface-3); border:1px solid var(--line); border-radius:var(--radius-s); font-size:var(--step--1); color:var(--text-2); line-height:1.6;}
+.buy-abroad-note a{color:var(--accent-ink); font-weight:600; font-family:var(--font-mixed); white-space:nowrap;}
+.course-buy-card.is-enrolled .buy-abroad-note{display:none;}
+
+/* Home: a course with an enrolment deadline, and the countdown to it (render.js). */
+.deadline-card{
+  display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:var(--space-6); align-items:center;
+  background:var(--surface-2); border:1px solid var(--line-accent); border-radius:var(--radius-l);
+  padding:var(--space-5);
+}
+.deadline-card .thumb{border-radius:var(--radius-m); overflow:hidden; aspect-ratio:16/9;}
+.deadline-body h2{font-size:var(--step-3); margin:0 0 var(--space-2);}
+.deadline-body h2 a{color:inherit; text-decoration:none;}
+.deadline-body .eyebrow{margin-bottom:var(--space-3);}
+.deadline-when{color:var(--text-muted); margin:0 0 var(--space-4);}
+.countdown{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--space-2); max-inline-size:26rem; margin-bottom:var(--space-5);}
+.countdown div{background:var(--surface-3); border:1px solid var(--line); border-radius:var(--radius-m); padding:var(--space-3) var(--space-2); text-align:center;}
+.countdown b{display:block; font-family:var(--font-mixed); font-size:var(--step-3); line-height:1.1; color:var(--text); font-variant-numeric:tabular-nums;}
+.countdown span{font-size:var(--step--1); color:var(--text-muted);}
+.deadline-foot{display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap;}
+@media (max-width:760px){
+  .deadline-card{grid-template-columns:minmax(0,1fr); padding:var(--space-4); gap:var(--space-4);}
+}
 .course-buy-card .small-note{margin-block-start:6px;}
 .course-buy-card .btn{margin-block-start:var(--space-5);}
 /* In the hero the card follows the description instead of filling a column of
@@ -2365,6 +2399,7 @@ html.vp-open,html.vp-open body{overflow:hidden;}
   .nav-burger{display:inline-flex;}
   .nav-right .nav-cta{display:none;}
   .nav-right a.icon-btn{display:none;}
+  .nav-login{padding:8px 14px;}
   .hero{padding-block:calc(var(--nav-h) + 40px) var(--space-9);}
   .hero-title{max-inline-size:none;}
   .hero-ctas{gap:var(--space-2); margin-block-end:var(--space-7);}

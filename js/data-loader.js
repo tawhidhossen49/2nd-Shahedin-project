@@ -36,7 +36,10 @@
       free: row.is_free,
       // Closed to new students (Admin -> Courses). Only an explicit false: a
       // database without the column keeps every course open.
-      enrollmentOpen: row.enrollment_open !== false,
+      // A passed enrolment deadline closes it the same way.
+      enrollmentOpen: row.enrollment_open !== false && !(Date.parse(row.enrollment_deadline) <= Date.now()),
+      // Optional. Until it passes, the home page features the course with a countdown.
+      deadline: row.enrollment_deadline || null,
       duration: row.duration_bn || row.duration_en || "",
       rating: Number(row.rating) || 4.8,
       students: row.students_count || 0,

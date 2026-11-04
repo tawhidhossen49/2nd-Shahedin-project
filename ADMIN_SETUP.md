@@ -267,6 +267,26 @@ Progress tracking: content blocks a student is enrolled in get a "mark as
 complete" checkbox (quizzes mark themselves complete automatically when
 checked), which drives their progress bar and certificate eligibility.
 
+### Google (Gmail) login
+
+The login popup has a "Google (Gmail) দিয়ে চালিয়ে যান" button. It appears
+only once Google is switched on in Supabase, so nothing breaks before then.
+To switch it on (about 10 minutes, once):
+
+1. **Google Cloud** (console.cloud.google.com) → APIs & Services →
+   **OAuth consent screen**: app name "Shahedin", External, your email. Publish it.
+2. **Credentials** → Create credentials → **OAuth client ID** → Web application.
+   Under **Authorised redirect URIs** add
+   `https://vkpokhjltfaclyeurxux.supabase.co/auth/v1/callback`. Copy the
+   Client ID and Client secret.
+3. **Supabase** → Authentication → **Sign In / Providers** → Google → turn it
+   on, paste the two values, save.
+4. **Supabase** → Authentication → **URL Configuration** → Redirect URLs: add
+   `https://www.shahedin.com/**`, `https://shahedin.com/**` and
+   `https://2nd-shahedin-project.vercel.app/**`.
+
+A Google account has no phone number; checkout asks for one anyway.
+
 ## Team members and what each can do
 
 Admin panel → **Team & access**. Only a main admin sees this page.
@@ -387,6 +407,15 @@ Everyone who already bought it keeps full access. Nobody new can buy or enrol:
 the course page shows "ভর্তি বন্ধ", the course card carries the same badge, and
 checkout and the server both refuse. Press it again to reopen. A student given
 access by hand from the Students page still gets in.
+
+## Enrolment deadline and the home-page countdown
+
+Courses → edit the course → section 7 → **Enrolment deadline** (Bangladesh
+time). Until then the home page shows the course near the top with a live
+countdown (days, hours, minutes, seconds). If more than one course has a
+deadline, the one ending soonest is shown. When the time passes, the countdown
+disappears and the course closes to new students exactly as above. To reopen,
+clear the date or set a later one. Needs `schema.sql` section 38.
 
 ## Course price and discount
 

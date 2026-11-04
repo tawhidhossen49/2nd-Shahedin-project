@@ -461,6 +461,31 @@ window.Admin = (function () {
      Storage > Settings > "Upload file size limit" in the dashboard. */
   const MAX_UPLOAD_BYTES = 50 * 1024 * 1024;
 
+  /* A photo straight from a phone or design app is often 2-3 MB, and every
+     visitor downloads it again. Re-drawn at no more than 1600px on its long
+     side as WebP (transparency kept), it looks the same and is about a tenth
+     of the size. Anything that is not a PNG/JPEG/WebP photo, or that would not
+     get smaller, is uploaded exactly as it was. */
+  const SHRINK_MAX_PX = 1600;
+  async function shrinkImage(file) {
+    if (!file || !/^image\/(png|jpeg|webp)$/i.test(file.type)) return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const scale = Math.min(1, SHRINK_MAX_PX / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close && bitmap.close();
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.82));
+      // Older Safari cannot write WebP and hands back a PNG instead: keep the original then.
+      if (!blob || blob.type !== "image/webp" || blob.size >= file.size) return file;
+      return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+    } catch (e) {
+      return file; // an image the browser cannot read still uploads as it was
+    }
+  }
+
   async function uploadFile(file, folder) {
     if (file && file.size > MAX_UPLOAD_BYTES) {
       const mb = Math.ceil(file.size / (1024 * 1024));
@@ -471,12 +496,16 @@ window.Admin = (function () {
         `storage, and it streams far better on a phone.`
       );
     }
+    file = await shrinkImage(file);
     const c = client();
     const ext = (file.name.split(".").pop() || "bin").toLowerCase().replace(/[^a-z0-9]/g, "");
     const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    /* Every upload gets a new name, so a file never changes once stored and
+       browsers may keep it for a year instead of downloading it on every
+       visit. Supabase's free plan allows 5 GB of downloads a month. */
     const { error } = await c.storage
       .from("media")
-      .upload(path, file, { upsert: false, contentType: file.type || undefined });
+      .upload(path, file, { upsert: false, contentType: file.type || undefined, cacheControl: "31536000" });
     if (error) throw error;
     const { data } = c.storage.from("media").getPublicUrl(path);
     return data.publicUrl;

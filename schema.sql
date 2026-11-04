@@ -2976,8 +2976,12 @@ create policy "admins can write site settings" on site_settings for all to authe
   );
 
 -- =========================================================================
--- 38. CLOSING A COURSE TO NEW STUDENTS
+-- 38. CLOSING A COURSE TO NEW STUDENTS, AND AN ENROLMENT DEADLINE
 --     Safe to re-run.
+--
+--     enrollment_deadline: optional date and time. Until then the home page
+--     features the course with a countdown; once it passes, the course is
+--     closed exactly as if enrollment_open had been switched off.
 --
 --     enrollment_open = false: everyone already enrolled keeps full access
 --     (nothing below touches their enrolment or courses_safe's check for it),
@@ -2991,6 +2995,7 @@ create policy "admins can write site settings" on site_settings for all to authe
 -- =========================================================================
 
 alter table courses add column if not exists enrollment_open boolean not null default true;
+alter table courses add column if not exists enrollment_deadline timestamptz;
 
 create or replace function course_is_free(p_course_id uuid)
 returns boolean
@@ -3000,7 +3005,9 @@ stable
 set search_path = public, pg_temp
 as $$
   select coalesce(
-    (select (c.is_free or c.price_bdt <= 0) and c.enrollment_open from courses c where c.id = p_course_id),
+    (select (c.is_free or c.price_bdt <= 0) and c.enrollment_open
+              and (c.enrollment_deadline is null or c.enrollment_deadline > now())
+       from courses c where c.id = p_course_id),
     false);
 $$;
 
@@ -3008,7 +3015,7 @@ drop view if exists courses_safe;
 create view courses_safe as
 select
   c.id, c.slug, c.title_bn, c.title_en, c.description_bn, c.description_en,
-  c.duration_bn, c.duration_en, c.price_bdt, c.old_price_bdt, c.is_free, c.enrollment_open, c.thumbnail_url,
+  c.duration_bn, c.duration_en, c.price_bdt, c.old_price_bdt, c.is_free, c.enrollment_open, c.enrollment_deadline, c.thumbnail_url,
   c.external_url, c.purchase_url, c.reviews_enabled, c.show_students_count,
   c.learn_title, c.learn_points, c.preview_video_url,
   c.is_published, c.sort_order, c.created_at, c.updated_at,

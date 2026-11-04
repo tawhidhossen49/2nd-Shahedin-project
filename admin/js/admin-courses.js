@@ -19,6 +19,12 @@
     pdf: "PDF",
   };
 
+  // A stored timestamp as the "YYYY-MM-DDTHH:MM" a datetime-local box shows, in this computer's time.
+  const toLocalInput = (iso) => {
+    const d = new Date(iso);
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  };
+
   /* Everything the admin can show or hide on a public course page, in one
      place. Adding another switch here puts it in the table AND the edit modal
      with no further wiring -- the previous version hardcoded "reviews"
@@ -364,6 +370,11 @@
             <h3 class="form-section-title"><span class="step-num">7</span> Publish and display</h3>
             <label class="form-check publish-check"><input type="checkbox" id="f_published" ${course === null || course?.is_published ? "checked" : ""}>
               <span><b>Published</b><span class="hint">Ticked: visitors can see and buy this course. Unticked: it is saved as a draft that only admins can see.</span></span></label>
+
+            <div class="form-field full" style="margin-top:18px;">
+              <label for="f_deadline">Enrolment deadline <span class="hint">optional, Bangladesh time. Until then the home page shows this course with a countdown. When it passes, nobody new can buy or enrol, the same as unticking "Open for new students". Leave empty for no deadline</span></label>
+              <input type="datetime-local" id="f_deadline" value="${course?.enrollment_deadline ? toLocalInput(course.enrollment_deadline) : ""}" style="max-width:280px;">
+            </div>
 
             <div class="form-field full" style="margin-top:18px;">
               <label>Show on the course page <span class="hint">each of these can also be flipped straight from the courses table, without opening this form</span></label>
@@ -818,6 +829,8 @@
         // Display only: the checkout charges price_bdt and nothing else.
         old_price_bdt: document.getElementById("f_old_price").value === "" ? null : parseInt(document.getElementById("f_old_price").value, 10),
         is_free: document.getElementById("f_free").checked,
+        // datetime-local has no timezone; the browser reads it as local (Bangladesh) time.
+        enrollment_deadline: document.getElementById("f_deadline").value ? new Date(document.getElementById("f_deadline").value).toISOString() : null,
         // Every switch from PAGE_FLAGS, so adding one there is enough.
         ...Object.fromEntries(PAGE_FLAGS.map((flag) => [flag.column, document.getElementById(flag.fieldId).checked])),
         rating: parseFloat(document.getElementById("f_rating").value || "4.8"),
@@ -849,7 +862,7 @@
          for one column. Save everything else rather than lose the form, and
          say what is missing -- but only when that column is the problem. */
       let priceColumnMissing = false;
-      for (const column of ["enrollment_open", "old_price_bdt"]) {
+      for (const column of ["enrollment_deadline", "enrollment_open", "old_price_bdt"]) {
         if (res.error && (res.error.code === "42703" || res.error.code === "PGRST204") && (res.error.message || "").includes(column)) {
           delete payload[column];
           res = await write(payload);

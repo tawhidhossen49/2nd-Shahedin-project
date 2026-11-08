@@ -1,0 +1,20 @@
+Options -Indexes
+RewriteEngine On
+
+# https only: logins and payments must never travel unencrypted.
+# /.well-known stays reachable over http so the certificate can be renewed.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
+</IfModule>
+
+# The login token travels in the Authorization header; LiteSpeed drops it unless told otherwise.
+CGIPassAuth On
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Uploaded files under /media are served as they are; everything else goes to the API.
+RewriteCond %{REQUEST_URI} !^/media/
+RewriteCond %{REQUEST_URI} !^/\.well-known/
+RewriteRule ^ index.php [QSA,L]

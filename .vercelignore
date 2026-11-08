@@ -1,0 +1,7 @@
+# Not part of the website. Without this, Vercel serves every file in the repo,
+# so the database schema, the server code and the setup notes could be
+# downloaded by anyone who guessed the address.
+server/
+supabase/
+schema.sql
+*.md

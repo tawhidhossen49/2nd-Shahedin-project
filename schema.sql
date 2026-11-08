@@ -3045,6 +3045,36 @@ where c.is_published = true or auth.uid() in (select id from admins);
 grant select on courses_safe to anon, authenticated;
 
 
+-- =========================================================================
+-- 39. AN ENROLMENT STAYS WITH ITS COURSE AND ITS STUDENT
+--     Safe to re-run.
+--
+--     The "update own enrolment" policy lets a student save their progress,
+--     but nothing stopped them changing course_id as well: a free enrolment
+--     could be pointed at a paid course. This refuses any change to course_id
+--     or user_id unless an admin makes it. Saving progress, and enrolling again
+--     in a course you are already in (same values), work exactly as before.
+-- =========================================================================
+
+create or replace function enrollments_lock_keys()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if (new.user_id is distinct from old.user_id or new.course_id is distinct from old.course_id)
+     and not exists (select 1 from admins where id = auth.uid()) then
+    raise exception 'An enrolment cannot be moved to another course or student.' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists enrollments_lock_keys on enrollments;
+create trigger enrollments_lock_keys before update on enrollments
+  for each row execute function enrollments_lock_keys();
+
+
 -- What you should see when the whole file has run: one row per admin, at
 -- least one of them "main", and every existing admin with 13 pages.
 select email, full_name, role, coalesce(array_length(permissions, 1), 0) as pages

@@ -18,3 +18,5 @@
 *.woff2 binary
 *.ttf   binary
 *.zip   binary
+# Server scripts run on Linux: keep Unix line endings.
+*.sh text eol=lf

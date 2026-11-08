@@ -1,0 +1,14 @@
+# Uploaded files only. Nothing in this folder may ever run as code.
+Options -Indexes -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .shtml
+RemoveType .php .php3 .php4 .php5 .php7 .php8 .phtml .phar
+<FilesMatch "(?i)(^\.|\.(php\d?|phtml|phar|pl|py|cgi|sh|shtml|html?|xhtml|svg|js|htaccess)$)">
+  Require all denied
+</FilesMatch>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  # Every upload gets a new name and never changes, so browsers may keep it for a year.
+  Header set Cache-Control "public, max-age=31536000, immutable"
+  Header set Access-Control-Allow-Origin "*"
+</IfModule>

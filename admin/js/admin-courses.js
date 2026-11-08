@@ -327,7 +327,7 @@
               <input type="file" id="f_preview_file" accept="video/*" style="margin-top:8px;">
               <p class="hint" style="margin-top:8px;">
                 <strong>A YouTube link has no size limit and is the better choice for anything long.</strong>
-                Uploaded files go to your own Supabase storage, which caps a single file at 50 MB on the free plan —
+                Uploaded files go to the website's own server, which takes a single file of up to 50 MB —
                 roughly a couple of minutes of phone video. Over that, the upload is refused. To remove the video,
                 clear the box above and save.
               </p>

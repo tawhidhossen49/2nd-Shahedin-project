@@ -40,9 +40,9 @@ if ($method === 'POST' && $path === '/storage/upload') {
     require __DIR__ . '/storage.php';
     storage_upload();
 }
-if (preg_match('#^/functions/([a-z-]+)$#', $path, $m)) {
+if (preg_match('#^/functions/([a-z-]+)(?:/(\d{1,2}))?$#', $path, $m)) {
     require __DIR__ . '/functions.php';
-    functions_handle($m[1]);
+    functions_handle($m[1], $m[2] ?? null);
 }
 
 switch ("$method $path") {

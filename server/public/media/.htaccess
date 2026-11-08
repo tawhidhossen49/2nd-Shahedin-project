@@ -1,5 +1,7 @@
 # Uploaded files only. Nothing in this folder may ever run as code.
 Options -Indexes -ExecCGI
+# PHP is off for this whole folder, even if a file here were ever renamed or reconfigured to run as PHP.
+php_flag engine off
 RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .phar .pl .py .cgi .shtml
 RemoveType .php .php3 .php4 .php5 .php7 .php8 .phtml .phar
 <FilesMatch "(?i)(^\.|\.(php\d?|phtml|phar|pl|py|cgi|sh|shtml|html?|xhtml|svg|js|htaccess)$)">

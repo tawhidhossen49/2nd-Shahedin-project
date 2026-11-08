@@ -114,6 +114,14 @@ try {
     ok(order_row($orderId)['status'] === 'cancelled', 'a later callback cannot change a finished order');
     $r = api('GET', '/functions/bkash-callback?paymentID=TR-NO-SUCH&status=success');
     ok(str_contains(location($r), 'status=unknown'), 'unknown payment: sent to the status page as unknown');
+    $r = api('GET', '/functions/bkash-callback/0?paymentID=TR-NO-SUCH&status=success');
+    ok(str_starts_with(location($r), 'https://www.shahedin.com/payment-status?'), 'a buyer from www.shahedin.com is sent back there', location($r));
+    $r = api('GET', '/functions/bkash-callback/2?paymentID=TR-NO-SUCH&status=success');
+    ok(str_starts_with(location($r), 'https://2nd-shahedin-project.vercel.app/payment-status?'), 'a buyer from the test site is sent back to the test site', location($r));
+    $r = api('GET', '/functions/bkash-callback/9?paymentID=TR-NO-SUCH&status=success');
+    ok(str_starts_with(location($r), 'https://2nd-shahedin-project.vercel.app/payment-status?'), 'an unknown site number falls back to the default, never anywhere else', location($r));
+    $cb = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(request_body, '$.callbackURL')) FROM bkash_api_log WHERE api = 'create-payment' ORDER BY id DESC LIMIT 1")->fetchColumn();
+    ok($cb === 'https://api.shahedin.com/functions/bkash-callback/0', 'bKash was told to return the buyer to the site they came from', $cb);
 
     echo "Refunds\n";
     $r = pay(['action' => 'refund', 'orderId' => $orderId, 'amount' => 1], $tBuyer);

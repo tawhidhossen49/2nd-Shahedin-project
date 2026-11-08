@@ -35,9 +35,9 @@ function fn_fail(string $message, int $status = 400, array $extra = []): never
     send_json(['error' => $message] + $extra, $status);
 }
 
-function functions_handle(string $name): never
+function functions_handle(string $name, ?string $site = null): never
 {
-    if ($name === 'bkash-callback') bkash_callback();
+    if ($name === 'bkash-callback') bkash_callback($site === null ? null : (int)$site);
     if (!in_array($name, ['bkash-payment', 'admin-users', 'meta-ads'], true)) fn_fail('Function not found.', 404);
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') fn_fail('Method not allowed.', 405);
     try {
@@ -181,7 +181,11 @@ function pay_create(string $userId, stdClass $b): never
     try {
         $cfg = bkash_config();
         // No query string: bKash appends "?paymentID=...", and the order is found by that id.
-        $pay = bkash_create($cfg, $total, $invoice, config('api_url') . '/functions/bkash-callback', payer_reference($field('phone'), $invoice));
+        // bKash sends the buyer back to the site they paid on (www.shahedin.com or the test site):
+        // its place in allowed_origins rides in the callback path, as a query string would break.
+        $site = array_search($_SERVER['HTTP_ORIGIN'] ?? '', config('allowed_origins'), true);
+        $callback = config('api_url') . '/functions/bkash-callback' . ($site === false ? '' : "/$site");
+        $pay = bkash_create($cfg, $total, $invoice, $callback, payer_reference($field('phone'), $invoice));
         q('UPDATE orders SET bkash_payment_id = ?, bkash_signature = ?, bkash_env = ? WHERE id = ?', [$pay['paymentId'], $pay['signature'] ?: null, $cfg['env'], $orderId]);
         send_json(['bkashURL' => $pay['bkashURL'], 'orderId' => $orderId]);
     } catch (BkashError | RuntimeException $e) {
@@ -289,9 +293,12 @@ function pay_refund(Ctx $ctx, stdClass $b): never
 
 function landing(?string $orderId, string $outcome): never
 {
+    global $LANDING_SITE;
     $p = ['status' => $outcome];
     if ($orderId) $p['order'] = $orderId;
-    header('Location: ' . rtrim((string)config('site_url'), '/') . '/payment-status?' . http_build_query($p), true, 302);
+    // Only ever one of the allowed sites; site_url when the payment did not say which.
+    $base = config('allowed_origins')[$LANDING_SITE ?? -1] ?? config('site_url');
+    header('Location: ' . rtrim((string)$base, '/') . '/payment-status?' . http_build_query($p), true, 302);
     exit;
 }
 
@@ -300,8 +307,9 @@ function landing(?string $orderId, string $outcome): never
  * "success" only means the PIN was right; Execute is what takes the money, and its
  * answer, not anything in the address, settles the order.
  */
-function bkash_callback(): never
+function bkash_callback(?int $site = null): never
 {
+    $GLOBALS['LANDING_SITE'] = $site;
     try {
         $pid = (string)($_GET['paymentID'] ?? $_GET['paymentId'] ?? '');
         $status = strtolower((string)($_GET['status'] ?? ''));

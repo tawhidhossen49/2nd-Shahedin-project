@@ -109,7 +109,7 @@ try {
     ok(str_contains(location($r), 'status=unknown') && order_row($orderId)['status'] === 'pending', 'callback with a wrong signature changes nothing');
     $sig = rawurlencode($o['bkash_signature']);
     $r = api('GET', "/functions/bkash-callback?paymentID=$pid&status=cancel&signature=$sig");
-    ok(str_starts_with(location($r), 'https://2nd-shahedin-project.vercel.app/payment-status?status=cancelled&order=') && order_row($orderId)['status'] === 'cancelled', 'cancel from bKash: order cancelled, customer sent to the status page', location($r));
+    ok(str_starts_with(location($r), rtrim((string)(require getenv('HOME') . '/shahedin-private/config.php')['site_url'], '/') . '/payment-status?status=cancelled&order=') && order_row($orderId)['status'] === 'cancelled', 'cancel from bKash: order cancelled, customer sent to the status page', location($r));
     $r = api('GET', "/functions/bkash-callback?paymentID=$pid&status=failure&signature=$sig");
     ok(order_row($orderId)['status'] === 'cancelled', 'a later callback cannot change a finished order');
     $r = api('GET', '/functions/bkash-callback?paymentID=TR-NO-SUCH&status=success');
@@ -119,7 +119,7 @@ try {
     $r = api('GET', '/functions/bkash-callback/2?paymentID=TR-NO-SUCH&status=success');
     ok(str_starts_with(location($r), 'https://2nd-shahedin-project.vercel.app/payment-status?'), 'a buyer from the test site is sent back to the test site', location($r));
     $r = api('GET', '/functions/bkash-callback/9?paymentID=TR-NO-SUCH&status=success');
-    ok(str_starts_with(location($r), 'https://2nd-shahedin-project.vercel.app/payment-status?'), 'an unknown site number falls back to the default, never anywhere else', location($r));
+    ok(str_starts_with(location($r), rtrim((string)(require getenv('HOME') . '/shahedin-private/config.php')['site_url'], '/') . '/payment-status?'), 'an unknown site number falls back to the default, never anywhere else', location($r));
     $cb = $db->query("SELECT JSON_UNQUOTE(JSON_EXTRACT(request_body, '$.callbackURL')) FROM bkash_api_log WHERE api = 'create-payment' ORDER BY id DESC LIMIT 1")->fetchColumn();
     ok($cb === 'https://api.shahedin.com/functions/bkash-callback/0', 'bKash was told to return the buyer to the site they came from', $cb);
 

@@ -200,15 +200,19 @@
       return { data: { user: null, session: null }, error: r.error };
     },
 
-    async verifyOtp({ phone, token }) {
-      const { status, json } = await call("POST", "/auth/verify", { phone, token });
+    // options.meta: Facebook's ids for the server's CompleteRegistration (js/meta-pixel.js).
+    async verifyOtp({ phone, token, options }) {
+      const { status, json } = await call("POST", "/auth/verify", { phone, token, meta: (options && options.meta) || undefined });
       return authResult(status, json);
     },
 
     async signInWithOAuth({ provider, options }) {
       if (provider !== "google") return { data: null, error: apiError({ message: "Unsupported provider", code: "provider_disabled" }, 400) };
       const back = (options && options.redirectTo) || location.href;
-      const url = apiUrl + "/auth/google?redirect_to=" + encodeURIComponent(back);
+      let url = apiUrl + "/auth/google?redirect_to=" + encodeURIComponent(back);
+      const meta = (options && options.meta) || {};
+      if (meta.fbp) url += "&fbp=" + encodeURIComponent(meta.fbp);
+      if (meta.fbc) url += "&fbc=" + encodeURIComponent(meta.fbc);
       location.assign(url);
       return { data: { provider, url }, error: null };
     },
@@ -241,7 +245,8 @@
     }
     const token = p.get("access_token");
     if (!/^[A-Za-z0-9_-]{40,}$/.test(token || "")) return;
-    session = { access_token: token, token_type: "bearer", expires_at: Number(p.get("expires_at")) || null, user: null };
+    session = { access_token: token, token_type: "bearer", expires_at: Number(p.get("expires_at")) || null, user: null, via: "google" };
+    if (p.get("new_user") === "1") session.is_new_user = true;   // a sign-up, not a login (auth.js asks one question)
     const { status, json } = await call("GET", "/auth/user");
     if (status === 200) saveSession(Object.assign(session, { user: json }), "SIGNED_IN");
     else saveSession(null, "SIGNED_OUT");
@@ -315,6 +320,7 @@
           method: "POST",
           headers,
           body: JSON.stringify((opts && opts.body) || {}),
+          keepalive: !!(opts && opts.keepalive),   // survives the page changing (tracking on a buy click)
         });
       } catch (e) {
         return { data: null, error: { name: "FunctionsFetchError", message: "Failed to send a request to the Edge Function", context: e } };

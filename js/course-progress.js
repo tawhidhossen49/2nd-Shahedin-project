@@ -92,6 +92,11 @@
        requireAuth() above runs first, so the order always has an account to
        attach to. */
     if (!course.free) {
+      // Facebook ads: the buy click (browser + server, same event id).
+      if (window.ShahedinPixel) {
+        await window.ShahedinPixel.initiateCheckout({ kind: "course", slug: course.slug, dbId: course.dbId, title: course.title, price: course.price, qty: 1 });
+      }
+      restore(); // so the Back button never returns to a button stuck on "অপেক্ষা করুন"
       window.location.href = `/checkout?course=${encodeURIComponent(course.slug)}`;
       return;
     }

@@ -94,7 +94,14 @@
       setFormMessage(form, SUCCESS_MSG, false);
       notify(form.dataset.successMessage || SUCCESS_MSG);
       // Facebook ads: a contact enquiry. Nothing is sent unless the Pixel is on.
-      if (window.ShahedinPixel) window.ShahedinPixel.track("Lead", {});
+      if (window.ShahedinPixel) {
+        window.ShahedinPixel.track("Lead", {
+          content_name: "যোগাযোগ ফর্ম",
+          content_category: payload.inquiry_type || "contact",
+          value: 0,
+          currency: "BDT",
+        });
+      }
 
       form.reset();
       clearCalendarSelection();

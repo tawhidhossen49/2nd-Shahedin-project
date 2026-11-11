@@ -305,6 +305,8 @@
           slug: item.slug,
           qty: item.qty,
           coupon_code: coupon ? coupon.code : null,
+          // Facebook's ids, kept on the order for the server's Purchase report.
+          meta: window.ShahedinPixel ? window.ShahedinPixel.ids() : null,
           buyer: {
             name: field("name"),
             phone: field("phone"),
@@ -349,13 +351,15 @@
   document.addEventListener("sitedata-ready", () => {
     item = findItem(window.SITE_DATA || {});
     renderSummary();
-    // Facebook ads: someone opened checkout with something in it. Does
-    // nothing unless the Pixel is switched on (js/meta-pixel.js).
+    // Facebook ads: the payment page was opened with something in it
+    // (InitiateCheckout already went with the "কিনুন" click). Does nothing
+    // unless the Pixel is switched on (js/meta-pixel.js).
     if (item && !item.closed && window.ShahedinPixel) {
-      window.ShahedinPixel.track("InitiateCheckout", {
+      window.ShahedinPixel.track("AddPaymentInfo", {
         content_ids: [String(item.dbId || item.slug)],
         content_type: "product",
         content_name: item.title,
+        content_category: item.kind,
         num_items: item.qty || 1,
         value: (Number(item.price) || 0) * (item.qty || 1),
         currency: "BDT",

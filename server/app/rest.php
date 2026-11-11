@@ -31,7 +31,7 @@ function column_types(): array
 {
     static $types = null;
     if ($types !== null) return $types;
-    $cacheKey = 'shahedin_types_v1';
+    $cacheKey = 'shahedin_types_v2';
     if (function_exists('apcu_fetch')) {
         $cached = apcu_fetch($cacheKey, $ok);
         if ($ok) return $types = $cached;

@@ -81,9 +81,11 @@ CREATE TABLE IF NOT EXISTS profiles (
   institution  TEXT         NULL,
   profession   TEXT         NULL,
   bio          TEXT         NULL,
+  heard_from   VARCHAR(20)  NULL,      -- sign-up question "আমাদের কোথা থেকে জানলেন?"
   created_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   updated_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
+  CONSTRAINT profiles_heard_from_chk CHECK (heard_from IS NULL OR heard_from IN ('facebook_ad','youtube','friend','other')),
   CONSTRAINT profiles_user_fk FOREIGN KEY (id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -263,6 +265,8 @@ CREATE TABLE IF NOT EXISTS orders (
   bkash_payer_account  VARCHAR(32)  NULL,
   bkash_signature      TEXT         NULL,
   bkash_env            VARCHAR(10)  NULL,
+  meta_fbp             VARCHAR(255) NULL,   -- Facebook browser id (_fbp) at checkout, for the server Purchase
+  meta_fbc             VARCHAR(255) NULL,   -- Facebook ad-click id (_fbc) at checkout
   failure_reason       TEXT         NULL,
   paid_at              DATETIME(6)  NULL,
   created_at           DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),

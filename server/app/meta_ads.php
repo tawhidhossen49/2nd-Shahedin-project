@@ -153,21 +153,27 @@ function meta_ads(Ctx $ctx, stdClass $b): never
         if ($s['pixel_id'] === '') fn_fail('Save a Pixel ID first.', 400);
         if ($s['token'] === '') fn_fail('The server has no access token yet. Ask your developer.', 400);
         $live = ['enabled' => true] + $s;   // a test goes out even while tracking is off
-        $ip = client_ip();
-        $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
-        $pv = meta_send($live, ['event_name' => 'PageView', 'event_id' => 'test_' . uuid4(),
-            'event_source_url' => rtrim((string)config('site_url'), '/') . '/', 'external_id' => $ctx->uid(), 'ip' => $ip, 'ua' => $ua], $code);
-        $purchase = null;
-        $last = q("SELECT id FROM orders WHERE status = 'completed' AND bkash_env = 'live' AND amount_bdt > 0 ORDER BY paid_at DESC LIMIT 1")->fetchColumn();
-        if ($last && ($e = meta_purchase($last, $ip, $ua))) {
-            // The admin's identity, never the buyer's: a test has no business sending a customer's details.
-            $purchase = meta_send($live, ['event_id' => 'test_' . uuid4(), 'email' => null, 'phone' => null, 'external_id' => $ctx->uid()] + $e, $code);
+
+        // Every server event, built exactly as the real ones are, but always with the
+        // ADMIN's own details: a test has no business sending a customer's.
+        $me = meta_account($ctx->uid()) + ['fbp' => $b->fbp ?? null, 'fbc' => $b->fbc ?? null] + meta_request_user();
+        $site = rtrim((string)config('site_url'), '/');
+        $events = [['event_name' => 'PageView', 'event_id' => 'test_' . uuid4(), 'event_source_url' => "$site/", 'user' => $me]];
+        $course = q('SELECT id, title_bn, title_en, price_bdt, is_free FROM courses WHERE is_published = 1 ORDER BY sort_order LIMIT 1')->fetch();
+        if ($course) {
+            $item = ['id' => $course['id'], 'kind' => 'course', 'title' => $course['title_bn'] ?: $course['title_en'], 'price' => $course['is_free'] ? 0 : (int)$course['price_bdt']];
+            $events[] = ['event_id' => 'test_' . uuid4()] + meta_initiate_checkout('x', $item, 1, $me, "$site/");
         }
-        $err = fn($r) => $r['body']['error']['message'] ?? null;
-        send_json([
-            'pageView' => ['ok' => $pv['ok'], 'error' => $err($pv) ?? ($pv['skipped'] ?? null)],
-            'purchase' => $purchase ? ['ok' => $purchase['ok'], 'error' => $err($purchase)] : null,
-        ]);
+        $events[] = ['event_id' => 'test_' . uuid4(), 'user' => $me] + meta_registration($ctx->uid(), [], "$site/");
+        $last = q("SELECT id FROM orders WHERE status = 'completed' AND bkash_env = 'live' AND amount_bdt > 0 ORDER BY paid_at DESC LIMIT 1")->fetchColumn();
+        if ($last && ($e = meta_purchase($last, []))) $events[] = ['event_id' => 'test_' . uuid4(), 'user' => $me] + $e;
+
+        $out = [];
+        foreach ($events as $e) {
+            $r = meta_send($live, $e, $code);
+            $out[] = ['name' => $e['event_name'], 'ok' => $r['ok'], 'error' => $r['body']['error']['message'] ?? ($r['skipped'] ?? null)];
+        }
+        send_json(['events' => $out]);
     }
     fn_fail('Unknown action.', 400);
 }

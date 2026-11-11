@@ -436,10 +436,12 @@
         try { message = (await error.context.json()).error; } catch (e) { message = ""; }
         throw new Error(message || "সার্ভারে পৌঁছানো যায়নি। / Could not reach the server.");
       }
-      const parts = [];
-      parts.push(data.pageView && data.pageView.ok ? "✓ PageView পাঠানো হয়েছে" : `✕ PageView যায়নি${data.pageView && data.pageView.error ? ` — ${esc(data.pageView.error)}` : ""}`);
-      if (data.purchase) parts.push(data.purchase.ok ? "✓ Purchase পাঠানো হয়েছে" : `✕ Purchase যায়নি${data.purchase.error ? ` — ${esc(data.purchase.error)}` : ""}`);
-      const allOk = data.pageView && data.pageView.ok && (!data.purchase || data.purchase.ok);
+      // One line per server event: PageView, InitiateCheckout, CompleteRegistration, Purchase.
+      const events = (data && data.events) || [];
+      const parts = events.map((ev) => ev.ok
+        ? `✓ ${esc(ev.name)} পাঠানো হয়েছে`
+        : `✕ ${esc(ev.name)} যায়নি${ev.error ? ` — ${esc(ev.error)}` : ""}`);
+      const allOk = events.length > 0 && events.every((ev) => ev.ok);
       box.className = "ads-test-result " + (allOk ? "ok" : "bad");
       box.innerHTML = parts.join("<br>") + (allOk ? "<br><span class=\"hint\">এখন Facebook-এর Test events পেজে দেখুন। / Now look at the Test events page in Facebook.</span>" : "");
     } catch (err) {

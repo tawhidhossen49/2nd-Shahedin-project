@@ -190,7 +190,7 @@ function policies(): array
             'select' => any_of(own('id'), admin_page('students')),
             'update' => own('id'),
             // Name and phone follow the login itself; the rest is the student's to edit.
-            'update_cols' => fn(Ctx $c) => ['email', 'city', 'address', 'institution', 'profession', 'bio'],
+            'update_cols' => fn(Ctx $c) => ['email', 'city', 'address', 'institution', 'profession', 'bio', 'heard_from'],
             'check' => fn(Ctx $c, array $r) => ($r['id'] ?? null) === $c->uid(),
         ],
 

@@ -51,6 +51,22 @@
     return Object.assign({}, p, { enrollments: myEnrollments, orders: myOrders, totalSpent });
   });
 
+  /* The sign-up question "আমাদের কোথা থেকে জানলেন?" (js/auth.js). Students
+     who joined before it existed, or skipped it, have no answer. */
+  const HEARD_LABELS = { facebook_ad: "Facebook অ্যাড", youtube: "YouTube", friend: "বন্ধু", other: "অন্যান্য" };
+  const heardLabel = (v) => HEARD_LABELS[v] || "—";
+
+  function heardSummary() {
+    const answered = students.filter((s) => HEARD_LABELS[s.heard_from]);
+    if (!answered.length) return "";
+    const counts = Object.keys(HEARD_LABELS).map((k) => {
+      const n = answered.filter((s) => s.heard_from === k).length;
+      return `<div class="stat-card"><div class="label">${HEARD_LABELS[k]}</div><div class="value">${n}</div></div>`;
+    }).join("");
+    return `<h3 style="margin:8px 0 8px;">আমাদের কোথা থেকে জানলেন? <span class="row-sub">(${answered.length} জন উত্তর দিয়েছেন)</span></h3>
+      <div class="stat-grid">${counts}</div>`;
+  }
+
   function formatPhone(e164) {
     if (!e164) return "—";
     return e164.startsWith("+880") ? "0" + e164.slice(4) : e164;
@@ -63,6 +79,7 @@
         <div class="stat-card"><div class="label">Total enrollments</div><div class="value">${students.reduce((n, s) => n + s.enrollments.length, 0)}</div></div>
         <div class="stat-card"><div class="label">Total revenue</div><div class="value">৳${students.reduce((n, s) => n + s.totalSpent, 0).toLocaleString()}</div></div>
       </div>
+      ${heardSummary()}
 
       <div class="form-field" style="max-width:320px; margin-bottom:16px;">
         <input type="text" id="studentSearch" placeholder="Search name, phone, email, city…">
@@ -93,7 +110,7 @@
     wrap.innerHTML = !filtered.length
       ? `<div class="empty-state">${students.length ? "No students match your search." : "No students have signed up yet."}</div>`
       : `<table class="admin-table">
-          <thead><tr><th>Name</th><th>Contact</th><th>Location</th><th>Joined</th><th>Courses</th><th>Total spent</th><th></th></tr></thead>
+          <thead><tr><th>Name</th><th>Contact</th><th>Location</th><th>Joined</th><th>Found us via</th><th>Courses</th><th>Total spent</th><th></th></tr></thead>
           <tbody>
             ${filtered
               .map(
@@ -111,6 +128,7 @@
                 </td>
                 <td class="row-sub">${Admin.escapeHtml(s.city || "—")}</td>
                 <td class="row-sub">${new Date(s.created_at).toLocaleDateString()}</td>
+                <td class="row-sub">${heardLabel(s.heard_from)}</td>
                 <td>${s.enrollments.length}</td>
                 <td>৳${s.totalSpent.toLocaleString()}</td>
                 <td class="row-actions"><button type="button" class="btn btn-ghost btn-sm" data-view="${s.id}">View</button></td>

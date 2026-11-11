@@ -433,7 +433,17 @@
       const valEl = stepper && stepper.querySelector("[data-qty-value]");
       // Clamped again here so a hand-edited quantity can't get past the stepper.
       const qty = Math.max(1, Math.min(qtyCeiling(stepper), valEl ? parseInt(valEl.textContent, 10) || 1 : 1));
-      window.location.href = `/checkout?product=${encodeURIComponent(buyBtn.dataset.buyProduct)}&qty=${qty}`;
+      const slug = buyBtn.dataset.buyProduct;
+      // Re-enabled before leaving, so the Back button never returns to a dead button.
+      const go = () => { buyBtn.disabled = false; window.location.href = `/checkout?product=${encodeURIComponent(slug)}&qty=${qty}`; };
+      // Facebook ads: the buy click (browser + server, same event id), then on to checkout.
+      const p = ((window.SITE_DATA && window.SITE_DATA.products) || []).find((x) => x.id === slug);
+      if (window.ShahedinPixel && p) {
+        buyBtn.disabled = true;
+        window.ShahedinPixel.initiateCheckout({ kind: "product", slug, dbId: p.dbId, title: p.title, price: p.price, qty }).then(go, go);
+      } else {
+        go();
+      }
     }
   });
 

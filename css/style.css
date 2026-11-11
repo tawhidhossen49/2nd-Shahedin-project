@@ -770,6 +770,9 @@ svg[stroke]{stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round;}
 .phone-input-group input{border-radius:0 var(--radius-s) var(--radius-s) 0 !important;}
 .auth-google-btn{display:flex; align-items:center; justify-content:center; gap:10px;}
 .auth-or{display:flex; align-items:center; gap:var(--space-3); margin:var(--space-4) 0; color:var(--text-3); font-size:var(--step--1);}
+/* The one sign-up question, "আমাদের কোথা থেকে জানলেন?" (js/auth.js) */
+.auth-heard-q{font-weight:600; font-size:var(--step-1); margin:0 0 var(--space-3); text-align:center;}
+.auth-heard{display:grid; gap:var(--space-2);}
 .auth-or::before,.auth-or::after{content:""; flex:1; border-top:1px solid var(--line-strong);}
 .auth-otp-sub{font-size:var(--step--1); color:var(--text-2); margin:-4px 0 var(--space-5);}
 .auth-otp-actions{display:flex; justify-content:space-between; align-items:center; gap:var(--space-3); margin-block-start:var(--space-4); flex-wrap:wrap;}

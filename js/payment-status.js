@@ -76,12 +76,16 @@
     } catch (err) {
       // Storage blocked: the shared event id still stops a double count.
     }
+    // value: what the buyer actually paid, after any coupon.
     window.ShahedinPixel.track("Purchase", {
       value: Number(order.amount),
       currency: "BDT",
       content_type: "product",
       content_name: order.title,
+      content_ids: [String(order.item_id || order.slug || "")],
       content_category: order.kind,
+      num_items: order.qty || 1,
+      order_id: String(order.id),
     }, "order_" + order.id);
   }
 

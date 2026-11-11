@@ -6,6 +6,7 @@
  *   GET  /functions/bkash-callback  where bKash sends the customer back
  *   POST /functions/admin-users     a main admin creates a new admin login
  *   POST /functions/meta-ads        Admin -> Facebook ads (meta_ads.php)
+ *   POST /functions/meta-event      the server copy of a browser InitiateCheckout (meta.php)
  *
  * Ported from supabase/functions/*; the rules and messages are the same.
  * These run with full database access (like the service role), so every
@@ -38,7 +39,7 @@ function fn_fail(string $message, int $status = 400, array $extra = []): never
 function functions_handle(string $name, ?string $site = null): never
 {
     if ($name === 'bkash-callback') bkash_callback($site === null ? null : (int)$site);
-    if (!in_array($name, ['bkash-payment', 'admin-users', 'meta-ads'], true)) fn_fail('Function not found.', 404);
+    if (!in_array($name, ['bkash-payment', 'admin-users', 'meta-ads', 'meta-event'], true)) fn_fail('Function not found.', 404);
     if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') fn_fail('Method not allowed.', 405);
     try {
         $ctx = current_ctx();
@@ -50,6 +51,7 @@ function functions_handle(string $name, ?string $site = null): never
         'bkash-payment' => bkash_payment($ctx, $body),
         'admin-users' => admin_users($ctx, $body),
         'meta-ads' => meta_ads($ctx, $body),
+        'meta-event' => meta_event($ctx, $body),
         default => fn_fail('Function not found.', 404),
     };
 }
@@ -162,11 +164,14 @@ function pay_create(string $userId, stdClass $b): never
 
     try {
         q('INSERT INTO orders (id, user_id, kind, item_id, item_title, qty, subtotal_bdt, discount_bdt, coupon_code, amount_bdt,
-                               payment_method, status, paid_at, bkash_invoice, buyer_name, buyer_phone, buyer_email, shipping_address)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
+                               payment_method, status, paid_at, bkash_invoice, buyer_name, buyer_phone, buyer_email, shipping_address,
+                               meta_fbp, meta_fbc)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [
             $orderId, $userId, $kind, $itemId, $title, $qty, $subtotal, $discount, $coupon, $total,
             $total === 0 ? 'free' : 'bKash', $total === 0 ? 'completed' : 'pending', $total === 0 ? now_utc() : null,
             $invoice, $field('name'), $field('phone'), $field('email'), $field('address'),
+            // The buyer's Facebook browser and ad-click ids, so the server's Purchase matches the ad.
+            meta_cookie($b->meta->fbp ?? null), meta_cookie($b->meta->fbc ?? null),
         ]);
     } catch (Throwable $e) {
         error_log('bkash-payment: could not write the order: ' . $e->getMessage());
@@ -231,7 +236,7 @@ function pay_status(string $userId, stdClass $b): never
     $table = $o['kind'] === 'course' ? 'courses' : 'products';
     $slug = q("SELECT slug FROM `$table` WHERE id = ?", [$o['item_id']])->fetchColumn();
     send_json(['order' => [
-        'id' => $o['id'], 'kind' => $o['kind'], 'slug' => $slug ?: null, 'title' => $o['item_title'],
+        'id' => $o['id'], 'kind' => $o['kind'], 'slug' => $slug ?: null, 'title' => $o['item_title'], 'item_id' => $o['item_id'], 'qty' => (int)$o['qty'],
         'amount' => (int)$o['amount_bdt'], 'status' => $o['status'], 'trxId' => $o['bkash_trx_id'], 'reason' => $o['failure_reason'],
     ]]);
 }
@@ -367,6 +372,44 @@ function bkash_callback(?int $site = null): never
         error_log('bkash-callback: ' . $e->getMessage());
         landing(isset($o['id']) ? $o['id'] : null, 'unknown');
     }
+}
+
+/* ---------------- meta-event ---------------- */
+
+/**
+ * The server copy of the Pixel's InitiateCheckout, sent when someone clicks "কিনুন".
+ * Public (the click can come before login), so it trusts nothing it is sent:
+ * the item and its price come from the database, the page address must be one of
+ * the site's own, and one address may send at most 60 an hour.
+ */
+function meta_event(Ctx $ctx, stdClass $b): never
+{
+    // shortcut: the count lives in APCu, so it resets if the server's PHP restarts; fine for a spam brake.
+    if (function_exists('apcu_inc')) {
+        $key = 'shahedin_meta_ev_' . client_ip() . '_' . gmdate('YmdH');
+        apcu_add($key, 0, 3700);
+        if (apcu_inc($key) > 60) fn_fail('Too many events.', 429);
+    }
+    if (($b->event ?? '') !== 'InitiateCheckout') fn_fail('Unknown event.', 400);
+    $eventId = (string)($b->event_id ?? '');
+    if (!preg_match('/^ic_[A-Za-z0-9-]{8,64}$/', $eventId)) fn_fail('Bad event id.', 400);
+
+    $kind = ($b->kind ?? '') === 'course' ? 'course' : 'product';
+    $slug = trim((string)($b->slug ?? ''));
+    $row = $kind === 'course'
+        ? q('SELECT id, title_bn, title_en, price_bdt, is_free FROM courses WHERE slug = ? AND is_published = 1', [$slug])->fetch()
+        : q('SELECT id, name_bn, name_en, price_bdt FROM products WHERE slug = ? AND is_published = 1', [$slug])->fetch();
+    if (!$row) fn_fail('Item not found.', 404);
+    $item = [
+        'id' => $row['id'], 'kind' => $kind,
+        'title' => $kind === 'course' ? ($row['title_bn'] ?: $row['title_en']) : ($row['name_bn'] ?: $row['name_en']),
+        'price' => $kind === 'course' && $row['is_free'] ? 0 : max(0, (int)$row['price_bdt']),
+    ];
+    $qty = $kind === 'product' ? min(99, max(1, (int)($b->qty ?? 1))) : 1;
+    $user = meta_account($ctx->uid()) + ['fbp' => $b->fbp ?? null, 'fbc' => $b->fbc ?? null] + meta_request_user();
+    $url = isset($b->url) ? (string)$b->url : null;
+    meta_later(fn() => meta_initiate_checkout($eventId, $item, $qty, $user, $url));
+    send_json(['ok' => true]);
 }
 
 /* ---------------- admin-users ---------------- */

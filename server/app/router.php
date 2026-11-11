@@ -18,6 +18,7 @@ declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/auth.php';
+require_once __DIR__ . '/meta.php';
 require __DIR__ . '/policies.php';
 require __DIR__ . '/rest.php';
 require __DIR__ . '/rpc.php';

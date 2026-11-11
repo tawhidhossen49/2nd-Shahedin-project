@@ -37,6 +37,7 @@ function api(string $method, string $path, $body = null, ?string $token = null):
     return ['status' => $status, 'headers' => substr($raw, 0, $hs), 'json' => json_decode(substr($raw, $hs), true)];
 }
 function pay(array $body, ?string $t): array { return api('POST', '/functions/bkash-payment', $body, $t); }
+function rest(array $req, ?string $t = null): array { return api('POST', '/rest', $req, $t); }
 function new_user(string $email): string
 {
     global $db;
@@ -90,15 +91,18 @@ try {
     }
 
     $r = pay(['action' => 'create', 'kind' => 'course', 'slug' => $paid['slug'], 'buyer' => ['name' => 'Pay Test', 'phone' => '01700000000'],
-              'amount' => 1, 'amount_bdt' => 1, 'price_bdt' => 1], $tBuyer);
+              'amount' => 1, 'amount_bdt' => 1, 'price_bdt' => 1,
+              'meta' => ['fbp' => 'fb.1.1700000000000.1234567890', 'fbc' => 'fb.1.1700000000000.IwAR_test-123']], $tBuyer);
     $orderId = $r['json']['orderId'] ?? '';
     ok($r['status'] === 200 && str_starts_with($r['json']['bkashURL'] ?? '', 'https://') && $orderId !== '', 'paid course: bKash checkout page returned', $r['json']);
     $o = order_row($orderId);
     ok(($o['amount_bdt'] ?? null) == $paid['price_bdt'], "price comes from the database (৳{$paid['price_bdt']}), not the browser");
     ok(($o['status'] ?? '') === 'pending' && ($o['bkash_env'] ?? '') === 'live' && !empty($o['bkash_payment_id']) && !empty($o['bkash_signature']), 'order is pending, tied to live bKash, signature kept');
+    ok(($o['meta_fbp'] ?? '') === 'fb.1.1700000000000.1234567890' && ($o['meta_fbc'] ?? '') === 'fb.1.1700000000000.IwAR_test-123', "the buyer's Facebook ids are kept on the order");
 
     $r = pay(['action' => 'status', 'orderId' => $orderId], $tBuyer);
     ok($r['status'] === 200 && ($r['json']['order']['status'] ?? '') === 'pending', 'status: an unpaid checkout stays pending', $r['json']);
+    ok(($r['json']['order']['item_id'] ?? '') === $paid['id'], 'status gives the item id (the Purchase content_ids)');
     $r = pay(['action' => 'status', 'orderId' => $orderId], $tPartial);
     ok($r['status'] === 404, "someone else's order is 'not found'");
 
@@ -177,6 +181,46 @@ try {
     ok(meta_period_range('last_7d', $t) === ['2026-03-03 18:00:00', '2026-03-10 18:00:00'], 'last 7 days = the 7 full Dhaka days before today');
     ok(meta_period_range('this_month', $t)[0] === '2026-02-28 18:00:00', 'this month starts on the 1st in Dhaka');
     ok(meta_period_range('maximum', $t)[0] === null, 'maximum has no start');
+
+    echo "Facebook events\n";
+    $ev = fn(array $body) => api('POST', '/functions/meta-event', $body);
+    $good = ['event' => 'InitiateCheckout', 'event_id' => 'ic_' . bin2hex(random_bytes(8)), 'kind' => 'course', 'slug' => $paid['slug'], 'url' => 'https://www.shahedin.com/courses'];
+    ok($ev(['event' => 'Purchase'] + $good)['status'] === 400, 'the click endpoint only accepts InitiateCheckout (a fake Purchase is refused)');
+    ok($ev(['event_id' => 'x<script>'] + $good)['status'] === 400, 'a malformed event id is refused');
+    ok($ev(['slug' => 'no-such-course-xyz'] + $good)['status'] === 404, 'an unknown course is refused');
+    $r = $ev($good);
+    ok($r['status'] === 200 && ($r['json']['ok'] ?? false) === true, 'a real buy click is accepted (no login needed)', $r['json']);
+
+    $u = meta_user_data(['email' => ' Test@Example.COM ', 'phone' => '01712345678', 'name' => 'Kamrul Hasan  Shahedin', 'external_id' => 'u1',
+                         'fbp' => 'fb.1.1700000000000.123', 'fbc' => 'bad value', 'ip' => '1.2.3.4', 'ua' => 'UA']);
+    ok($u['em'] === [hash('sha256', 'test@example.com')] && $u['ph'] === [hash('sha256', '8801712345678')], 'email lower-cased and phone as 8801XXXXXXXXX, both SHA-256');
+    ok($u['fn'] === [hash('sha256', 'kamrul')] && $u['ln'] === [hash('sha256', 'shahedin')] && $u['external_id'] === [hash('sha256', 'u1')], 'first and last name and user id, SHA-256');
+    ok($u['fbp'] === 'fb.1.1700000000000.123' && !isset($u['fbc']) && $u['client_ip_address'] === '1.2.3.4' && $u['client_user_agent'] === 'UA', 'fbp, IP and browser unhashed; a malformed fbc is dropped');
+    ok(meta_name_parts('শাহেদিন') === ['শাহেদিন', ''], 'a one-word Bangla name gives a first name only');
+    $p = meta_purchase($orderId, ['ip' => '1.2.3.4', 'ua' => 'UA']);
+    ok($p && $p['event_id'] === "order_$orderId" && $p['custom_data']['value'] === (int)$paid['price_bdt'] && $p['custom_data']['content_ids'] === [$paid['id']]
+        && $p['custom_data']['order_id'] === $orderId && $p['user']['fbc'] === 'fb.1.1700000000000.IwAR_test-123' && $p['user']['name'] === 'Pay Test',
+        'Purchase: same event id as the browser, amount paid, item id, order id, buyer name and click id', $p);
+
+    echo "Sign-up\n";
+    $cfg = require getenv('HOME') . '/shahedin-private/config.php';
+    $signupPhone = '88017' . sprintf('%08d', random_int(0, 99999999));
+    $otp = function () use ($db, $cfg, $signupPhone) {
+        $code = sprintf('%06d', random_int(0, 999999));
+        $db->prepare('REPLACE INTO otp_codes (phone, code_hash, full_name, attempts, sent_at, expires_at) VALUES (?, ?, ?, 0, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6) + INTERVAL 5 MINUTE)')
+           ->execute([$signupPhone, hash_hmac('sha256', "$signupPhone|$code", $cfg['app_secret']), 'Signup Test']);
+        return $code;
+    };
+    $r = api('POST', '/auth/verify', ['phone' => '+' . $signupPhone, 'token' => $otp(), 'meta' => ['fbp' => 'fb.1.1700000000000.42', 'url' => 'https://www.shahedin.com/']]);
+    $signupToken = $r['json']['access_token'] ?? '';
+    $signupId = $r['json']['user']['id'] ?? '';
+    ok($r['status'] === 200 && $signupToken !== '' && ($r['json']['is_new_user'] ?? false) === true, 'a new phone number: account created and marked new (the browser then reports it and asks one question)', $r['json']);
+    $r = rest(['table' => 'profiles', 'method' => 'update', 'values' => ['heard_from' => 'youtube'], 'filters' => [['id', 'eq', $signupId]]], $signupToken);
+    ok($r['status'] === 200 && $db->query('SELECT heard_from FROM profiles WHERE id = ' . $db->quote($signupId))->fetchColumn() === 'youtube', '"where did you hear about us" is saved on the profile');
+    $r = rest(['table' => 'profiles', 'method' => 'update', 'values' => ['heard_from' => 'hacker'], 'filters' => [['id', 'eq', $signupId]]], $signupToken);
+    ok($r['status'] >= 400 && ($r['json']['code'] ?? '') === '23514', 'an answer outside the four choices is refused', $r['json']);
+    $r = api('POST', '/auth/verify', ['phone' => '+' . $signupPhone, 'token' => $otp()]);
+    ok($r['status'] === 200 && !isset($r['json']['is_new_user']), 'the same number again is a login, not a new sign-up');
 } finally {
     // Enrolments first, so the course's student count is recounted by its trigger.
     $ids = [$buyer, $partial];
@@ -189,6 +233,10 @@ try {
     $db->exec("DELETE FROM users WHERE id IN ($in)");
     $db->exec('DELETE FROM sessions WHERE token_hash = ' . $db->quote(hash('sha256', $tMain)));
     $db->exec("DELETE FROM auth_failures WHERE failed_at > UTC_TIMESTAMP() - INTERVAL 10 MINUTE");
+    if (!empty($signupPhone)) {
+        $db->prepare('DELETE FROM users WHERE phone = ?')->execute([$signupPhone]);
+        $db->prepare('DELETE FROM otp_codes WHERE phone = ?')->execute([$signupPhone]);
+    }
     if ($free) ok((int)$db->query('SELECT students_count FROM courses WHERE id = ' . $db->quote($free['id']))->fetchColumn() === (int)$free['students_count'], 'clean-up: student count back as it was');
     ok(!$db->query("SELECT 1 FROM users WHERE email LIKE 'paytest-%@example.invalid'")->fetchColumn(), 'clean-up: test accounts removed');
 }

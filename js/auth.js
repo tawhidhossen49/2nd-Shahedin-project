@@ -163,7 +163,8 @@ window.ShahedinAuth = (function () {
       container.querySelector("[data-google]").addEventListener("click", async (e) => {
         e.currentTarget.disabled = true;
         // Comes back to this same page, signed in.
-        const { error } = await client().auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href } });
+        const meta = window.ShahedinPixel ? window.ShahedinPixel.ids() : undefined;
+        const { error } = await client().auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.href, meta } });
         if (error) {
           e.currentTarget.disabled = false;
           errEl.hidden = false;
@@ -293,16 +294,18 @@ window.ShahedinAuth = (function () {
         btn.textContent = "যাচাই হচ্ছে…";
         try {
           const c = client();
-          const { data, error } = await c.auth.verifyOtp({ phone, token, type: "sms" });
+          const meta = window.ShahedinPixel ? Object.assign({ url: location.href }, window.ShahedinPixel.ids()) : undefined;
+          const { data, error } = await c.auth.verifyOtp({ phone, token, type: "sms", options: { meta } });
           if (error) throw error;
           await c.auth.updateUser({ data: { full_name: name } }); // keep the name current whether this was a signup or a login
           clearResendTimer();
-          /* Facebook ads: a NEW account. The same form logs people in, so only
-             an account created in the last few minutes counts as a signup.
-             Nothing is sent unless the Pixel is switched on. */
-          const createdAt = data && data.user && Date.parse(data.user.created_at);
-          if (createdAt && Date.now() - createdAt < 10 * 60 * 1000 && window.ShahedinPixel) {
-            window.ShahedinPixel.track("CompleteRegistration", { status: true });
+          /* The same form logs people in, so the server says whether this was
+             a new account. Only then: the sign-up is reported and the
+             "where did you hear about us" question is asked, in this same box. */
+          if (data.session && data.session.is_new_user) {
+            reportSignup(data.user);
+            askHeardFrom(container, data.user, () => { if (opts.onSuccess) opts.onSuccess(data.user); });
+            return;
           }
           if (opts.onSuccess) opts.onSuccess(data.user);
         } catch (err) {
@@ -325,6 +328,81 @@ window.ShahedinAuth = (function () {
     if (m.includes("phone") && m.includes("valid")) return "সঠিক একটি ফোন নম্বর দিন।";
     return msg || "কিছু একটা সমস্যা হয়েছে, আবার চেষ্টা করুন।";
   }
+
+  /* ---------- A new account: Facebook sign-up event + one question ---------- */
+
+  const SIGNUP_FLAG = "shahedin_signup_done_";
+
+  /* CompleteRegistration, once per account. The server sends the same event
+     with the same id (reg_<user id>), so Facebook counts it once. */
+  function reportSignup(user) {
+    if (!user || !user.id) return;
+    try {
+      if (localStorage.getItem(SIGNUP_FLAG + user.id)) return;
+      localStorage.setItem(SIGNUP_FLAG + user.id, "1");
+    } catch (e) {
+      // Storage blocked: the shared event id still stops a double count.
+    }
+    if (window.ShahedinPixel) {
+      window.ShahedinPixel.track("CompleteRegistration", {
+        content_name: "রেজিস্ট্রেশন", status: true, value: 0, currency: "BDT",
+      }, "reg_" + user.id);
+    }
+  }
+
+  const HEARD_FROM = [
+    ["facebook_ad", "Facebook অ্যাড"],
+    ["youtube", "YouTube"],
+    ["friend", "বন্ধু"],
+    ["other", "অন্যান্য"],
+  ];
+
+  /* "আমাদের কোথা থেকে জানলেন?" — asked once, right after sign-up. The answer
+     is saved on the student's profile (Admin -> Students shows it). */
+  function askHeardFrom(container, user, done) {
+    container.innerHTML = `
+      <div class="auth-info" style="display:block;">অ্যাকাউন্ট তৈরি হয়েছে! শেষ একটা ছোট প্রশ্ন।</div>
+      <p class="auth-heard-q">আমাদের কোথা থেকে জানলেন?</p>
+      <div class="auth-heard">
+        ${HEARD_FROM.map(([v, label]) => `<button type="button" class="btn btn-ghost btn-block" data-heard="${v}">${label}</button>`).join("")}
+      </div>`;
+    container.querySelectorAll("[data-heard]").forEach((btn) => btn.addEventListener("click", async () => {
+      container.querySelectorAll("[data-heard]").forEach((b) => { b.disabled = true; });
+      btn.textContent = "সেভ হচ্ছে…";
+      try {
+        await client().from("profiles").update({ heard_from: btn.dataset.heard }).eq("id", user.id);
+      } catch (e) {
+        // The answer is a nicety: never block the student over it.
+      }
+      done();
+    }));
+  }
+
+  /* Google sign-ups come back to the page as a full redirect, so the same
+     two steps run here, in a small box of their own. */
+  function watchGoogleSignup() {
+    const c = client();
+    if (!c) return;
+    c.auth.onAuthStateChange((_event, session) => {
+      if (!session || !session.is_new_user || session.via !== "google" || !session.user) return;
+      let seen = false;
+      try { seen = !!localStorage.getItem(SIGNUP_FLAG + session.user.id); } catch (e) { seen = false; }
+      if (seen || document.getElementById("heardModal")) return;
+      reportSignup(session.user);
+      const backdrop = document.createElement("div");
+      backdrop.className = "modal-backdrop auth-modal-backdrop";
+      backdrop.id = "heardModal";
+      backdrop.innerHTML = `
+        <div class="modal auth-modal">
+          <div class="auth-modal-brand"><span class="dot"></span>Shahedin</div>
+          <div class="auth-modal-body"></div>
+        </div>`;
+      document.body.appendChild(backdrop);
+      askHeardFrom(backdrop.querySelector(".auth-modal-body"), session.user, () => backdrop.remove());
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", watchGoogleSignup);
+  else watchGoogleSignup();
 
   /* ---------- Modal wrapper ---------- */
   let _modalResolvers = [];

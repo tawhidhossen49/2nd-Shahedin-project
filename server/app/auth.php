@@ -200,14 +200,17 @@ function auth_verify_otp(stdClass $b): array
     $user = q('SELECT id FROM users WHERE phone = ?', [$phone])->fetch();
     if ($user) {
         q('UPDATE users SET phone_confirmed_at = COALESCE(phone_confirmed_at, UTC_TIMESTAMP(6)) WHERE id = ?', [$user['id']]);
-        $id = $user['id'];
-    } else {
-        $id = uuid4();
-        $meta = $row['full_name'] ? ['full_name' => $row['full_name']] : new stdClass();
-        q('INSERT INTO users (id, phone, user_metadata, phone_confirmed_at) VALUES (?, ?, ?, UTC_TIMESTAMP(6))',
-          [$id, $phone, json_encode($meta, JSON_UNESCAPED_UNICODE)]);
+        return start_session($user['id']);
     }
-    return start_session($id);
+    $id = uuid4();
+    $meta = $row['full_name'] ? ['full_name' => $row['full_name']] : new stdClass();
+    q('INSERT INTO users (id, phone, user_metadata, phone_confirmed_at) VALUES (?, ?, ?, UTC_TIMESTAMP(6))',
+      [$id, $phone, json_encode($meta, JSON_UNESCAPED_UNICODE)]);
+    // Facebook: a new account. The browser sends the same event id (reg_<id>) when it sees is_new_user.
+    $visitor = ['fbp' => $b->meta->fbp ?? null, 'fbc' => $b->meta->fbc ?? null] + meta_request_user();
+    $url = isset($b->meta->url) ? (string)$b->meta->url : null;
+    meta_later(fn() => meta_registration($id, $visitor, $url));
+    return start_session($id) + ['is_new_user' => true];
 }
 
 /* ---------------- email + password (admin panel) ---------------- */
@@ -309,7 +312,9 @@ function auth_google_start(): never
     $redirect = safe_redirect((string)($_GET['redirect_to'] ?? ''));
     $state = bin2hex(random_bytes(16));
     // The state travels in a signed cookie, so the reply from Google can only finish a login this browser started.
-    setcookie('g_state', signed(base64_encode(json_encode(['s' => $state, 'r' => $redirect, 't' => time()]))), [
+    // The Facebook ids ride along too: the api subdomain may not see the site's own cookies.
+    $fb = ['fbp' => meta_cookie($_GET['fbp'] ?? null), 'fbc' => meta_cookie($_GET['fbc'] ?? null)];
+    setcookie('g_state', signed(base64_encode(json_encode(['s' => $state, 'r' => $redirect, 't' => time(), 'fb' => $fb]))), [
         'expires' => time() + 600, 'path' => '/auth/google', 'secure' => true, 'httponly' => true, 'samesite' => 'Lax',
     ]);
     header('Location: https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query([
@@ -365,6 +370,7 @@ function auth_google_callback(): never
         $user = q('SELECT id FROM users WHERE email = ?', [$email])->fetch();
         if ($user) q('UPDATE users SET google_sub = ? WHERE id = ?', [$sub, $user['id']]);
     }
+    $isNew = !$user;
     if ($user) {
         $id = $user['id'];
     } else {
@@ -372,11 +378,16 @@ function auth_google_callback(): never
         $meta = ['full_name' => $claims['name'] ?? '', 'name' => $claims['name'] ?? '', 'avatar_url' => $claims['picture'] ?? '', 'email' => $email, 'email_verified' => $verified];
         q('INSERT INTO users (id, email, google_sub, user_metadata, email_confirmed_at) VALUES (?, ?, ?, ?, ?)',
           [$id, $email ?: null, $sub, json_encode($meta, JSON_UNESCAPED_UNICODE), $verified ? now_utc() : null]);
+        $visitor = [
+            'fbp' => $saved['fb']['fbp'] ?? ($_COOKIE['_fbp'] ?? null),
+            'fbc' => $saved['fb']['fbc'] ?? ($_COOKIE['_fbc'] ?? null),
+        ] + meta_request_user();
+        meta_later(fn() => meta_registration($id, $visitor, $back));
     }
     $s = start_session($id);
     // The token goes in the #fragment: browsers never send that part to any server or log.
     header('Location: ' . strtok($back, '#') . '#' . http_build_query([
         'access_token' => $s['access_token'], 'expires_at' => $s['expires_at'], 'token_type' => 'bearer', 'type' => 'google',
-    ]));
+    ] + ($isNew ? ['new_user' => 1] : [])));
     exit;
 }

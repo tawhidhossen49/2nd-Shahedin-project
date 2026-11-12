@@ -128,7 +128,7 @@ function cors(): void
     if ($origin !== '' && in_array($origin, config('allowed_origins'), true)) {
         header("Access-Control-Allow-Origin: $origin");
         header('Vary: Origin');
-        header('Access-Control-Allow-Headers: authorization, content-type, apikey, x-client-info, prefer');
+        header('Access-Control-Allow-Headers: authorization, content-type, apikey, x-client-info, prefer, x-meta-test-code');
         header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
         header('Access-Control-Max-Age: 86400');
     }

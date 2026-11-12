@@ -185,13 +185,17 @@ function meta_initiate_checkout(string $eventId, array $item, int $qty, array $u
  */
 function meta_later(callable $build): void
 {
-    register_shutdown_function(function () use ($build) {
+    // A request marked "X-Meta-Test-Code: TEST..." (the automatic tests) sends its events as
+    // test events, which Facebook shows only under Test events and never counts.
+    $test = (string)($_SERVER['HTTP_X_META_TEST_CODE'] ?? '');
+    $test = preg_match('/^TEST\w{2,40}$/', $test) ? $test : null;
+    register_shutdown_function(function () use ($build, $test) {
         try {
             if (function_exists('litespeed_finish_request')) litespeed_finish_request();
             elseif (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
             $s = meta_settings();
             if (!$s['enabled'] || $s['token'] === '') return;
-            if ($e = $build()) meta_send($s, $e);
+            if ($e = $build()) meta_send($s, $e, $test);
         } catch (Throwable $e) {
             error_log('meta: event failed: ' . $e->getMessage());
         }

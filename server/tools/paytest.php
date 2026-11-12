@@ -26,7 +26,8 @@ function ok(bool $cond, string $what, $extra = null): void
 function api(string $method, string $path, $body = null, ?string $token = null): array
 {
     $ch = curl_init("https://api.shahedin.com$path");
-    $h = ['Content-Type: application/json', 'Origin: https://www.shahedin.com'];
+    // Marked as a test, so the Facebook events these checks cause are test events, never counted.
+    $h = ['Content-Type: application/json', 'Origin: https://www.shahedin.com', 'X-Meta-Test-Code: TESTPAYTEST1'];
     if ($token) $h[] = "Authorization: Bearer $token";
     curl_setopt_array($ch, [CURLOPT_RESOLVE => [LOCAL], CURLOPT_CUSTOMREQUEST => $method, CURLOPT_HTTPHEADER => $h, CURLOPT_RETURNTRANSFER => true, CURLOPT_HEADER => true, CURLOPT_TIMEOUT => 60]);
     if ($body !== null) curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
